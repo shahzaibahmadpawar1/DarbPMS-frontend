@@ -502,31 +502,32 @@ export function ExecutiveDashboard() {
                             <h3 className="text-sm font-semibold text-gray-700 mb-3">
                                 Overhead Construction Events
                             </h3>
-                            <ResponsiveContainer width="100%" height={180}>
-                                <PieChart>
-                                    <Pie
-                                        data={spendByPhase}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={45}
-                                        outerRadius={70}
-                                        paddingAngle={3}
-                                        dataKey="value"
-                                    >
-                                        {spendByPhase.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={entry.color} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip
-                                        contentStyle={{
-                                            backgroundColor: "#fff",
-                                            border: "1px solid #e2e8f0",
-                                            borderRadius: "8px",
-                                            color: "#1e293b",
-                                        }}
-                                    />
-                                </PieChart>
-                            </ResponsiveContainer>
+                            <div className="h-48">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <PieChart>
+                                        <Pie
+                                            data={spendByPhase}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={40}
+                                            outerRadius={65}
+                                            paddingAngle={3}
+                                            dataKey="value"
+                                        >
+                                            {spendByPhase.map((entry, index) => (
+                                                <Cell key={`cell-${index}`} fill={entry.color} />
+                                            ))}
+                                        </Pie>
+                                        <Tooltip
+                                            contentStyle={{
+                                                backgroundColor: "white",
+                                                border: "1px solid #e5e7eb",
+                                                borderRadius: "8px",
+                                            }}
+                                        />
+                                    </PieChart>
+                                </ResponsiveContainer>
+                            </div>
                         </div>
                     </div>
                 </div>

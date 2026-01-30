@@ -19,6 +19,7 @@ import {
   Activity,
 } from "lucide-react";
 import { BackToDashboardButton } from "./BackToDashboardButton";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 
 interface NavItem {
   title: string;
@@ -171,8 +172,9 @@ export function DashboardLayout() {
           } transition-all duration-300`}
       >
         {/* Header with Back to Dashboard Button */}
-        <div className="bg-white border-b border-gray-200 px-8 py-4 sticky top-0 z-10 shadow-sm">
+        <div className="bg-white border-b border-gray-200 px-8 py-4 sticky top-0 z-10 shadow-sm flex items-center justify-between">
           <BackToDashboardButton />
+          <LanguageSwitcher />
         </div>
 
         <Outlet />
