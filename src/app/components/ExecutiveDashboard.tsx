@@ -49,24 +49,25 @@ function CircularProgressGauge({
                         strokeWidth="8"
                         fill="none"
                     />
-                    {/* Progress circle with gradient */}
+                    {/* Progress circle with vibrant gradient */}
+                    <defs>
+                        <linearGradient id={`circleGradient-${label}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stopColor="#8b5cf6" />
+                            <stop offset="100%" stopColor="#06b6d4" />
+                        </linearGradient>
+                    </defs>
                     <circle
                         cx={size / 2}
                         cy={size / 2}
                         r={radius}
-                        stroke={
-                            percentage < 30
-                                ? "#ef4444"
-                                : percentage < 70
-                                    ? "#f59e0b"
-                                    : "#10b981"
-                        }
-                        strokeWidth="8"
+                        stroke={`url(#circleGradient-${label})`}
+                        strokeWidth="10"
                         fill="none"
                         strokeDasharray={circumference}
                         strokeDashoffset={offset}
                         strokeLinecap="round"
                         className="transition-all duration-1000"
+                        style={{ filter: 'drop-shadow(0 0 4px rgba(139, 92, 246, 0.3))' }}
                     />
                 </svg>
                 {/* Center text */}
@@ -109,8 +110,8 @@ function SpeedometerGauge({ value, label, max = 100 }: { value: number; label: s
                     <defs>
                         <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                             <stop offset="0%" stopColor="#ef4444" />
-                            <stop offset="50%" stopColor="#f59e0b" />
-                            <stop offset="100%" stopColor="#10b981" />
+                            <stop offset="50%" stopColor="#8b5cf6" />
+                            <stop offset="100%" stopColor="#06b6d4" />
                         </linearGradient>
                     </defs>
                     <path
@@ -280,7 +281,7 @@ export function ExecutiveDashboard() {
                     {phaseProgress.map((phase, index) => (
                         <div
                             key={index}
-                            className="bg-white rounded-xl p-4 border border-gray-200 shadow-md"
+                            className="bg-white rounded-xl p-4 border border-gray-200 shadow-md vibrant-glow vibrant-glow-hover relative overflow-hidden"
                         >
                             <CircularProgressGauge
                                 percentage={phase.percentage}
@@ -293,10 +294,10 @@ export function ExecutiveDashboard() {
 
                 {/* Middle Row with Gauges and Days Counter */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-                    <div className="col-span-1 bg-white rounded-xl p-4 border border-gray-200 shadow-md">
+                    <div className="col-span-1 bg-white rounded-xl p-4 border border-gray-200 shadow-md vibrant-glow vibrant-glow-hover relative overflow-hidden">
                         <SpeedometerGauge value={27} label="EAC Margin" />
                     </div>
-                    <div className="col-span-1 bg-white rounded-xl p-4 border border-gray-200 shadow-md flex flex-col items-center justify-center">
+                    <div className="col-span-1 bg-white rounded-xl p-4 border border-gray-200 shadow-md vibrant-glow vibrant-glow-hover relative overflow-hidden flex flex-col items-center justify-center">
                         <div className="text-5xl font-bold text-[#00C0A7]">256</div>
                         <div className="text-sm text-gray-600 mt-2">Days</div>
                         <div className="text-xs text-gray-500 mt-1">Launch Date</div>
@@ -309,7 +310,7 @@ export function ExecutiveDashboard() {
                     {/* Left Column - Task Tracking & Monthly Spend */}
                     <div className="lg:col-span-3 space-y-6">
                         {/* Task Tracking Donut */}
-                        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md">
+                        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md vibrant-glow vibrant-glow-hover relative overflow-hidden">
                             <h3 className="text-sm font-semibold text-gray-700 mb-3">Task Tracking</h3>
                             <ResponsiveContainer width="100%" height={220}>
                                 <PieChart>
@@ -352,7 +353,7 @@ export function ExecutiveDashboard() {
                         </div>
 
                         {/* Monthly Project Spend */}
-                        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md">
+                        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md vibrant-glow vibrant-glow-hover relative overflow-hidden">
                             <h3 className="text-sm font-semibold text-gray-700 mb-3">
                                 Month on Month Project Spend
                             </h3>
@@ -401,7 +402,7 @@ export function ExecutiveDashboard() {
                     {/* Center Column - Bar Charts */}
                     <div className="lg:col-span-5 space-y-6">
                         {/* Average Days per Task */}
-                        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md">
+                        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md vibrant-glow vibrant-glow-hover relative overflow-hidden">
                             <h3 className="text-sm font-semibold text-gray-700 mb-3">
                                 Average Days per Task by Department
                             </h3>
@@ -431,7 +432,7 @@ export function ExecutiveDashboard() {
                         </div>
 
                         {/* S-Curve Progress Tracking */}
-                        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md">
+                        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md vibrant-glow vibrant-glow-hover relative overflow-hidden">
                             <h3 className="text-sm font-semibold text-gray-700 mb-3">
                                 S-Curve Progress Tracking
                             </h3>
@@ -478,7 +479,7 @@ export function ExecutiveDashboard() {
                     {/* Right Column - Regional Expenses & Spend by Phase */}
                     <div className="lg:col-span-4 space-y-6">
                         {/* Regional Expenses Map */}
-                        <div className="bg-white p-4 rounded-xl shadow-md border border-gray-200">
+                        <div className="bg-white p-4 rounded-xl shadow-md border border-gray-200 vibrant-glow vibrant-glow-hover relative overflow-hidden">
                             <h3 className="text-sm font-semibold text-gray-700 mb-4">
                                 Project Locations
                             </h3>
@@ -498,7 +499,7 @@ export function ExecutiveDashboard() {
                         </div>
 
                         {/* Spend by Phase Donut */}
-                        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md">
+                        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md vibrant-glow vibrant-glow-hover relative overflow-hidden">
                             <h3 className="text-sm font-semibold text-gray-700 mb-3">
                                 Overhead Construction Events
                             </h3>
@@ -535,7 +536,7 @@ export function ExecutiveDashboard() {
                 {/* Bottom Section */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-6">
                     {/* Budget Spent */}
-                    <div className="lg:col-span-3 bg-white rounded-xl p-4 border border-gray-200 shadow-md">
+                    <div className="lg:col-span-3 bg-white rounded-xl p-4 border border-gray-200 shadow-md vibrant-glow vibrant-glow-hover relative overflow-hidden">
                         <h3 className="text-sm font-semibold text-gray-700 mb-4">
                             Project Budget Spent to Date
                         </h3>
@@ -568,7 +569,7 @@ export function ExecutiveDashboard() {
                     </div>
 
                     {/* Key Risks */}
-                    <div className="lg:col-span-5 bg-white rounded-xl p-4 border border-gray-200 shadow-md">
+                    <div className="lg:col-span-5 bg-white rounded-xl p-4 border border-gray-200 shadow-md vibrant-glow vibrant-glow-hover relative overflow-hidden">
                         <h3 className="text-sm font-semibold text-gray-700 mb-4">
                             Key Risks to Project
                         </h3>
@@ -613,7 +614,7 @@ export function ExecutiveDashboard() {
                     </div>
 
                     {/* Manpower Planning */}
-                    <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-gray-200 shadow-md">
+                    <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-gray-200 shadow-md vibrant-glow vibrant-glow-hover relative overflow-hidden">
                         <h3 className="text-sm font-semibold text-gray-700 mb-4">
                             Manpower Planning
                         </h3>
@@ -673,3 +674,8 @@ export function ExecutiveDashboard() {
         </div>
     );
 }
+
+
+
+
+

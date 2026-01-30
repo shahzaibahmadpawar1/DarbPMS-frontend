@@ -49,9 +49,9 @@ export function LanguageSwitcher() {
         <div className="relative">
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:border-[#ff6b35] transition-all shadow-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:border-violet-500 transition-all shadow-sm"
             >
-                <Languages className="w-4 h-4 text-[#ff6b35]" />
+                <Languages className="w-4 h-4 text-violet-600" />
                 <span className="text-sm font-bold text-[#020713]">
                     {lang === "en" ? "English" : "العربية"}
                 </span>
@@ -67,13 +67,13 @@ export function LanguageSwitcher() {
                     <div className="absolute top-full mt-2 right-0 w-32 bg-white border border-gray-100 rounded-xl shadow-xl z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                         <button
                             onClick={() => applyLanguage("en")}
-                            className={`w-full text-left px-4 py-3 text-sm font-medium hover:bg-orange-50 transition-colors ${lang === "en" ? "text-[#ff6b35] bg-orange-50/50" : "text-gray-700"}`}
+                            className={`w-full text-left px-4 py-3 text-sm font-medium hover:bg-violet-50 transition-colors ${lang === "en" ? "text-violet-600 bg-violet-50/50" : "text-gray-700"}`}
                         >
                             English
                         </button>
                         <button
                             onClick={() => applyLanguage("ar")}
-                            className={`w-full text-left px-4 py-3 text-sm font-medium hover:bg-orange-50 transition-colors ${lang === "ar" ? "text-[#ff6b35] bg-orange-50/50" : "text-gray-700"}`}
+                            className={`w-full text-left px-4 py-3 text-sm font-medium hover:bg-violet-50 transition-colors ${lang === "ar" ? "text-violet-600 bg-violet-50/50" : "text-gray-700"}`}
                         >
                             العربية
                         </button>
@@ -83,3 +83,8 @@ export function LanguageSwitcher() {
         </div>
     );
 }
+
+
+
+
+

@@ -47,7 +47,7 @@ export function CommercialLicenseForm() {
           <button
             onClick={() => setViewMode('form')}
             className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'form'
-                ? 'bg-white text-[#ff6b35] shadow-sm'
+                ? 'bg-white text-[#6366f1] shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
               }`}
           >
@@ -57,7 +57,7 @@ export function CommercialLicenseForm() {
           <button
             onClick={() => setViewMode('records')}
             className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'records'
-                ? 'bg-white text-[#ff6b35] shadow-sm'
+                ? 'bg-white text-[#6366f1] shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
               }`}
           >
@@ -68,7 +68,7 @@ export function CommercialLicenseForm() {
       </div>
 
       {viewMode === 'form' ? (
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-xl p-8 vibrant-glow border-t-4 border-violet-600 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
           {/* License Information */}
           <div className="mb-6">
             <h2 className="text-xl font-semibold text-[#020713] mb-4 border-b border-[#D2C29C] pb-2">
@@ -83,7 +83,7 @@ export function CommercialLicenseForm() {
                   type="text"
                   value={formData.licenseNumber}
                   onChange={(e) => setFormData({ ...formData, licenseNumber: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                   required
                 />
               </div>
@@ -93,7 +93,7 @@ export function CommercialLicenseForm() {
                   type="date"
                   value={formData.paymentDueDate}
                   onChange={(e) => setFormData({ ...formData, paymentDueDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -102,7 +102,7 @@ export function CommercialLicenseForm() {
                   type="date"
                   value={formData.issuanceDate}
                   onChange={(e) => setFormData({ ...formData, issuanceDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -111,7 +111,7 @@ export function CommercialLicenseForm() {
                   type="date"
                   value={formData.expiryDate}
                   onChange={(e) => setFormData({ ...formData, expiryDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -120,7 +120,7 @@ export function CommercialLicenseForm() {
                   type="number"
                   value={formData.numberOfDays}
                   onChange={(e) => setFormData({ ...formData, numberOfDays: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                   readOnly
                 />
               </div>
@@ -129,7 +129,7 @@ export function CommercialLicenseForm() {
                 <select
                   value={formData.licenseStatus}
                   onChange={(e) => setFormData({ ...formData, licenseStatus: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 >
                   <option value="">Select Status</option>
                   <option value="active">Active</option>
@@ -153,7 +153,7 @@ export function CommercialLicenseForm() {
                   type="text"
                   value={formData.ownerName}
                   onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -162,7 +162,7 @@ export function CommercialLicenseForm() {
                   type="text"
                   value={formData.ownerId}
                   onChange={(e) => setFormData({ ...formData, ownerId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -171,7 +171,7 @@ export function CommercialLicenseForm() {
                   type="text"
                   value={formData.isicClassification}
                   onChange={(e) => setFormData({ ...formData, isicClassification: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
             </div>
@@ -189,7 +189,7 @@ export function CommercialLicenseForm() {
                   type="text"
                   value={formData.municipality}
                   onChange={(e) => setFormData({ ...formData, municipality: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -198,7 +198,7 @@ export function CommercialLicenseForm() {
                   type="text"
                   value={formData.subMunicipality}
                   onChange={(e) => setFormData({ ...formData, subMunicipality: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -207,7 +207,7 @@ export function CommercialLicenseForm() {
                   type="text"
                   value={formData.district}
                   onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -216,7 +216,7 @@ export function CommercialLicenseForm() {
                   type="text"
                   value={formData.street}
                   onChange={(e) => setFormData({ ...formData, street: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -225,7 +225,7 @@ export function CommercialLicenseForm() {
                   type="number"
                   value={formData.totalSpace}
                   onChange={(e) => setFormData({ ...formData, totalSpace: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -234,7 +234,7 @@ export function CommercialLicenseForm() {
                   type="number"
                   value={formData.signageSpace}
                   onChange={(e) => setFormData({ ...formData, signageSpace: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -243,7 +243,7 @@ export function CommercialLicenseForm() {
                   type="text"
                   value={formData.stationCode}
                   onChange={(e) => setFormData({ ...formData, stationCode: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
             </div>
@@ -252,7 +252,7 @@ export function CommercialLicenseForm() {
           <div className="flex justify-end">
             <button
               type="submit"
-              className="bg-[#ff6b35] hover:bg-[#ff8c61] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
+              className="bg-[#6366f1] hover:bg-[#818cf8] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
             >
               <Save className="w-5 h-5" />
               Save Commercial License
@@ -269,3 +269,9 @@ export function CommercialLicenseForm() {
     </div>
   );
 }
+
+
+
+
+
+

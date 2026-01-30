@@ -28,7 +28,7 @@ export function BuildingPermitForm() {
           <button
             onClick={() => setViewMode('form')}
             className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'form'
-                ? 'bg-white text-[#ff6b35] shadow-sm'
+                ? 'bg-white text-[#6366f1] shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
               }`}
           >
@@ -38,7 +38,7 @@ export function BuildingPermitForm() {
           <button
             onClick={() => setViewMode('records')}
             className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'records'
-                ? 'bg-white text-[#ff6b35] shadow-sm'
+                ? 'bg-white text-[#6366f1] shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
               }`}
           >
@@ -49,19 +49,19 @@ export function BuildingPermitForm() {
       </div>
 
       {viewMode === 'form' ? (
-        <form onSubmit={(e) => { e.preventDefault(); alert("Building Permit saved!"); }} className="bg-white rounded-lg shadow-md p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <form onSubmit={(e) => { e.preventDefault(); alert("Building Permit saved!"); }} className="bg-white rounded-xl shadow-xl p-8 vibrant-glow border-t-4 border-violet-600 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {Object.entries(formData).map(([key, value]) => (
               <div key={key}>
                 <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</label>
                 <input type={key.includes('Date') ? 'date' : key.includes('Number') || key.includes('Area') ? 'number' : 'text'}
                   value={value} onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]" />
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]" />
               </div>
             ))}
           </div>
           <div className="flex justify-end mt-6">
-            <button type="submit" className="bg-[#ff6b35] hover:bg-[#ff8c61] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors">
+            <button type="submit" className="bg-[#6366f1] hover:bg-[#818cf8] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors">
               <Save className="w-5 h-5" /> Save Building Permit
             </button>
           </div>
@@ -76,3 +76,9 @@ export function BuildingPermitForm() {
     </div>
   );
 }
+
+
+
+
+
+

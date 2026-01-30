@@ -10,7 +10,7 @@ export function Dashboard() {
       value: "156",
       icon: <Building2 className="w-8 h-8" />,
       change: "+12%",
-      color: "bg-[#ff6b35]",
+      color: "bg-[#6366f1]",
       path: "/total-stations",
     },
     {
@@ -18,7 +18,7 @@ export function Dashboard() {
       value: "142",
       icon: <FileCheck className="w-8 h-8" />,
       change: "+8%",
-      color: "bg-[#ff6b35]",
+      color: "bg-[#6366f1]",
       path: "/active-licenses",
     },
     {
@@ -26,7 +26,7 @@ export function Dashboard() {
       value: "23",
       icon: <Clock className="w-8 h-8" />,
       change: "-5%",
-      color: "bg-orange-500",
+      color: "bg-violet-500",
       path: "/pending-permits",
     },
     {
@@ -34,7 +34,7 @@ export function Dashboard() {
       value: "38",
       icon: <Activity className="w-8 h-8" />,
       change: "+15%",
-      color: "bg-[#ff6b35]",
+      color: "bg-[#6366f1]",
       path: "/active-projects",
     },
   ];
@@ -66,10 +66,11 @@ export function Dashboard() {
           <Link
             key={index}
             to={stat.path}
-            className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-all transform hover:-translate-y-1 block"
+            className="bg-white rounded-xl shadow-md p-6 vibrant-glow-hover vibrant-glow transition-all block group relative overflow-hidden"
           >
+            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-transparent via-violet-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
             <div className="flex items-center justify-between mb-4">
-              <div className={`${stat.color} text-white p-3 rounded-lg`}>
+              <div className={`${stat.color} text-white p-3 rounded-xl shadow-lg shadow-violet-200`}>
                 {stat.icon}
               </div>
               <span className={`text-sm font-semibold ${stat.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
@@ -83,10 +84,10 @@ export function Dashboard() {
       </div>
 
       {/* Total Stations Progress Widget */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+      <div className="bg-white rounded-xl shadow-xl p-8 mb-8 vibrant-glow relative overflow-hidden">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-[#020713]">Total Stations Progress</h2>
-          <Link to="/total-stations" className="text-[#ff6b35] text-sm font-semibold hover:underline">View All</Link>
+          <Link to="/total-stations" className="text-[#6366f1] text-sm font-semibold hover:underline">View All</Link>
         </div>
         <div className="space-y-6">
           {stations.map((station, index) => (
@@ -96,11 +97,11 @@ export function Dashboard() {
                   <p className="font-bold text-[#020713]">{station.name}</p>
                   <span className="text-xs text-gray-500">{station.status}</span>
                 </div>
-                <span className="text-sm font-bold text-[#ff6b35]">{station.completion}%</span>
+                <span className="text-sm font-bold text-[#6366f1]">{station.completion}%</span>
               </div>
               <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-[#ff6b35] to-[#ff8c61] transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-violet-500 via-indigo-500 to-cyan-500 transition-all duration-500"
                   style={{ width: `${station.completion}%` }}
                 />
               </div>
@@ -110,13 +111,13 @@ export function Dashboard() {
       </div>
 
       {/* Recent Activities */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-12">
+      <div className="bg-white rounded-xl shadow-xl p-8 mb-12 vibrant-glow relative overflow-hidden">
         <h2 className="text-xl font-bold text-[#020713] mb-4">Recent Activities</h2>
         <div className="space-y-4">
           {recentActivities.map((activity, index) => (
             <div
               key={index}
-              className="flex items-center justify-between p-4 border border-gray-200 rounded-lg hover:border-[#ff6b35] transition-colors"
+              className="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:border-violet-400 hover:shadow-lg hover:shadow-violet-100 transition-all bg-white/50 backdrop-blur-sm"
             >
               <div>
                 <p className="font-medium text-[#020713]">{activity.action}</p>
@@ -136,3 +137,8 @@ export function Dashboard() {
     </div>
   );
 }
+
+
+
+
+

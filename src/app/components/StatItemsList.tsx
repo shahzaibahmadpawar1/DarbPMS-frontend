@@ -46,10 +46,10 @@ const getTitle = (type: string) => {
 
 const getIcon = (type: string) => {
     switch (type) {
-        case "active-licenses": return <FileText className="w-5 h-5 text-[#ff6b35]" />;
-        case "pending-permits": return <Clock className="w-5 h-5 text-[#ff6b35]" />;
-        case "active-projects": return <Activity className="w-5 h-5 text-[#ff6b35]" />;
-        default: return <FileText className="w-5 h-5 text-[#ff6b35]" />;
+        case "active-licenses": return <FileText className="w-5 h-5 text-[#6366f1]" />;
+        case "pending-permits": return <Clock className="w-5 h-5 text-[#6366f1]" />;
+        case "active-projects": return <Activity className="w-5 h-5 text-[#6366f1]" />;
+        default: return <FileText className="w-5 h-5 text-[#6366f1]" />;
     }
 };
 
@@ -82,7 +82,7 @@ export function StatItemsList() {
                         <input
                             type="text"
                             placeholder={`Search ${title.toLowerCase()}...`}
-                            className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#ff6b35] min-w-[300px]"
+                            className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#6366f1] min-w-[300px]"
                         />
                     </div>
                 </div>
@@ -106,7 +106,7 @@ export function StatItemsList() {
                                 <tr key={item.id} className="hover:bg-gray-50/50 transition-colors group">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-orange-50 rounded-lg">
+                                            <div className="p-2 bg-violet-50 rounded-lg">
                                                 {getIcon(type)}
                                             </div>
                                             <div>
@@ -123,7 +123,7 @@ export function StatItemsList() {
                                                 ? 'bg-green-100 text-green-700'
                                                 : item.status === 'Delayed'
                                                     ? 'bg-red-100 text-red-700'
-                                                    : 'bg-orange-100 text-orange-700'
+                                                    : 'bg-orange-100 text-indigo-700'
                                             }`}>
                                             {item.status}
                                         </span>
@@ -145,3 +145,8 @@ export function StatItemsList() {
         </div>
     );
 }
+
+
+
+
+

@@ -98,87 +98,103 @@ export function DashboardLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
-      {/* Sidebar */}
-      <aside
-        className={`${sidebarOpen ? "w-72" : "w-20"
-          } transition-all duration-300 bg-black text-white flex flex-col fixed h-screen z-10`}
-      >
-        {/* Logo & Toggle */}
-        <div className="p-4 flex items-center justify-between border-b border-gray-700">
-          {sidebarOpen ? (
-            <div className="flex items-center gap-2">
-              <Building2 className="w-8 h-8 text-[#ff6b35]" />
-              <div>
-                <h1 className="font-bold text-lg text-[#ff6b35]">DARB</h1>
-                <p className="text-xs text-gray-400">Project Management</p>
-              </div>
-            </div>
-          ) : (
-            <Building2 className="w-8 h-8 text-[#ff6b35]" />
-          )}
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="p-2 hover:bg-gray-700 rounded-lg"
-          >
-            {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-          </button>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-violet-50 via-cyan-50 to-pink-50 flex relative overflow-hidden">
+      {/* Animated mesh gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-tr from-violet-100/30 via-transparent to-cyan-100/30 pointer-events-none"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.08),transparent_50%)] pointer-events-none"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(6,182,212,0.08),transparent_50%)] pointer-events-none"></div>
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto py-4 scrollbar-thin scrollbar-track-black scrollbar-thumb-gray-800 hover:scrollbar-thumb-gray-700" style={{ scrollbarWidth: 'thin', scrollbarColor: '#1f1f1f black' }}>
-          {navigation.map((group) => (
-            <div key={group.group} className="mb-2">
-              {sidebarOpen && (
-                <button
-                  onClick={() => toggleGroup(group.group)}
-                  className="w-full px-4 py-2 flex items-center justify-between text-sm font-semibold text-gray-400 hover:text-white transition-colors"
-                >
-                  <span>{group.group}</span>
-                  {expandedGroups.includes(group.group) ? (
-                    <ChevronDown className="w-4 h-4" />
-                  ) : (
-                    <ChevronRight className="w-4 h-4" />
-                  )}
-                </button>
-              )}
-              {(expandedGroups.includes(group.group) || !sidebarOpen) && (
-                <div className="mt-1">
-                  {group.items.map((item) => (
-                    <Link
-                      key={item.path}
-                      to={item.path}
-                      className={`flex items-center gap-3 px-4 py-3 mx-2 rounded-lg transition-colors ${location.pathname === item.path
-                        ? "bg-[#ff6b35] text-white"
-                        : "text-gray-300 hover:bg-gray-800 hover:text-white"
-                        }`}
-                    >
-                      {item.icon}
-                      {sidebarOpen && <span className="text-sm">{item.title}</span>}
-                    </Link>
-                  ))}
+      {/* Content wrapper */}
+      <div className="relative z-0 flex w-full">
+        {/* Sidebar */}
+        <aside
+          className={`${sidebarOpen ? "w-72" : "w-20"
+            } transition-all duration-300 bg-gradient-to-br from-violet-600 via-purple-600 to-cyan-500 text-white flex flex-col fixed h-screen z-10 shadow-2xl backdrop-blur-xl`}
+          style={{
+            boxShadow: '0 0 60px rgba(139, 92, 246, 0.4), 0 0 120px rgba(6, 182, 212, 0.2)'
+          }}
+        >
+          {/* Logo & Toggle */}
+          <div className="p-4 flex items-center justify-between border-b border-white/20 backdrop-blur-sm">
+            {sidebarOpen ? (
+              <div className="flex items-center gap-2">
+                <Building2 className="w-8 h-8 text-white drop-shadow-lg" />
+                <div>
+                  <h1 className="font-bold text-lg text-white drop-shadow-lg">DARB</h1>
+                  <p className="text-xs text-white/80">Project Management</p>
                 </div>
-              )}
-            </div>
-          ))}
-        </nav>
-      </aside>
+              </div>
+            ) : (
+              <Building2 className="w-8 h-8 text-white drop-shadow-lg" />
+            )}
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 hover:bg-white/20 rounded-lg transition-all"
+            >
+              {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          </div>
 
-      {/* Main Content */}
-      <main
-        className={`flex-1 ${sidebarOpen
-          ? "ltr:ml-72 rtl:mr-72"
-          : "ltr:ml-20 rtl:mr-20"
-          } transition-all duration-300`}
-      >
-        {/* Header with Back to Dashboard Button */}
-        <div className="bg-white border-b border-gray-200 px-8 py-4 sticky top-0 z-10 shadow-sm flex items-center justify-between">
-          <BackToDashboardButton />
-          <LanguageSwitcher />
-        </div>
+          {/* Navigation */}
+          <nav className="flex-1 overflow-y-auto py-4" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.3) transparent' }}>
+            {navigation.map((group) => (
+              <div key={group.group} className="mb-2">
+                {sidebarOpen && (
+                  <button
+                    onClick={() => toggleGroup(group.group)}
+                    className="w-full px-4 py-2 flex items-center justify-between text-sm font-semibold text-white/70 hover:text-white transition-colors"
+                  >
+                    <span>{group.group}</span>
+                    {expandedGroups.includes(group.group) ? (
+                      <ChevronDown className="w-4 h-4" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4" />
+                    )}
+                  </button>
+                )}
+                {(expandedGroups.includes(group.group) || !sidebarOpen) && (
+                  <div className="mt-1">
+                    {group.items.map((item) => (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        className={`flex items-center gap-3 px-4 py-3 mx-2 rounded-lg transition-all duration-200 ${location.pathname === item.path
+                          ? "bg-white/25 text-white shadow-lg backdrop-blur-sm"
+                          : "text-white/80 hover:bg-white/15 hover:text-white"
+                          }`}
+                      >
+                        {item.icon}
+                        {sidebarOpen && <span className="text-sm">{item.title}</span>}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ))}
+          </nav>
+        </aside>
 
-        <Outlet />
-      </main>
+        {/* Main Content */}
+        <main
+          className={`flex-1 ${sidebarOpen
+            ? "ltr:ml-72 rtl:mr-72"
+            : "ltr:ml-20 rtl:mr-20"
+            } transition-all duration-300`}
+        >
+          {/* Header with Back to Dashboard Button */}
+          <div className="bg-white/80 backdrop-blur-xl border-b border-violet-100 px-8 py-4 sticky top-0 z-10 shadow-lg shadow-violet-100/50 flex items-center justify-between">
+            <BackToDashboardButton />
+            <LanguageSwitcher />
+          </div>
+
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }
+
+
+
+
+

@@ -18,7 +18,7 @@ export function StationStatusForm() {
         <p className="text-gray-600 mt-2">Manage station status classifications</p>
       </div>
 
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-white rounded-xl shadow-xl p-8 vibrant-glow border-t-4 border-violet-600 relative overflow-hidden">
         <table className="w-full">
           <thead>
             <tr className="border-b border-gray-200">
@@ -44,3 +44,9 @@ export function StationStatusForm() {
     </div>
   );
 }
+
+
+
+
+
+

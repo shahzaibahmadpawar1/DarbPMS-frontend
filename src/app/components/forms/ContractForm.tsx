@@ -58,7 +58,7 @@ export function ContractForm() {
           <button
             onClick={() => setViewMode('form')}
             className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'form'
-                ? 'bg-white text-[#ff6b35] shadow-sm'
+                ? 'bg-white text-[#6366f1] shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
               }`}
           >
@@ -68,7 +68,7 @@ export function ContractForm() {
           <button
             onClick={() => setViewMode('records')}
             className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'records'
-                ? 'bg-white text-[#ff6b35] shadow-sm'
+                ? 'bg-white text-[#6366f1] shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
               }`}
           >
@@ -79,7 +79,7 @@ export function ContractForm() {
       </div>
 
       {viewMode === 'form' ? (
-        <form onSubmit={handleSubmit} className="bg-white rounded-lg shadow-md p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-xl p-8 vibrant-glow border-t-4 border-violet-600 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
           {/* Contract Basic Info */}
           <div className="mb-6">
             <h2 className="text-xl font-semibold text-[#020713] mb-4 border-b border-[#D2C29C] pb-2">
@@ -94,7 +94,7 @@ export function ContractForm() {
                   type="text"
                   value={formData.contractNumber}
                   onChange={(e) => setFormData({ ...formData, contractNumber: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                   required
                 />
               </div>
@@ -103,7 +103,7 @@ export function ContractForm() {
                 <select
                   value={formData.contractType}
                   onChange={(e) => setFormData({ ...formData, contractType: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 >
                   <option value="">Select Type</option>
                   <option value="lease">Lease</option>
@@ -117,7 +117,7 @@ export function ContractForm() {
                   type="text"
                   value={formData.stationCode}
                   onChange={(e) => setFormData({ ...formData, stationCode: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -126,7 +126,7 @@ export function ContractForm() {
                   type="date"
                   value={formData.signatureDate}
                   onChange={(e) => setFormData({ ...formData, signatureDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -135,7 +135,7 @@ export function ContractForm() {
                   type="text"
                   value={formData.signatureLocation}
                   onChange={(e) => setFormData({ ...formData, signatureLocation: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -144,7 +144,7 @@ export function ContractForm() {
                   type="date"
                   value={formData.tenancyStartDate}
                   onChange={(e) => setFormData({ ...formData, tenancyStartDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -153,7 +153,7 @@ export function ContractForm() {
                   type="date"
                   value={formData.tenancyEndDate}
                   onChange={(e) => setFormData({ ...formData, tenancyEndDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
             </div>
@@ -171,7 +171,7 @@ export function ContractForm() {
                   type="text"
                   value={formData.lessorName}
                   onChange={(e) => setFormData({ ...formData, lessorName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -180,7 +180,7 @@ export function ContractForm() {
                   type="text"
                   value={formData.lessorNationality}
                   onChange={(e) => setFormData({ ...formData, lessorNationality: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -188,7 +188,7 @@ export function ContractForm() {
                 <select
                   value={formData.lessorIdType}
                   onChange={(e) => setFormData({ ...formData, lessorIdType: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 >
                   <option value="">Select ID Type</option>
                   <option value="national">National ID</option>
@@ -202,7 +202,7 @@ export function ContractForm() {
                   type="text"
                   value={formData.lessorIdNo}
                   onChange={(e) => setFormData({ ...formData, lessorIdNo: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -211,7 +211,7 @@ export function ContractForm() {
                   type="tel"
                   value={formData.lessorMobile}
                   onChange={(e) => setFormData({ ...formData, lessorMobile: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -220,7 +220,7 @@ export function ContractForm() {
                   type="email"
                   value={formData.lessorEmail}
                   onChange={(e) => setFormData({ ...formData, lessorEmail: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
             </div>
@@ -238,7 +238,7 @@ export function ContractForm() {
                   type="text"
                   value={formData.tenantName}
                   onChange={(e) => setFormData({ ...formData, tenantName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -247,7 +247,7 @@ export function ContractForm() {
                   type="text"
                   value={formData.tenantNationality}
                   onChange={(e) => setFormData({ ...formData, tenantNationality: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -256,7 +256,7 @@ export function ContractForm() {
                   type="text"
                   value={formData.tenantIdNo}
                   onChange={(e) => setFormData({ ...formData, tenantIdNo: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -265,7 +265,7 @@ export function ContractForm() {
                   type="tel"
                   value={formData.tenantMobile}
                   onChange={(e) => setFormData({ ...formData, tenantMobile: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -274,7 +274,7 @@ export function ContractForm() {
                   type="email"
                   value={formData.tenantEmail}
                   onChange={(e) => setFormData({ ...formData, tenantEmail: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
             </div>
@@ -292,7 +292,7 @@ export function ContractForm() {
                   type="number"
                   value={formData.durationYears}
                   onChange={(e) => setFormData({ ...formData, durationYears: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -301,7 +301,7 @@ export function ContractForm() {
                   type="number"
                   value={formData.durationDays}
                   onChange={(e) => setFormData({ ...formData, durationDays: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -310,7 +310,7 @@ export function ContractForm() {
                   type="number"
                   value={formData.contractValue}
                   onChange={(e) => setFormData({ ...formData, contractValue: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -319,7 +319,7 @@ export function ContractForm() {
                   type="number"
                   value={formData.numberOfInstallments}
                   onChange={(e) => setFormData({ ...formData, numberOfInstallments: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -328,7 +328,7 @@ export function ContractForm() {
                   type="date"
                   value={formData.dueDate}
                   onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -337,7 +337,7 @@ export function ContractForm() {
                   type="number"
                   value={formData.dueAmount}
                   onChange={(e) => setFormData({ ...formData, dueAmount: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -346,7 +346,7 @@ export function ContractForm() {
                   type="number"
                   value={formData.paidAmount}
                   onChange={(e) => setFormData({ ...formData, paidAmount: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -355,7 +355,7 @@ export function ContractForm() {
                   type="number"
                   value={formData.unpaidAmount}
                   onChange={(e) => setFormData({ ...formData, unpaidAmount: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
               <div>
@@ -364,7 +364,7 @@ export function ContractForm() {
                   type="text"
                   value={formData.duePeriod}
                   onChange={(e) => setFormData({ ...formData, duePeriod: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#ff6b35]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
                 />
               </div>
             </div>
@@ -373,7 +373,7 @@ export function ContractForm() {
           <div className="flex justify-end">
             <button
               type="submit"
-              className="bg-[#ff6b35] hover:bg-[#ff8c61] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
+              className="bg-[#6366f1] hover:bg-[#818cf8] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
             >
               <Save className="w-5 h-5" />
               Save Contract
@@ -390,3 +390,9 @@ export function ContractForm() {
     </div>
   );
 }
+
+
+
+
+
+

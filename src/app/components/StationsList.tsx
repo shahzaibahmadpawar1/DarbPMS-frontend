@@ -45,12 +45,12 @@ export function StationsList() {
                         <input
                             type="text"
                             placeholder="Search stations..."
-                            className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#ff6b35] min-w-[300px]"
+                            className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#6366f1] min-w-[300px]"
                         />
                     </div>
                     <button
                         onClick={() => navigate("/station-information")}
-                        className="bg-[#ff6b35] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#ff8c61] transition-colors"
+                        className="bg-[#6366f1] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#818cf8] transition-colors"
                     >
                         Add New Station
                     </button>
@@ -74,7 +74,7 @@ export function StationsList() {
                                 <tr key={station.id} className="hover:bg-gray-50/50 transition-colors group">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-orange-50 rounded-lg text-[#ff6b35]">
+                                            <div className="p-2 bg-violet-50 rounded-lg text-[#6366f1]">
                                                 <Gauge className="w-5 h-5" />
                                             </div>
                                             <div>
@@ -93,7 +93,7 @@ export function StationsList() {
                                                 ? 'bg-green-100 text-green-700'
                                                 : station.completion < 30
                                                     ? 'bg-blue-100 text-blue-700'
-                                                    : 'bg-orange-100 text-orange-700'
+                                                    : 'bg-orange-100 text-indigo-700'
                                                 }`}>
                                                 {station.status}
                                             </span>
@@ -107,7 +107,7 @@ export function StationsList() {
                                             </div>
                                             <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
                                                 <div
-                                                    className="h-full bg-gradient-to-r from-[#ff6b35] to-[#ff8c61] transition-all duration-500"
+                                                    className="h-full bg-gradient-to-r from-[#6366f1] to-[#818cf8] transition-all duration-500"
                                                     style={{ width: `${station.completion}%` }}
                                                 />
                                             </div>
@@ -127,3 +127,8 @@ export function StationsList() {
         </div>
     );
 }
+
+
+
+
+
