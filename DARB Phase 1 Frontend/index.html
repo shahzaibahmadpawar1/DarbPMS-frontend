@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/png" href="/favicon.png" />
+  <title>DARB pms</title>
+  <style>
+    /* Hides the top Google banner completely */
+    .goog-te-banner-frame.skiptranslate,
+    .goog-te-banner-frame,
+    .goog-te-banner,
+    .goog-te-balloon-frame,
+    #goog-gt-tt,
+    .goog-tooltip,
+    .goog-tooltip:hover {
+      display: none !important;
+    }
+
+    body {
+      top: 0px !important;
+      position: static !important;
+    }
+
+    /* Prevent Google from adding margin to the top of the page */
+    html {
+      margin-top: 0px !important;
+    }
+
+    /* Style the dropdown container to look premium */
+    #google_translate_element {
+      position: absolute;
+      top: 15px;
+      right: 20px;
+      z-index: 1000;
+      background: white;
+      padding: 4px 8px;
+      border-radius: 10px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      border: 1px solid #e2e8f0;
+    }
+
+    /* Clean up the Google widget text and appearance */
+    .goog-te-gadget {
+      font-family: inherit !important;
+      color: transparent !important;
+    }
+
+    .goog-te-gadget .goog-te-combo {
+      margin: 0 !important;
+      padding: 6px 10px;
+      border: 1px solid #ff6b35;
+      border-radius: 8px;
+      color: #020713;
+      font-weight: 600;
+      font-size: 14px;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .goog-te-gadget .goog-te-combo:focus {
+      border-color: #ff8c61;
+      box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.2);
+    }
+
+    .goog-te-gadget>span {
+      display: none !important;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="google_translate_element" style="text-align: right; padding: 10px;"></div>
+
+  <div id="root"></div>
+
+  <script type="text/javascript">
+    function googleTranslateElementInit() {
+      new google.translate.TranslateElement({
+        pageLanguage: 'en',       // The original language of your site
+        includedLanguages: 'ar,en', // Only show Arabic and English
+        layout: google.translate.TranslateElement.InlineLayout.SIMPLE,
+        autoDisplay: false
+      }, 'google_translate_element');
+    }
+
+    // Script to handle RTL toggle based on Google Translate selection
+    setInterval(() => {
+      const googleCombo = document.querySelector(".goog-te-combo");
+      if (googleCombo) {
+        const lang = googleCombo.value;
+        if (lang === 'ar') {
+          document.documentElement.dir = 'rtl';
+          document.documentElement.lang = 'ar';
+        } else {
+          document.documentElement.dir = 'ltr';
+          document.documentElement.lang = 'en';
+        }
+      }
+    }, 1000);
+  </script>
+  <script type="text/javascript"
+    src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+  <script type="module" src="/src/main.tsx"></script>
+</body>
