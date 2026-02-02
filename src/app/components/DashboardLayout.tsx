@@ -17,9 +17,12 @@ import {
   Menu,
   X,
   Activity,
+  LogOut,
+  MessageCircle,
 } from "lucide-react";
 import { BackToDashboardButton } from "./BackToDashboardButton";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { ChatWidget } from "./ChatWidget";
 
 interface NavItem {
   title: string;
@@ -87,6 +90,7 @@ export function DashboardLayout() {
   const [expandedGroups, setExpandedGroups] = useState<string[]>(
     navigation.map((g) => g.group)
   );
+  const [chatOpen, setChatOpen] = useState(false);
   const location = useLocation();
 
   const toggleGroup = (group: string) => {
@@ -172,6 +176,17 @@ export function DashboardLayout() {
               </div>
             ))}
           </nav>
+
+          {/* Logout Section */}
+          <div className="p-4 border-t border-white/20">
+            <Link
+              to="/login"
+              className="flex items-center gap-3 px-4 py-3 mx-2 rounded-lg text-white/80 hover:bg-white/15 hover:text-white transition-all duration-200"
+            >
+              <LogOut className="w-5 h-5" />
+              {sidebarOpen && <span className="text-sm font-medium">Log out</span>}
+            </Link>
+          </div>
         </aside>
 
         {/* Main Content */}
@@ -184,12 +199,27 @@ export function DashboardLayout() {
           {/* Header with Back to Dashboard Button */}
           <div className="bg-white/80 backdrop-blur-xl border-b border-violet-100 px-8 py-4 sticky top-0 z-10 shadow-lg shadow-violet-100/50 flex items-center justify-between">
             <BackToDashboardButton />
-            <LanguageSwitcher />
+            <div className="flex items-center gap-4">
+              <button
+                onClick={() => setChatOpen(!chatOpen)}
+                className="relative p-2 hover:bg-violet-100 rounded-lg transition-colors"
+                aria-label="Open chat"
+              >
+                <MessageCircle className="w-5 h-5 text-violet-600" />
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-white">
+                  3
+                </span>
+              </button>
+              <LanguageSwitcher />
+            </div>
           </div>
 
           <Outlet />
         </main>
       </div>
+
+      {/* Chat Widget */}
+      <ChatWidget isOpen={chatOpen} onClose={() => setChatOpen(false)} />
     </div>
   );
 }
