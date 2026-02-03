@@ -273,7 +273,7 @@ export function ExecutiveDashboard() {
                     <h1 className="text-3xl font-bold text-[#020713] mb-2">
                         Project Progress YTD - March 2026
                     </h1>
-                    <p className="text-gray-600">DARB Station Executive Dashboard</p>
+                    <p className="text-gray-600">Darb Station Executive Dashboard</p>
                 </div>
 
                 {/* Top Section - Circular Progress Gauges */}

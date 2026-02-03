@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Building2, User, Lock, ArrowRight } from "lucide-react";
+import { User, Lock, ArrowRight } from "lucide-react";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import logo from "../../assets/logo.png";
 
 export function LoginPage() {
     const [username, setUsername] = useState("");
@@ -37,8 +38,8 @@ export function LoginPage() {
                     <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-violet-500 via-purple-500 to-cyan-500"></div>
 
                     <div className="text-center mb-8">
-                        <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-violet-600 via-purple-600 to-cyan-500 rounded-2xl shadow-xl shadow-violet-200 mb-6 group transition-transform hover:scale-110 duration-300">
-                            <Building2 className="w-10 h-10 text-white drop-shadow-lg" />
+                        <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-2xl shadow-xl shadow-violet-200 mb-6 group transition-transform hover:scale-110 duration-300 p-2">
+                            <img src={logo} alt="Darb Logo" className="w-full h-full object-contain" />
                         </div>
                         <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Darb Station</h1>
                         <p className="text-gray-500 font-medium mt-2">Project Management System</p>

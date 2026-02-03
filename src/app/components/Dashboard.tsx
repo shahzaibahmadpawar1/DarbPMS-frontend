@@ -1,6 +1,7 @@
-import { Building2, FileCheck, Clock, Activity } from "lucide-react";
+import { FileCheck, Clock, Activity, AlertCircle, CheckCircle, Calendar } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { ExecutiveDashboard } from "./ExecutiveDashboard";
+import logo from "../../assets/logo.png";
 
 export function Dashboard() {
   const navigate = useNavigate();
@@ -8,33 +9,41 @@ export function Dashboard() {
     {
       title: "Total Stations",
       value: "156",
-      icon: <Building2 className="w-8 h-8" />,
+      icon: <img src={logo} alt="" className="w-8 h-8 object-contain brightness-0 invert" />,
       change: "+12%",
       color: "bg-[#6366f1]",
       path: "/total-stations",
     },
     {
-      title: "Active Licenses",
-      value: "142",
-      icon: <FileCheck className="w-8 h-8" />,
-      change: "+8%",
-      color: "bg-[#6366f1]",
+      title: "Under Process",
+      value: "42",
+      icon: <Clock className="w-8 h-8" />,
+      change: "+5%",
+      color: "bg-blue-500",
       path: "/active-licenses",
     },
     {
-      title: "Pending Permits",
-      value: "23",
-      icon: <Clock className="w-8 h-8" />,
-      change: "-5%",
-      color: "bg-violet-500",
+      title: "Delay",
+      value: "8",
+      icon: <AlertCircle className="w-8 h-8" />,
+      change: "-3%",
+      color: "bg-red-500",
       path: "/pending-permits",
     },
     {
-      title: "Active Projects",
-      value: "38",
-      icon: <Activity className="w-8 h-8" />,
-      change: "+15%",
-      color: "bg-[#6366f1]",
+      title: "Completed",
+      value: "98",
+      icon: <CheckCircle className="w-8 h-8" />,
+      change: "+18%",
+      color: "bg-green-500",
+      path: "/active-projects",
+    },
+    {
+      title: "Opening Soon",
+      value: "8",
+      icon: <Calendar className="w-8 h-8" />,
+      change: "+2%",
+      color: "bg-violet-500",
       path: "/active-projects",
     },
   ];
@@ -57,11 +66,11 @@ export function Dashboard() {
     <div className="p-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-[#020713] mb-2">Dashboard</h1>
-        <p className="text-gray-600">DARB Project Management & Tracking System</p>
+        <p className="text-gray-600">Darb Project Management & Tracking System</p>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
         {stats.map((stat, index) => (
           <Link
             key={index}

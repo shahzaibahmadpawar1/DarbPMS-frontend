@@ -1,21 +1,33 @@
-import { useState } from "react";
-import { Save } from "lucide-react";
+import { Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useStation } from "../../context/StationContext";
 
 export function StationStatusForm() {
+  const { accessMode } = useStation();
+  const isReadOnly = accessMode === 'view-only';
   const navigate = useNavigate();
-  const [statuses, setStatuses] = useState([
+
+  const statuses = [
     { code: "1", description: "Active" },
     { code: "2", description: "Inactive" },
     { code: "3", description: "Under Construction" },
     { code: "4", description: "Under Development" },
-  ]);
+  ];
 
   return (
     <div className="p-8">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-[#020713]">Station Status (Master Data)</h1>
-        <p className="text-gray-600 mt-2">Manage station status classifications</p>
+      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-[#020713]">Station Status (Master Data)</h1>
+          <p className="text-gray-600 mt-2">Manage station status classifications</p>
+        </div>
+
+        {isReadOnly && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg border border-blue-200">
+            <Eye className="w-4 h-4" />
+            <span className="text-sm font-semibold">View Only Mode</span>
+          </div>
+        )}
       </div>
 
       <div className="bg-white rounded-xl shadow-xl p-8 vibrant-glow border-t-4 border-violet-600 relative overflow-hidden">
@@ -44,6 +56,7 @@ export function StationStatusForm() {
     </div>
   );
 }
+
 
 
 

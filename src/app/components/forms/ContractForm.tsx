@@ -1,41 +1,47 @@
 import { useState } from "react";
-import { Save, List, PlusCircle } from "lucide-react";
+import { Save, List, PlusCircle, Eye } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
+import { useStation } from "../../context/StationContext";
 
 export function ContractForm() {
+  const { accessMode } = useStation();
+  const isReadOnly = accessMode === 'view-only';
+
   const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
+
+  // Pre-filled demo data for single station mode
   const [formData, setFormData] = useState({
-    contractNumber: "",
-    contractType: "",
-    signatureDate: "",
-    signatureLocation: "",
-    tenancyStartDate: "",
-    tenancyEndDate: "",
-    lessorName: "",
-    lessorNationality: "",
-    lessorIdType: "",
-    lessorIdNo: "",
-    lessorMobile: "",
-    lessorEmail: "",
-    tenantName: "",
-    tenantNationality: "",
-    tenantIdNo: "",
-    tenantMobile: "",
-    tenantEmail: "",
-    durationYears: "",
-    durationDays: "",
-    contractValue: "",
-    numberOfInstallments: "",
-    dueDate: "",
-    dueAmount: "",
-    paidAmount: "",
-    unpaidAmount: "",
-    duePeriod: "",
-    stationCode: "",
+    contractNumber: isReadOnly ? "CN-N101-2024-001" : "",
+    contractType: isReadOnly ? "lease" : "",
+    signatureDate: isReadOnly ? "2024-01-15" : "",
+    signatureLocation: isReadOnly ? "Riyadh, Saudi Arabia" : "",
+    tenancyStartDate: isReadOnly ? "2024-02-01" : "",
+    tenancyEndDate: isReadOnly ? "2029-01-31" : "",
+    lessorName: isReadOnly ? "Ahmed bin Abdullah Al-Mansour" : "",
+    lessorNationality: isReadOnly ? "Saudi" : "",
+    lessorIdType: isReadOnly ? "national" : "",
+    lessorIdNo: isReadOnly ? "1023948572" : "",
+    lessorMobile: isReadOnly ? "+966 50 123 4567" : "",
+    lessorEmail: isReadOnly ? "ahmed.almansour@darbstation.sa" : "",
+    tenantName: isReadOnly ? "Darb Fuel Stations Company" : "",
+    tenantNationality: isReadOnly ? "Saudi" : "",
+    tenantIdNo: isReadOnly ? "7001234567" : "",
+    tenantMobile: isReadOnly ? "+966 11 456 7890" : "",
+    tenantEmail: isReadOnly ? "contracts@darbfuel.sa" : "",
+    durationYears: isReadOnly ? "5" : "",
+    durationDays: isReadOnly ? "1825" : "",
+    contractValue: isReadOnly ? "750000" : "",
+    numberOfInstallments: isReadOnly ? "60" : "",
+    dueDate: isReadOnly ? "2024-03-01" : "",
+    dueAmount: isReadOnly ? "12500" : "",
+    paidAmount: isReadOnly ? "12500" : "",
+    unpaidAmount: isReadOnly ? "0" : "",
+    duePeriod: isReadOnly ? "Monthly" : "",
+    stationCode: isReadOnly ? "N101" : "",
   });
 
   const mockRecords = [
-    { no: "CN-8821", type: "Lease", tenant: "DARB Co.", station: "ST-201", value: "150,000 SAR" },
+    { no: "CN-8821", type: "Lease", tenant: "Darb Co.", station: "ST-201", value: "150,000 SAR" },
     { no: "CN-9902", type: "Rent", tenant: "Global Fuel", station: "ST-204", value: "85,000 SAR" },
     { no: "CN-7733", type: "Sublease", tenant: "QuickStop", station: "ST-202", value: "120,000 SAR" },
   ];
@@ -51,31 +57,42 @@ export function ContractForm() {
       <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold text-[#020713]">Contract Management</h1>
-          <p className="text-gray-600 mt-2">Lease and rent agreement details</p>
+          <p className="text-gray-600 mt-2">
+            {isReadOnly ? "View lease and rent agreement details" : "Lease and rent agreement details"}
+          </p>
         </div>
 
-        <div className="flex bg-gray-100 p-1 rounded-xl w-fit">
-          <button
-            onClick={() => setViewMode('form')}
-            className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'form'
+        {!isReadOnly && (
+          <div className="flex bg-gray-100 p-1 rounded-xl w-fit">
+            <button
+              onClick={() => setViewMode('form')}
+              className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'form'
                 ? 'bg-white text-[#6366f1] shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
-              }`}
-          >
-            <PlusCircle className="w-4 h-4" />
-            <span>New Entry</span>
-          </button>
-          <button
-            onClick={() => setViewMode('records')}
-            className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'records'
+                }`}
+            >
+              <PlusCircle className="w-4 h-4" />
+              <span>New Entry</span>
+            </button>
+            <button
+              onClick={() => setViewMode('records')}
+              className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'records'
                 ? 'bg-white text-[#6366f1] shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
-              }`}
-          >
-            <List className="w-4 h-4" />
-            <span>View Records</span>
-          </button>
-        </div>
+                }`}
+            >
+              <List className="w-4 h-4" />
+              <span>View Records</span>
+            </button>
+          </div>
+        )}
+
+        {isReadOnly && (
+          <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg border border-blue-200">
+            <Eye className="w-4 h-4" />
+            <span className="text-sm font-semibold">View Only Mode</span>
+          </div>
+        )}
       </div>
 
       {viewMode === 'form' ? (
@@ -94,8 +111,9 @@ export function ContractForm() {
                   type="text"
                   value={formData.contractNumber}
                   onChange={(e) => setFormData({ ...formData, contractNumber: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   required
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -103,7 +121,8 @@ export function ContractForm() {
                 <select
                   value={formData.contractType}
                   onChange={(e) => setFormData({ ...formData, contractType: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={isReadOnly}
                 >
                   <option value="">Select Type</option>
                   <option value="lease">Lease</option>
@@ -117,7 +136,8 @@ export function ContractForm() {
                   type="text"
                   value={formData.stationCode}
                   onChange={(e) => setFormData({ ...formData, stationCode: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -126,7 +146,8 @@ export function ContractForm() {
                   type="date"
                   value={formData.signatureDate}
                   onChange={(e) => setFormData({ ...formData, signatureDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -135,7 +156,8 @@ export function ContractForm() {
                   type="text"
                   value={formData.signatureLocation}
                   onChange={(e) => setFormData({ ...formData, signatureLocation: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -144,7 +166,8 @@ export function ContractForm() {
                   type="date"
                   value={formData.tenancyStartDate}
                   onChange={(e) => setFormData({ ...formData, tenancyStartDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -153,7 +176,8 @@ export function ContractForm() {
                   type="date"
                   value={formData.tenancyEndDate}
                   onChange={(e) => setFormData({ ...formData, tenancyEndDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={isReadOnly}
                 />
               </div>
             </div>
@@ -171,7 +195,8 @@ export function ContractForm() {
                   type="text"
                   value={formData.lessorName}
                   onChange={(e) => setFormData({ ...formData, lessorName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -180,7 +205,8 @@ export function ContractForm() {
                   type="text"
                   value={formData.lessorNationality}
                   onChange={(e) => setFormData({ ...formData, lessorNationality: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -188,7 +214,8 @@ export function ContractForm() {
                 <select
                   value={formData.lessorIdType}
                   onChange={(e) => setFormData({ ...formData, lessorIdType: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={isReadOnly}
                 >
                   <option value="">Select ID Type</option>
                   <option value="national">National ID</option>
@@ -202,7 +229,8 @@ export function ContractForm() {
                   type="text"
                   value={formData.lessorIdNo}
                   onChange={(e) => setFormData({ ...formData, lessorIdNo: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -211,7 +239,8 @@ export function ContractForm() {
                   type="tel"
                   value={formData.lessorMobile}
                   onChange={(e) => setFormData({ ...formData, lessorMobile: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -220,7 +249,8 @@ export function ContractForm() {
                   type="email"
                   value={formData.lessorEmail}
                   onChange={(e) => setFormData({ ...formData, lessorEmail: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={isReadOnly}
                 />
               </div>
             </div>
@@ -238,7 +268,8 @@ export function ContractForm() {
                   type="text"
                   value={formData.tenantName}
                   onChange={(e) => setFormData({ ...formData, tenantName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -247,7 +278,8 @@ export function ContractForm() {
                   type="text"
                   value={formData.tenantNationality}
                   onChange={(e) => setFormData({ ...formData, tenantNationality: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -256,7 +288,8 @@ export function ContractForm() {
                   type="text"
                   value={formData.tenantIdNo}
                   onChange={(e) => setFormData({ ...formData, tenantIdNo: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -265,7 +298,8 @@ export function ContractForm() {
                   type="tel"
                   value={formData.tenantMobile}
                   onChange={(e) => setFormData({ ...formData, tenantMobile: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -274,7 +308,8 @@ export function ContractForm() {
                   type="email"
                   value={formData.tenantEmail}
                   onChange={(e) => setFormData({ ...formData, tenantEmail: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={isReadOnly}
                 />
               </div>
             </div>
@@ -292,7 +327,8 @@ export function ContractForm() {
                   type="number"
                   value={formData.durationYears}
                   onChange={(e) => setFormData({ ...formData, durationYears: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -301,7 +337,8 @@ export function ContractForm() {
                   type="number"
                   value={formData.durationDays}
                   onChange={(e) => setFormData({ ...formData, durationDays: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -310,7 +347,8 @@ export function ContractForm() {
                   type="number"
                   value={formData.contractValue}
                   onChange={(e) => setFormData({ ...formData, contractValue: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -319,7 +357,8 @@ export function ContractForm() {
                   type="number"
                   value={formData.numberOfInstallments}
                   onChange={(e) => setFormData({ ...formData, numberOfInstallments: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -328,7 +367,8 @@ export function ContractForm() {
                   type="date"
                   value={formData.dueDate}
                   onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -337,7 +377,8 @@ export function ContractForm() {
                   type="number"
                   value={formData.dueAmount}
                   onChange={(e) => setFormData({ ...formData, dueAmount: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -346,7 +387,8 @@ export function ContractForm() {
                   type="number"
                   value={formData.paidAmount}
                   onChange={(e) => setFormData({ ...formData, paidAmount: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -355,7 +397,8 @@ export function ContractForm() {
                   type="number"
                   value={formData.unpaidAmount}
                   onChange={(e) => setFormData({ ...formData, unpaidAmount: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={isReadOnly}
                 />
               </div>
               <div>
@@ -364,21 +407,24 @@ export function ContractForm() {
                   type="text"
                   value={formData.duePeriod}
                   onChange={(e) => setFormData({ ...formData, duePeriod: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1]"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  disabled={isReadOnly}
                 />
               </div>
             </div>
           </div>
 
-          <div className="flex justify-end">
-            <button
-              type="submit"
-              className="bg-[#6366f1] hover:bg-[#818cf8] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
-            >
-              <Save className="w-5 h-5" />
-              Save Contract
-            </button>
-          </div>
+          {!isReadOnly && (
+            <div className="flex justify-end">
+              <button
+                type="submit"
+                className="bg-[#6366f1] hover:bg-[#818cf8] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
+              >
+                <Save className="w-5 h-5" />
+                Save Contract
+              </button>
+            </div>
+          )}
         </form>
       ) : (
         <FormRecordsList
@@ -390,9 +436,3 @@ export function ContractForm() {
     </div>
   );
 }
-
-
-
-
-
-

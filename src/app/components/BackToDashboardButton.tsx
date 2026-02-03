@@ -1,12 +1,17 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { Home, ArrowLeft } from "lucide-react";
+import { useStation } from "../context/StationContext";
 
 export function BackToDashboardButton() {
     const navigate = useNavigate();
     const location = useLocation();
+    const { accessMode } = useStation();
+
+    // Determine the correct dashboard path based on access mode
+    const dashboardPath = accessMode === 'admin' ? '/all-stations-dashboard' : '/dashboard';
 
     // Don't show the button if we're already on the dashboard
-    if (location.pathname === "/dashboard") {
+    if (location.pathname === dashboardPath) {
         return null;
     }
 
@@ -22,7 +27,7 @@ export function BackToDashboardButton() {
             </button>
 
             <button
-                onClick={() => navigate("/dashboard")}
+                onClick={() => navigate(dashboardPath)}
                 className="flex items-center gap-2 px-4 py-2 bg-[#6366f1] hover:bg-[#818cf8] text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
                 title="Return to dashboard"
             >

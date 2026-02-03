@@ -1,5 +1,6 @@
 import { useParams, Link } from "react-router-dom";
-import { ArrowLeft, Building2, TrendingUp, Activity, AlertCircle, CheckCircle2, Clock, DollarSign } from "lucide-react";
+import { ArrowLeft, TrendingUp, Activity, AlertCircle, CheckCircle2, Clock, DollarSign } from "lucide-react";
+import logo from "../../assets/logo.png";
 
 export function StationAnalyticsPage() {
     const { stationId } = useParams();
@@ -29,8 +30,8 @@ export function StationAnalyticsPage() {
             {/* Header */}
             <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 vibrant-glow p-8 mb-8">
                 <div className="flex items-center gap-4 mb-4">
-                    <div className="w-16 h-16 bg-gradient-to-br from-violet-600 to-cyan-500 rounded-2xl flex items-center justify-center shadow-xl">
-                        <Building2 className="w-8 h-8 text-white" />
+                    <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-xl p-2">
+                        <img src={logo} alt="Darb Logo" className="w-full h-full object-contain" />
                     </div>
                     <div className="flex-1">
                         <h1 className="text-4xl font-black text-gray-900 tracking-tight">{stationData.name}</h1>

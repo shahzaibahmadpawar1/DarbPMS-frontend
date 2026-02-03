@@ -2,17 +2,18 @@ import { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import {
     LayoutDashboard,
-    Building2,
     Activity,
-    ChevronRight,
     Menu,
     X,
     LogOut,
     MessageCircle,
+    FileText,
+    PlusCircle,
 } from "lucide-react";
 import { BackToDashboardButton } from "./BackToDashboardButton";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { ChatWidget } from "./ChatWidget";
+import logo from "../../assets/logo.png";
 
 interface NavItem {
     title: string;
@@ -23,13 +24,19 @@ interface NavItem {
 const navigation: NavItem[] = [
     { title: "Dashboard", path: "/all-stations-dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
     { title: "Analytics", path: "/all-stations-analytics", icon: <Activity className="w-5 h-5" /> },
-    { title: "Stations", path: "/all-stations-list", icon: <Building2 className="w-5 h-5" /> },
+    { title: "Stations", path: "/all-stations-list", icon: <img src={logo} alt="" className="w-5 h-5 object-contain brightness-0 invert" /> },
+    { title: "Reports", path: "/all-stations-reports", icon: <FileText className="w-5 h-5" /> },
+    { title: "Contact CEO Office", path: "/all-stations-contact-ceo", icon: <MessageCircle className="w-5 h-5" /> },
 ];
 
 export function AllStationsDashboardLayout() {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [chatOpen, setChatOpen] = useState(false);
     const location = useLocation();
+
+    const handleChatClick = () => {
+        setChatOpen(!chatOpen);
+    };
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-violet-50 via-cyan-50 to-pink-50 flex relative overflow-hidden">
@@ -43,7 +50,7 @@ export function AllStationsDashboardLayout() {
                 {/* Sidebar */}
                 <aside
                     className={`${sidebarOpen ? "w-72" : "w-20"
-                        } transition-all duration-300 bg-gradient-to-br from-violet-600 via-purple-600 to-cyan-500 text-white flex flex-col fixed h-screen z-10 shadow-2xl backdrop-blur-xl`}
+                        } transition-all duration-300 bg-gradient-to-br from-violet-600 via-purple-600 to-cyan-500 text-white flex flex-col fixed inset-y-4 ltr:left-4 rtl:right-4 z-10 shadow-2xl backdrop-blur-xl rounded-[2.5rem] overflow-hidden`}
                     style={{
                         boxShadow: '0 0 60px rgba(139, 92, 246, 0.4), 0 0 120px rgba(6, 182, 212, 0.2)'
                     }}
@@ -52,14 +59,18 @@ export function AllStationsDashboardLayout() {
                     <div className="p-4 flex items-center justify-between border-b border-white/20 backdrop-blur-sm">
                         {sidebarOpen ? (
                             <div className="flex items-center gap-2">
-                                <Building2 className="w-8 h-8 text-white drop-shadow-lg" />
+                                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center p-1.5 shadow-lg">
+                                    <img src={logo} alt="Darb Logo" className="w-full h-full object-contain" />
+                                </div>
                                 <div>
-                                    <h1 className="font-bold text-lg text-white drop-shadow-lg">DARB</h1>
+                                    <h1 className="font-bold text-lg text-white drop-shadow-lg">Darb</h1>
                                     <p className="text-xs text-white/80">All Stations</p>
                                 </div>
                             </div>
                         ) : (
-                            <Building2 className="w-8 h-8 text-white drop-shadow-lg" />
+                            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center p-1.5 shadow-lg">
+                                <img src={logo} alt="Darb Logo" className="w-full h-full object-contain" />
+                            </div>
                         )}
                         <button
                             onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -88,6 +99,16 @@ export function AllStationsDashboardLayout() {
                                 {sidebarOpen && <span className="text-sm font-medium">{item.title}</span>}
                             </Link>
                         ))}
+                        <button
+                            onClick={handleChatClick}
+                            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-white/80 hover:bg-white/15 hover:text-white relative"
+                        >
+                            <MessageCircle className="w-5 h-5" />
+                            {sidebarOpen && <span className="text-sm font-medium">Chat</span>}
+                            <span className="absolute top-2 left-8 w-4 h-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-white">
+                                3
+                            </span>
+                        </button>
                     </nav>
 
                     {/* Logout Section */}
@@ -105,24 +126,21 @@ export function AllStationsDashboardLayout() {
                 {/* Main Content */}
                 <main
                     className={`flex-1 ${sidebarOpen
-                        ? "ltr:ml-72 rtl:mr-72"
-                        : "ltr:ml-20 rtl:mr-20"
+                        ? "ltr:ml-80 rtl:mr-80"
+                        : "ltr:ml-28 rtl:mr-28"
                         } transition-all duration-300 relative z-0`}
                 >
                     {/* Header */}
-                    <header className="bg-white/80 backdrop-blur-xl border-b border-violet-100 px-8 py-4 sticky top-0 z-10 shadow-lg shadow-violet-100/50 flex items-center justify-between">
+                    <header className="bg-white/80 backdrop-blur-xl m-4 rounded-2xl border border-violet-100 px-8 py-4 sticky top-4 z-10 shadow-lg shadow-violet-100/50 flex items-center justify-between">
                         <BackToDashboardButton />
                         <div className="flex items-center gap-4">
-                            <button
-                                onClick={() => setChatOpen(!chatOpen)}
-                                className="relative p-2 hover:bg-violet-100 rounded-lg transition-colors"
-                                aria-label="Open chat"
+                            <Link
+                                to="/add-new-project"
+                                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-sm"
                             >
-                                <MessageCircle className="w-5 h-5 text-violet-600" />
-                                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-white">
-                                    3
-                                </span>
-                            </button>
+                                <PlusCircle className="w-4 h-4" />
+                                <span>Add New Project</span>
+                            </Link>
                             <LanguageSwitcher />
                         </div>
                     </header>

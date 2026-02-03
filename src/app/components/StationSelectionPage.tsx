@@ -4,7 +4,6 @@ import {
     MapPin,
     Map as MapIcon,
     Layout,
-    Building2,
     ArrowRight,
     ChevronRight,
     ChevronLeft,
@@ -12,6 +11,7 @@ import {
 } from "lucide-react";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useStation } from "../context/StationContext";
+import logo from "../../assets/logo.png";
 
 // Demo Data - Reorganized: Region → City → Project → Location
 const demoData = {
@@ -181,7 +181,7 @@ export function StationSelectionPage() {
                                 disabled={step < 4}
                                 className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${step >= 4 ? 'text-cyan-600 bg-cyan-50' : 'text-gray-400'}`}
                             >
-                                <Building2 className="w-4 h-4" />
+                                <img src={logo} alt="Location" className="w-4 h-4 object-contain" />
                                 Location
                             </button>
                         )}
@@ -287,9 +287,9 @@ export function StationSelectionPage() {
                                                 }`}
                                         >
                                             <div className="flex items-center gap-4">
-                                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors ${selectedLocation === location ? 'bg-white/20' : 'bg-cyan-100'
+                                                <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-colors p-2 ${selectedLocation === location ? 'bg-white/20' : 'bg-white shadow-sm'
                                                     }`}>
-                                                    <Building2 className={`w-6 h-6 ${selectedLocation === location ? 'text-white' : 'text-cyan-600'}`} />
+                                                    <img src={logo} alt="Station" className="w-full h-full object-contain" />
                                                 </div>
                                                 <span className="text-xl font-bold tracking-tight">{location}</span>
                                             </div>

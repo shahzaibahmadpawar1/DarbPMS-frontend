@@ -1,28 +1,19 @@
 import { useState } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import {
-  LayoutDashboard,
-  Building2,
   FileText,
-  Users,
-  Scroll,
-  Pencil,
-  HardHat,
-  Shield,
-  Leaf,
-  Zap,
-  Package,
-  ChevronDown,
-  ChevronRight,
   Menu,
   X,
   Activity,
   LogOut,
   MessageCircle,
+  PlusCircle,
 } from "lucide-react";
 import { BackToDashboardButton } from "./BackToDashboardButton";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { ChatWidget } from "./ChatWidget";
+import { useStation } from "../context/StationContext";
+import logo from "../../assets/logo.png";
 
 interface NavItem {
   title: string;
@@ -30,75 +21,23 @@ interface NavItem {
   icon: React.ReactNode;
 }
 
-interface NavGroup {
-  group: string;
-  items: NavItem[];
-}
-
-const navigation: NavGroup[] = [
-  {
-    group: "Overview",
-    items: [
-      { title: "Dashboard", path: "/dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
-      { title: "Analytics", path: "/executive-analytics", icon: <Activity className="w-5 h-5" /> },
-    ],
-  },
-  {
-    group: "Station Essentials",
-    items: [
-      { title: "Station Information", path: "/station-information", icon: <Building2 className="w-5 h-5" /> },
-      { title: "Station Type", path: "/station-type", icon: <FileText className="w-5 h-5" /> },
-      { title: "Station Status", path: "/station-status", icon: <FileText className="w-5 h-5" /> },
-    ],
-  },
-  {
-    group: "Ownership & Legal",
-    items: [
-      { title: "Owner Information", path: "/owner-information", icon: <Users className="w-5 h-5" /> },
-      { title: "Deed Information", path: "/deed-information", icon: <Scroll className="w-5 h-5" /> },
-      { title: "Contract", path: "/contract", icon: <FileText className="w-5 h-5" /> },
-    ],
-  },
-  {
-    group: "Engineering & Design",
-    items: [
-      { title: "Consultation Office", path: "/consultation-office", icon: <Pencil className="w-5 h-5" /> },
-      { title: "Architectural Design", path: "/architectural-design", icon: <Pencil className="w-5 h-5" /> },
-      { title: "Building Permit", path: "/building-permit", icon: <HardHat className="w-5 h-5" /> },
-    ],
-  },
-  {
-    group: "Government Licenses",
-    items: [
-      { title: "Commercial License", path: "/commercial-license", icon: <FileText className="w-5 h-5" /> },
-      { title: "Salamah License", path: "/salamah-license", icon: <Shield className="w-5 h-5" /> },
-      { title: "Taqyees License", path: "/taqyees-license", icon: <FileText className="w-5 h-5" /> },
-      { title: "Environmental License", path: "/environmental-license", icon: <Leaf className="w-5 h-5" /> },
-      { title: "Energy License", path: "/energy-license", icon: <Zap className="w-5 h-5" /> },
-    ],
-  },
-  {
-    group: "Assets",
-    items: [
-      { title: "Fixed Assets", path: "/fixed-assets", icon: <Package className="w-5 h-5" /> },
-    ],
-  },
-];
-
 export function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [expandedGroups, setExpandedGroups] = useState<string[]>(
-    navigation.map((g) => g.group)
-  );
   const [chatOpen, setChatOpen] = useState(false);
   const location = useLocation();
 
-  const toggleGroup = (group: string) => {
-    setExpandedGroups((prev) =>
-      prev.includes(group)
-        ? prev.filter((g) => g !== group)
-        : [...prev, group]
-    );
+  const { selectedStation } = useStation();
+  const stationName = selectedStation?.name || "Location N101";
+
+  const navigation: NavItem[] = [
+    { title: stationName, path: "/dashboard", icon: <img src={logo} alt="" className="w-5 h-5 object-contain brightness-0 invert" /> },
+    { title: "Analytics", path: "/dashboard/executive-analytics", icon: <Activity className="w-5 h-5" /> },
+    { title: "Reports", path: "/dashboard/reports", icon: <FileText className="w-5 h-5" /> },
+    { title: "Contact CEO Office", path: "/dashboard/contact-ceo", icon: <MessageCircle className="w-5 h-5" /> },
+  ];
+
+  const handleChatClick = () => {
+    setChatOpen(!chatOpen);
   };
 
   return (
@@ -113,7 +52,7 @@ export function DashboardLayout() {
         {/* Sidebar */}
         <aside
           className={`${sidebarOpen ? "w-72" : "w-20"
-            } transition-all duration-300 bg-gradient-to-br from-violet-600 via-purple-600 to-cyan-500 text-white flex flex-col fixed h-screen z-10 shadow-2xl backdrop-blur-xl`}
+            } transition-all duration-300 bg-gradient-to-br from-violet-600 via-purple-600 to-cyan-500 text-white flex flex-col fixed inset-y-4 ltr:left-4 rtl:right-4 z-10 shadow-2xl backdrop-blur-xl rounded-[2.5rem] overflow-hidden`}
           style={{
             boxShadow: '0 0 60px rgba(139, 92, 246, 0.4), 0 0 120px rgba(6, 182, 212, 0.2)'
           }}
@@ -122,14 +61,18 @@ export function DashboardLayout() {
           <div className="p-4 flex items-center justify-between border-b border-white/20 backdrop-blur-sm">
             {sidebarOpen ? (
               <div className="flex items-center gap-2">
-                <Building2 className="w-8 h-8 text-white drop-shadow-lg" />
+                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center p-1.5 shadow-lg">
+                  <img src={logo} alt="Darb Logo" className="w-full h-full object-contain" />
+                </div>
                 <div>
-                  <h1 className="font-bold text-lg text-white drop-shadow-lg">DARB</h1>
-                  <p className="text-xs text-white/80">Project Management</p>
+                  <h1 className="font-bold text-lg text-white drop-shadow-lg">Darb</h1>
+                  <p className="text-xs text-white/80">{stationName}</p>
                 </div>
               </div>
             ) : (
-              <Building2 className="w-8 h-8 text-white drop-shadow-lg" />
+              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center p-1.5 shadow-lg">
+                <img src={logo} alt="Darb Logo" className="w-full h-full object-contain" />
+              </div>
             )}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -140,41 +83,30 @@ export function DashboardLayout() {
           </div>
 
           {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto py-4" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.3) transparent' }}>
-            {navigation.map((group) => (
-              <div key={group.group} className="mb-2">
-                {sidebarOpen && (
-                  <button
-                    onClick={() => toggleGroup(group.group)}
-                    className="w-full px-4 py-2 flex items-center justify-between text-sm font-semibold text-white/70 hover:text-white transition-colors"
-                  >
-                    <span>{group.group}</span>
-                    {expandedGroups.includes(group.group) ? (
-                      <ChevronDown className="w-4 h-4" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4" />
-                    )}
-                  </button>
-                )}
-                {(expandedGroups.includes(group.group) || !sidebarOpen) && (
-                  <div className="mt-1">
-                    {group.items.map((item) => (
-                      <Link
-                        key={item.path}
-                        to={item.path}
-                        className={`flex items-center gap-3 px-4 py-3 mx-2 rounded-lg transition-all duration-200 ${location.pathname === item.path
-                          ? "bg-white/25 text-white shadow-lg backdrop-blur-sm"
-                          : "text-white/80 hover:bg-white/15 hover:text-white"
-                          }`}
-                      >
-                        {item.icon}
-                        {sidebarOpen && <span className="text-sm">{item.title}</span>}
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
+          <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+            {navigation.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${location.pathname === item.path
+                  ? "bg-white/25 text-white shadow-lg backdrop-blur-sm"
+                  : "text-white/80 hover:bg-white/15 hover:text-white"
+                  }`}
+              >
+                {item.icon}
+                {sidebarOpen && <span className="text-sm font-medium">{item.title}</span>}
+              </Link>
             ))}
+            <button
+              onClick={handleChatClick}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-white/80 hover:bg-white/15 hover:text-white relative"
+            >
+              <MessageCircle className="w-5 h-5" />
+              {sidebarOpen && <span className="text-sm font-medium">Chat</span>}
+              <span className="absolute top-2 left-8 w-4 h-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-white">
+                3
+              </span>
+            </button>
           </nav>
 
           {/* Logout Section */}
@@ -192,24 +124,21 @@ export function DashboardLayout() {
         {/* Main Content */}
         <main
           className={`flex-1 ${sidebarOpen
-            ? "ltr:ml-72 rtl:mr-72"
-            : "ltr:ml-20 rtl:mr-20"
+            ? "ltr:ml-80 rtl:mr-80"
+            : "ltr:ml-28 rtl:mr-28"
             } transition-all duration-300`}
         >
           {/* Header with Back to Dashboard Button */}
-          <div className="bg-white/80 backdrop-blur-xl border-b border-violet-100 px-8 py-4 sticky top-0 z-10 shadow-lg shadow-violet-100/50 flex items-center justify-between">
+          <div className="bg-white/80 backdrop-blur-xl m-4 rounded-2xl border border-violet-100 px-8 py-4 sticky top-4 z-10 shadow-lg shadow-violet-100/50 flex items-center justify-between">
             <BackToDashboardButton />
             <div className="flex items-center gap-4">
-              <button
-                onClick={() => setChatOpen(!chatOpen)}
-                className="relative p-2 hover:bg-violet-100 rounded-lg transition-colors"
-                aria-label="Open chat"
+              <Link
+                to="/add-new-project"
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-sm"
               >
-                <MessageCircle className="w-5 h-5 text-violet-600" />
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-white">
-                  3
-                </span>
-              </button>
+                <PlusCircle className="w-4 h-4" />
+                <span>Add New Project</span>
+              </Link>
               <LanguageSwitcher />
             </div>
           </div>

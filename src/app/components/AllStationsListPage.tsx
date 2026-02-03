@@ -1,20 +1,22 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import {
-    Building2,
     ChevronDown,
     ChevronRight,
     FileText,
     Users,
     Scroll,
-    Pencil,
-    HardHat,
     Shield,
     Leaf,
     Zap,
     Package,
     Activity,
+    Search,
+    CheckCircle,
+    XCircle,
+    Info,
 } from "lucide-react";
+import logo from "../../assets/logo.png";
 
 // Demo stations data
 const stations = [
@@ -64,47 +66,61 @@ const stationSections = [
     {
         group: "Station Essentials",
         items: [
-            { title: "Station Information", icon: <Building2 className="w-4 h-4" /> },
-            { title: "Station Type", icon: <FileText className="w-4 h-4" /> },
-            { title: "Station Status", icon: <FileText className="w-4 h-4" /> },
+            { title: "Station Information", icon: <Info className="w-4 h-4" />, completed: true },
+            { title: "Station Type", icon: <FileText className="w-4 h-4" />, completed: true },
+            { title: "Station Status", icon: <FileText className="w-4 h-4" />, completed: false },
         ],
     },
     {
         group: "Ownership & Legal",
         items: [
-            { title: "Owner Information", icon: <Users className="w-4 h-4" /> },
-            { title: "Deed Information", icon: <Scroll className="w-4 h-4" /> },
-            { title: "Contract", icon: <FileText className="w-4 h-4" /> },
-        ],
-    },
-    {
-        group: "Engineering & Design",
-        items: [
-            { title: "Consultation Office", icon: <Pencil className="w-4 h-4" /> },
-            { title: "Architectural Design", icon: <Pencil className="w-4 h-4" /> },
-            { title: "Building Permit", icon: <HardHat className="w-4 h-4" /> },
+            { title: "Owner Information", icon: <Users className="w-4 h-4" />, completed: true },
+            { title: "Deed Information", icon: <Scroll className="w-4 h-4" />, completed: true },
+            { title: "Contract", icon: <FileText className="w-4 h-4" />, completed: false },
         ],
     },
     {
         group: "Government Licenses",
         items: [
-            { title: "Commercial License", icon: <FileText className="w-4 h-4" /> },
-            { title: "Salamah License", icon: <Shield className="w-4 h-4" /> },
-            { title: "Taqyees License", icon: <FileText className="w-4 h-4" /> },
-            { title: "Environmental License", icon: <Leaf className="w-4 h-4" /> },
-            { title: "Energy License", icon: <Zap className="w-4 h-4" /> },
+            { title: "Commercial License", icon: <FileText className="w-4 h-4" />, completed: true },
+            { title: "Salamah License", icon: <Shield className="w-4 h-4" />, completed: false },
+            { title: "Taqyees License", icon: <FileText className="w-4 h-4" />, completed: true },
+            { title: "Environmental License", icon: <Leaf className="w-4 h-4" />, completed: true },
+            { title: "Energy License", icon: <Zap className="w-4 h-4" />, completed: false },
+        ],
+    },
+    {
+        group: "Departments",
+        items: [
+            { title: "Investment", icon: <FileText className="w-4 h-4" />, completed: true },
+            { title: "Projects", icon: <FileText className="w-4 h-4" />, completed: true },
+            { title: "Operations Management", icon: <FileText className="w-4 h-4" />, completed: false },
+            { title: "Franchise Management", icon: <FileText className="w-4 h-4" />, completed: true },
+            { title: "Property Management", icon: <FileText className="w-4 h-4" />, completed: false },
+            { title: "Quality Management", icon: <FileText className="w-4 h-4" />, completed: true },
+            { title: "Procurement Department", icon: <FileText className="w-4 h-4" />, completed: true },
+            { title: "Maintenance Department", icon: <FileText className="w-4 h-4" />, completed: false },
+            { title: "Legal Department", icon: <FileText className="w-4 h-4" />, completed: true },
+            { title: "Marketing Department", icon: <FileText className="w-4 h-4" />, completed: false },
+            { title: "Government Relations Department", icon: <FileText className="w-4 h-4" />, completed: true },
+            { title: "IT Management", icon: <FileText className="w-4 h-4" />, completed: true },
+            { title: "Human Resource", icon: <FileText className="w-4 h-4" />, completed: false },
+            { title: "Finance", icon: <FileText className="w-4 h-4" />, completed: true },
+            { title: "Safety", icon: <FileText className="w-4 h-4" />, completed: true },
+            { title: "Certificates", icon: <FileText className="w-4 h-4" />, completed: false },
         ],
     },
     {
         group: "Assets",
         items: [
-            { title: "Fixed Assets", icon: <Package className="w-4 h-4" /> },
+            { title: "Fixed Assets", icon: <Package className="w-4 h-4" />, completed: true },
         ],
     },
 ];
 
 export function AllStationsListPage() {
     const [expandedStations, setExpandedStations] = useState<string[]>([]);
+    const [searchQuery, setSearchQuery] = useState("");
 
     const toggleStation = (stationId: string) => {
         setExpandedStations((prev) =>
@@ -127,6 +143,11 @@ export function AllStationsListPage() {
         }
     };
 
+    // Filter stations based on search query
+    const filteredStations = stations.filter((station) =>
+        station.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+
     return (
         <div className="max-w-7xl mx-auto">
             <div className="mb-8">
@@ -134,8 +155,22 @@ export function AllStationsListPage() {
                 <p className="text-gray-600 font-medium">Manage all stations and their associated forms</p>
             </div>
 
+            {/* Search Bar */}
+            <div className="mb-6">
+                <div className="relative">
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <input
+                        type="text"
+                        placeholder="Search stations by name..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent bg-white shadow-sm"
+                    />
+                </div>
+            </div>
+
             <div className="space-y-4">
-                {stations.map((station) => {
+                {filteredStations.map((station) => {
                     const completionPercentage = Math.round((station.formsCompleted / station.totalForms) * 100);
 
                     return (
@@ -150,8 +185,8 @@ export function AllStationsListPage() {
                             >
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-4 flex-1">
-                                        <div className="w-12 h-12 bg-gradient-to-br from-violet-600 to-cyan-500 rounded-xl flex items-center justify-center shadow-lg">
-                                            <Building2 className="w-6 h-6 text-white" />
+                                        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg p-1.5">
+                                            <img src={logo} alt="Darb Logo" className="w-full h-full object-contain" />
                                         </div>
                                         <div className="flex-1">
                                             <div className="flex items-center gap-3 mb-2">
@@ -218,10 +253,20 @@ export function AllStationsListPage() {
                                                     <Link
                                                         key={item.title}
                                                         to={`/station/${station.id}/form/${item.title.toLowerCase().replace(/\s+/g, "-")}`}
-                                                        className="flex items-center gap-2 px-3 py-2 bg-white rounded-lg hover:bg-violet-50 hover:text-violet-700 transition-colors text-sm font-medium text-gray-700 border border-gray-100 hover:border-violet-200"
+                                                        className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg transition-colors text-sm font-medium border group ${item.completed
+                                                                ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:border-green-300'
+                                                                : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100 hover:border-red-300'
+                                                            }`}
                                                     >
-                                                        {item.icon}
-                                                        <span>{item.title}</span>
+                                                        <div className="flex items-center gap-2">
+                                                            {item.icon}
+                                                            <span>{item.title}</span>
+                                                        </div>
+                                                        {item.completed ? (
+                                                            <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                                                        ) : (
+                                                            <XCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                                                        )}
                                                     </Link>
                                                 ))}
                                             </div>

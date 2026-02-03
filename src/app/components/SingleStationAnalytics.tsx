@@ -1,27 +1,23 @@
 import { useStation } from "../context/StationContext";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Building2, TrendingUp, Activity, AlertCircle, CheckCircle2, Clock, DollarSign } from "lucide-react";
+import { ArrowLeft, TrendingUp, Activity, AlertCircle, CheckCircle2, Clock, DollarSign } from "lucide-react";
+import logo from "../../assets/logo.png";
 
 export function SingleStationAnalytics() {
     const { selectedStation } = useStation();
 
-    // If we have a selected station from context, show its analytics
-    if (!selectedStation) {
-        return (
-            <div className="max-w-7xl mx-auto">
-                <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 vibrant-glow p-8">
-                    <h2 className="text-2xl font-black text-gray-900 mb-4">Station Analytics</h2>
-                    <p className="text-gray-600">
-                        Please select a station to view its analytics.
-                    </p>
-                </div>
-            </div>
-        );
-    }
+    // Use selected station or a default for demo purposes
+    const station = selectedStation || {
+        id: "location-n101",
+        name: "Location N101",
+        region: "Central Region",
+        city: "Riyadh",
+        project: "North Darb Expansion"
+    };
 
     // Demo data for the specific station
     const stationData = {
-        name: selectedStation.name,
+        name: station.name,
         status: "Active",
         completion: 75,
         budget: "2.5M SAR",
@@ -35,13 +31,13 @@ export function SingleStationAnalytics() {
             {/* Header */}
             <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 vibrant-glow p-8 mb-8">
                 <div className="flex items-center gap-4 mb-4">
-                    <div className="w-16 h-16 bg-gradient-to-br from-violet-600 to-cyan-500 rounded-2xl flex items-center justify-center shadow-xl">
-                        <Building2 className="w-8 h-8 text-white" />
+                    <div className="w-16 h-16 bg-white rounded-2xl flex items-center justify-center shadow-xl p-2">
+                        <img src={logo} alt="Darb Logo" className="w-full h-full object-contain" />
                     </div>
                     <div className="flex-1">
                         <h1 className="text-4xl font-black text-gray-900 tracking-tight">{stationData.name}</h1>
                         <p className="text-gray-600 font-medium">Station Analytics Dashboard</p>
-                        <p className="text-sm text-gray-500 mt-1">{selectedStation.region} • {selectedStation.city} • {selectedStation.project}</p>
+                        <p className="text-sm text-gray-500 mt-1">{station.region} • {station.city} • {station.project}</p>
                     </div>
                 </div>
 
