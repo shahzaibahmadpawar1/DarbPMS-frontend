@@ -46,10 +46,10 @@ const getTitle = (type: string) => {
 
 const getIcon = (type: string) => {
     switch (type) {
-        case "active-licenses": return <FileText className="w-5 h-5 text-[#f97316]" />;
-        case "pending-permits": return <Clock className="w-5 h-5 text-[#f97316]" />;
-        case "active-projects": return <Activity className="w-5 h-5 text-[#f97316]" />;
-        default: return <FileText className="w-5 h-5 text-[#f97316]" />;
+        case "active-licenses": return <FileText className="w-5 h-5 text-primary" />;
+        case "pending-permits": return <Clock className="w-5 h-5 text-primary" />;
+        case "active-projects": return <Activity className="w-5 h-5 text-primary" />;
+        default: return <FileText className="w-5 h-5 text-primary" />;
     }
 };
 
@@ -82,7 +82,7 @@ export function StatItemsList() {
                         <input
                             type="text"
                             placeholder={`Search ${title.toLowerCase()}...`}
-                            className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#f97316] min-w-[300px]"
+                            className="pl-10 pr-4 py-2 border border-border rounded-lg focus:outline-none focus:border-primary min-w-[300px]"
                         />
                     </div>
                 </div>
@@ -106,7 +106,7 @@ export function StatItemsList() {
                                 <tr key={item.id} className="hover:bg-gray-50/50 transition-colors group">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-violet-50 rounded-lg">
+                                            <div className="p-2 bg-primary/10 rounded-lg">
                                                 {getIcon(type)}
                                             </div>
                                             <div>
@@ -120,10 +120,10 @@ export function StatItemsList() {
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${item.status === 'Active' || item.status === 'On Track'
-                                                ? 'bg-green-100 text-green-700'
-                                                : item.status === 'Delayed'
-                                                    ? 'bg-red-100 text-red-700'
-                                                    : 'bg-orange-100 text-indigo-700'
+                                            ? 'bg-success/10 text-success'
+                                            : item.status === 'Delayed'
+                                                ? 'bg-error/10 text-error'
+                                                : 'bg-primary/10 text-primary'
                                             }`}>
                                             {item.status}
                                         </span>

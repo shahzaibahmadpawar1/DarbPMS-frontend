@@ -92,61 +92,61 @@ export function ProcurementDepartmentForm() {
                 return (
                     <>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+                            <label className="block text-sm font-medium text-muted-foreground mb-1">Product Name</label>
                             <input
                                 type="text"
                                 value={formData.productName || ""}
                                 onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
+                                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted bg-background text-foreground"
                                 disabled={isReadOnly}
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                            <label className="block text-sm font-medium text-muted-foreground mb-1">Quantity</label>
                             <input
                                 type="number"
                                 value={formData.quantity || ""}
                                 onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
+                                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted bg-background text-foreground"
                                 disabled={isReadOnly}
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Supplier</label>
+                            <label className="block text-sm font-medium text-muted-foreground mb-1">Supplier</label>
                             <input
                                 type="text"
                                 value={formData.supplier || ""}
                                 onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
+                                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted bg-background text-foreground"
                                 disabled={isReadOnly}
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Cost (SAR)</label>
+                            <label className="block text-sm font-medium text-muted-foreground mb-1">Estimated Cost (SAR)</label>
                             <input
                                 type="number"
                                 value={formData.estimatedCost || ""}
                                 onChange={(e) => setFormData({ ...formData, estimatedCost: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
+                                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted bg-background text-foreground"
                                 disabled={isReadOnly}
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Delivery Date</label>
+                            <label className="block text-sm font-medium text-muted-foreground mb-1">Delivery Date</label>
                             <input
                                 type="date"
                                 value={formData.deliveryDate || ""}
                                 onChange={(e) => setFormData({ ...formData, deliveryDate: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
+                                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted bg-background text-foreground"
                                 disabled={isReadOnly}
                             />
                         </div>
                         <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Product Description</label>
+                            <label className="block text-sm font-medium text-muted-foreground mb-1">Product Description</label>
                             <textarea
                                 value={formData.productDescription || ""}
                                 onChange={(e) => setFormData({ ...formData, productDescription: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
+                                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted bg-background text-foreground"
                                 rows={3}
                                 disabled={isReadOnly}
                             />
@@ -158,11 +158,11 @@ export function ProcurementDepartmentForm() {
                 return (
                     <>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Item Type</label>
+                            <label className="block text-sm font-medium text-muted-foreground mb-1">Item Type</label>
                             <select
                                 value={formData.itemType || ""}
                                 onChange={(e) => setFormData({ ...formData, itemType: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
+                                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted bg-background text-foreground"
                                 disabled={isReadOnly}
                             >
                                 <option value="">Select Item Type</option>
@@ -173,43 +173,43 @@ export function ProcurementDepartmentForm() {
                             </select>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Size</label>
+                            <label className="block text-sm font-medium text-muted-foreground mb-1">Size</label>
                             <input
                                 type="text"
                                 value={formData.size || ""}
                                 onChange={(e) => setFormData({ ...formData, size: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
+                                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted bg-background text-foreground"
                                 placeholder="e.g., S, M, L, XL"
                                 disabled={isReadOnly}
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Color</label>
+                            <label className="block text-sm font-medium text-muted-foreground mb-1">Color</label>
                             <input
                                 type="text"
                                 value={formData.color || ""}
                                 onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
+                                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted bg-background text-foreground"
                                 disabled={isReadOnly}
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                            <label className="block text-sm font-medium text-muted-foreground mb-1">Quantity</label>
                             <input
                                 type="number"
                                 value={formData.quantity || ""}
                                 onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
+                                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted bg-background text-foreground"
                                 disabled={isReadOnly}
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Estimated Cost (SAR)</label>
+                            <label className="block text-sm font-medium text-muted-foreground mb-1">Estimated Cost (SAR)</label>
                             <input
                                 type="number"
                                 value={formData.estimatedCost || ""}
                                 onChange={(e) => setFormData({ ...formData, estimatedCost: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
+                                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted bg-background text-foreground"
                                 disabled={isReadOnly}
                             />
                         </div>
@@ -224,15 +224,15 @@ export function ProcurementDepartmentForm() {
             case "quotation-fuel-extensions":
                 return (
                     <div className="md:col-span-2">
-                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-violet-400 transition-colors">
+                        <div className="border-2 border-dashed border-border rounded-lg p-8 text-center hover:border-primary/50 transition-all">
                             <div className="flex flex-col items-center gap-4">
-                                <div className="w-16 h-16 bg-violet-100 rounded-full flex items-center justify-center">
-                                    <FileText className="w-8 h-8 text-violet-600" />
+                                <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+                                    <FileText className="w-8 h-8 text-primary" />
                                 </div>
                                 {isReadOnly ? (
                                     <div>
-                                        <h3 className="text-lg font-semibold text-gray-700 mb-2">Quotation Request Files</h3>
-                                        <div className="inline-flex items-center gap-2 px-6 py-3 bg-gray-100 text-gray-500 rounded-lg">
+                                        <h3 className="text-lg font-semibold text-foreground mb-2">Quotation Request Files</h3>
+                                        <div className="inline-flex items-center gap-2 px-6 py-3 bg-muted text-muted-foreground rounded-lg">
                                             <FileText className="w-5 h-5" />
                                             View Attached Quotation
                                         </div>
@@ -240,8 +240,8 @@ export function ProcurementDepartmentForm() {
                                 ) : (
                                     <>
                                         <div>
-                                            <h3 className="text-lg font-semibold text-gray-700 mb-2">Upload Quotation Request</h3>
-                                            <p className="text-sm text-gray-500 mb-4">
+                                            <h3 className="text-lg font-semibold text-foreground mb-2">Upload Quotation Request</h3>
+                                            <p className="text-sm text-muted-foreground mb-4">
                                                 Upload your quotation request document or attachment
                                             </p>
                                         </div>
@@ -253,7 +253,7 @@ export function ProcurementDepartmentForm() {
                                                 multiple
                                                 disabled={isReadOnly}
                                             />
-                                            <span className="inline-flex items-center gap-2 px-6 py-3 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors">
+                                            <span className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all">
                                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                                                 </svg>
@@ -268,11 +268,11 @@ export function ProcurementDepartmentForm() {
                             </div>
                         </div>
                         <div className="mt-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Brief Description (Optional)</label>
+                            <label className="block text-sm font-medium text-muted-foreground mb-1">Brief Description (Optional)</label>
                             <textarea
                                 value={formData.specifications || ""}
                                 onChange={(e) => setFormData({ ...formData, specifications: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
+                                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted bg-background text-foreground"
                                 rows={3}
                                 placeholder="Add any additional notes or requirements for this quotation request"
                                 disabled={isReadOnly}
@@ -295,17 +295,17 @@ export function ProcurementDepartmentForm() {
         <div className="p-8">
             <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-[#020713]">Procurement Department</h1>
-                    <p className="text-gray-600 mt-2">Manage procurement requests and supplier relations</p>
+                    <h1 className="text-3xl font-bold text-foreground">Procurement Department</h1>
+                    <p className="text-muted-foreground mt-2">Manage procurement requests and supplier relations</p>
                 </div>
 
                 {!isReadOnly && (
-                    <div className="flex bg-gray-100 p-1 rounded-xl w-fit">
+                    <div className="flex bg-muted p-1 rounded-xl w-fit">
                         <button
                             onClick={() => setViewMode('form')}
                             className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'form'
-                                ? 'bg-white text-[#f97316] shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700'
+                                ? 'bg-card text-primary shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'
                                 }`}
                         >
                             <PlusCircle className="w-4 h-4" />
@@ -314,8 +314,8 @@ export function ProcurementDepartmentForm() {
                         <button
                             onClick={() => setViewMode('records')}
                             className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'records'
-                                ? 'bg-white text-[#f97316] shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700'
+                                ? 'bg-card text-primary shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'
                                 }`}
                         >
                             <List className="w-4 h-4" />
@@ -325,7 +325,7 @@ export function ProcurementDepartmentForm() {
                 )}
 
                 {isReadOnly && (
-                    <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg border border-blue-200">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-info/5 text-info rounded-lg border border-info/20">
                         <Eye className="w-4 h-4" />
                         <span className="text-sm font-semibold">View Only Mode</span>
                     </div>
@@ -333,21 +333,21 @@ export function ProcurementDepartmentForm() {
             </div>
 
             {viewMode === 'form' ? (
-                <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-xl p-8 vibrant-glow border-t-4 border-violet-600 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <form onSubmit={handleSubmit} className="bg-card rounded-xl shadow-xl p-8 card-glow border-t-4 border-primary relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
                     {/* Request Type Selection */}
                     <div className="mb-6">
-                        <h2 className="text-xl font-semibold text-[#020713] mb-4 border-b border-[#D2C29C] pb-2">
+                        <h2 className="text-xl font-semibold text-foreground mb-4 border-b border-border pb-2">
                             Request Information
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div className="md:col-span-2">
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-medium text-muted-foreground mb-1">
                                     Request Type <span className="text-red-500">*</span>
                                 </label>
                                 <select
                                     value={formData.requestType}
                                     onChange={(e) => setFormData({ ...formData, requestType: e.target.value as RequestType })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
+                                    className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted bg-background text-foreground"
                                     required
                                     disabled={isReadOnly}
                                 >
@@ -360,54 +360,54 @@ export function ProcurementDepartmentForm() {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-medium text-muted-foreground mb-1">
                                     Request Number <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
                                     value={formData.requestNumber}
                                     onChange={(e) => setFormData({ ...formData, requestNumber: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
+                                    className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted bg-background text-foreground"
                                     required
                                     disabled={isReadOnly}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Request Date</label>
+                                <label className="block text-sm font-medium text-muted-foreground mb-1">Request Date</label>
                                 <input
                                     type="date"
                                     value={formData.requestDate}
                                     onChange={(e) => setFormData({ ...formData, requestDate: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
+                                    className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted bg-background text-foreground"
                                     disabled={isReadOnly}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Requester</label>
+                                <label className="block text-sm font-medium text-muted-foreground mb-1">Requester</label>
                                 <input
                                     type="text"
                                     value={formData.requester}
                                     onChange={(e) => setFormData({ ...formData, requester: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
+                                    className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted bg-background text-foreground"
                                     disabled={isReadOnly}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Department</label>
+                                <label className="block text-sm font-medium text-muted-foreground mb-1">Department</label>
                                 <input
                                     type="text"
                                     value={formData.department}
                                     onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
+                                    className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted bg-background text-foreground"
                                     disabled={isReadOnly}
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                                <label className="block text-sm font-medium text-muted-foreground mb-1">Priority</label>
                                 <select
                                     value={formData.priority}
                                     onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
+                                    className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted bg-background text-foreground"
                                     disabled={isReadOnly}
                                 >
                                     <option value="">Select Priority</option>
@@ -418,11 +418,11 @@ export function ProcurementDepartmentForm() {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                                <label className="block text-sm font-medium text-muted-foreground mb-1">Status</label>
                                 <select
                                     value={formData.status}
                                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
+                                    className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted bg-background text-foreground"
                                     disabled={isReadOnly}
                                 >
                                     <option value="">Select Status</option>
@@ -439,7 +439,7 @@ export function ProcurementDepartmentForm() {
                     {/* Dynamic Fields Based on Request Type */}
                     {formData.requestType && (
                         <div className="mb-6">
-                            <h2 className="text-xl font-semibold text-[#020713] mb-4 border-b border-[#D2C29C] pb-2">
+                            <h2 className="text-xl font-semibold text-foreground mb-4 border-b border-border pb-2">
                                 {requestTypes.find(t => t.value === formData.requestType)?.label} Details
                             </h2>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -450,12 +450,12 @@ export function ProcurementDepartmentForm() {
 
                     {/* Notes Section */}
                     <div className="mb-6">
-                        <h2 className="text-xl font-semibold text-[#020713] mb-4 border-b border-[#D2C29C] pb-2">
+                        <h2 className="text-xl font-semibold text-foreground mb-4 border-b border-border pb-2">
                             Additional Information
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                                <label className="block text-sm font-medium text-muted-foreground mb-1">Notes</label>
                                 <textarea
                                     value={formData.notes}
                                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
@@ -466,18 +466,18 @@ export function ProcurementDepartmentForm() {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-2">Request Action</label>
+                                <label className="block text-sm font-medium text-muted-foreground mb-2">Request Action</label>
                                 <div className="flex gap-4">
                                     <button
                                         type="button"
                                         onClick={() => setFormData({ ...formData, status: 'approved' })}
                                         className={`flex-1 flex items-center justify-center gap-2 py-4 rounded-xl border-2 transition-all ${formData.status === 'approved'
-                                                ? 'bg-green-50 border-green-500 text-green-700 shadow-md ring-2 ring-green-100'
-                                                : 'bg-white border-gray-200 text-gray-500 hover:border-green-200 hover:text-green-600'
+                                            ? 'bg-success/5 border-success text-success shadow-md ring-2 ring-success/10'
+                                            : 'bg-card border-border text-muted-foreground hover:border-success/30 hover:text-success'
                                             } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
                                         disabled={isReadOnly}
                                     >
-                                        <div className={`p-1 rounded-full ${formData.status === 'approved' ? 'bg-green-500 text-white' : 'bg-gray-100'}`}>
+                                        <div className={`p-1 rounded-full ${formData.status === 'approved' ? 'bg-success text-white' : 'bg-muted'}`}>
                                             <Check className="w-4 h-4" />
                                         </div>
                                         <span className="font-bold">Approve</span>
@@ -486,23 +486,23 @@ export function ProcurementDepartmentForm() {
                                         type="button"
                                         onClick={() => setFormData({ ...formData, status: 'rejected' })}
                                         className={`flex-1 flex items-center justify-center gap-2 py-4 rounded-xl border-2 transition-all ${formData.status === 'rejected'
-                                                ? 'bg-red-50 border-red-500 text-red-700 shadow-md ring-2 ring-red-100'
-                                                : 'bg-white border-gray-200 text-gray-500 hover:border-red-200 hover:text-red-600'
+                                            ? 'bg-error/5 border-error text-error shadow-md ring-2 ring-error/10'
+                                            : 'bg-card border-border text-muted-foreground hover:border-error/30 hover:text-error'
                                             } ${isReadOnly ? 'opacity-50 cursor-not-allowed' : ''}`}
                                         disabled={isReadOnly}
                                     >
-                                        <div className={`p-1 rounded-full ${formData.status === 'rejected' ? 'bg-red-500 text-white' : 'bg-gray-100'}`}>
+                                        <div className={`p-1 rounded-full ${formData.status === 'rejected' ? 'bg-error text-white' : 'bg-muted'}`}>
                                             <X className="w-4 h-4" />
                                         </div>
                                         <span className="font-bold">Reject</span>
                                     </button>
                                 </div>
                                 {formData.status && (
-                                    <div className={`mt-4 p-3 rounded-lg text-sm font-semibold flex items-center gap-2 ${formData.status === 'approved' ? 'bg-green-50 text-green-700' :
-                                            formData.status === 'rejected' ? 'bg-red-50 text-red-700' : 'bg-blue-50 text-blue-700'
+                                    <div className={`mt-4 p-3 rounded-lg text-sm font-semibold flex items-center gap-2 ${formData.status === 'approved' ? 'bg-success/5 text-success' :
+                                        formData.status === 'rejected' ? 'bg-error/5 text-error' : 'bg-info/5 text-info'
                                         }`}>
-                                        <div className={`w-2 h-2 rounded-full ${formData.status === 'approved' ? 'bg-green-500' :
-                                                formData.status === 'rejected' ? 'bg-red-500' : 'bg-blue-500'
+                                        <div className={`w-2 h-2 rounded-full ${formData.status === 'approved' ? 'bg-success' :
+                                            formData.status === 'rejected' ? 'bg-error' : 'bg-info'
                                             }`} />
                                         Current Status: <span className="capitalize">{formData.status.replace('-', ' ')}</span>
                                     </div>
@@ -515,7 +515,7 @@ export function ProcurementDepartmentForm() {
                         <div className="flex justify-end">
                             <button
                                 type="submit"
-                                className="bg-[#f97316] hover:bg-[#fb923c] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
+                                className="btn-primary px-6 py-3 rounded-lg flex items-center gap-2 transition-all shadow-lg hover:shadow-primary/20"
                             >
                                 <Save className="w-5 h-5" />
                                 Save Procurement Request

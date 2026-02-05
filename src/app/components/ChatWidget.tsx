@@ -17,7 +17,7 @@ interface ChatWidgetProps {
 
 const roles = [
     { id: "land-owner", name: "Land Owner", color: "bg-green-500", online: true },
-    { id: "project-manager", name: "Project Manager", color: "bg-blue-500", online: true },
+    { id: "project-manager", name: "Project Manager", color: "bg-secondary", online: true },
     { id: "engineer", name: "Engineer", color: "bg-orange-500", online: false },
     { id: "contractor", name: "Contractor", color: "bg-orange-500", online: true },
     { id: "admin", name: "Admin", color: "bg-red-500", online: true },
@@ -89,7 +89,7 @@ export function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
                 }`}
         >
             {/* Header */}
-            <div className="bg-gradient-to-r from-orange-600 to-gray-500 rounded-t-2xl p-4 flex items-center justify-between">
+            <div className="bg-gradient-to-r from-primary to-secondary rounded-t-2xl p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3 flex-1">
                     <div className="relative">
                         <div className={`w-10 h-10 ${selectedRole.color} rounded-full flex items-center justify-center`}>
@@ -170,12 +170,12 @@ export function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
                             >
                                 <div
                                     className={`max-w-[75%] ${message.isCurrentUser
-                                            ? 'bg-gradient-to-r from-orange-600 to-gray-500 text-white'
-                                            : 'bg-white border border-gray-200 text-gray-900'
+                                        ? 'bg-gradient-to-r from-primary to-secondary text-white'
+                                        : 'bg-white border border-gray-200 text-gray-900'
                                         } rounded-2xl p-3 shadow-sm`}
                                 >
                                     {!message.isCurrentUser && (
-                                        <p className="text-xs font-semibold mb-1 text-orange-600">
+                                        <p className="text-xs font-semibold mb-1 text-primary">
                                             {message.sender} • {message.role}
                                         </p>
                                     )}
@@ -199,13 +199,13 @@ export function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
                                 onChange={(e) => setNewMessage(e.target.value)}
                                 onKeyPress={handleKeyPress}
                                 placeholder="Type your message..."
-                                className="flex-1 resize-none border border-gray-300 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent max-h-24"
+                                className="flex-1 resize-none border border-border rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent max-h-24"
                                 rows={1}
                             />
                             <button
                                 onClick={handleSendMessage}
                                 disabled={!newMessage.trim()}
-                                className="w-10 h-10 bg-gradient-to-r from-orange-600 to-gray-500 rounded-xl flex items-center justify-center hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-10 h-10 bg-gradient-to-r from-primary to-secondary rounded-xl flex items-center justify-center hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 aria-label="Send message"
                             >
                                 <Send className="w-5 h-5 text-white" />

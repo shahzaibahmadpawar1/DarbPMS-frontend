@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Save, List, PlusCircle, Send, MessageSquare, User, Mail, Phone, Eye } from "lucide-react";
+import { List, PlusCircle, Send, MessageSquare, User, Mail, Phone } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
 
@@ -20,8 +20,6 @@ interface ComplaintFormData {
 
 export function ComplaintContactForm() {
     const { accessMode } = useStation();
-    // Contact CEO Office is always fillable, but we might want to show past records in admin mode
-    const isReadOnlyMode = false; // Always false for this specific form based on user request
 
     const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
     const [formData, setFormData] = useState<ComplaintFormData>({
@@ -68,17 +66,17 @@ export function ComplaintContactForm() {
         <div className="p-8">
             <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-[#020713]">Contact CEO Office</h1>
-                    <p className="text-gray-600 mt-2">Submit complaints, suggestions, or direct messages to the CEO</p>
+                    <h1 className="text-3xl font-bold text-foreground">Contact CEO Office</h1>
+                    <p className="text-muted-foreground mt-2">Submit complaints, suggestions, or direct messages to the CEO</p>
                 </div>
 
                 {accessMode === 'admin' && (
-                    <div className="flex bg-gray-100 p-1 rounded-xl w-fit">
+                    <div className="flex bg-muted p-1 rounded-xl w-fit">
                         <button
                             onClick={() => setViewMode('form')}
                             className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'form'
-                                ? 'bg-white text-[#f97316] shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700'
+                                ? 'bg-card text-primary shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'
                                 }`}
                         >
                             <PlusCircle className="w-4 h-4" />
@@ -87,8 +85,8 @@ export function ComplaintContactForm() {
                         <button
                             onClick={() => setViewMode('records')}
                             className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'records'
-                                ? 'bg-white text-[#f97316] shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700'
+                                ? 'bg-card text-primary shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'
                                 }`}
                         >
                             <List className="w-4 h-4" />
@@ -99,14 +97,14 @@ export function ComplaintContactForm() {
             </div>
 
             {viewMode === 'form' ? (
-                <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-xl p-8 vibrant-glow border-t-4 border-orange-600 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <form onSubmit={handleSubmit} className="bg-card rounded-xl shadow-xl p-8 card-glow border-t-4 border-primary relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
                     {/* CEO Contact Notice */}
-                    <div className="mb-6 bg-gradient-to-r from-orange-50 to-gray-50 border-l-4 border-orange-600 p-4 rounded-lg">
+                    <div className="mb-6 bg-info/5 border-l-4 border-info p-4 rounded-lg">
                         <div className="flex items-start gap-3">
-                            <MessageSquare className="w-6 h-6 text-orange-600 mt-1" />
+                            <MessageSquare className="w-6 h-6 text-info mt-1" />
                             <div>
-                                <h3 className="font-bold text-orange-900 mb-1">Direct Line to CEO Office</h3>
-                                <p className="text-sm text-orange-700">
+                                <h3 className="font-bold text-foreground mb-1">Direct Line to CEO Office</h3>
+                                <p className="text-sm text-muted-foreground">
                                     This form sends your message directly to the CEO's office. All submissions are reviewed personally and you will receive a response within 24-48 hours.
                                 </p>
                             </div>
@@ -115,58 +113,58 @@ export function ComplaintContactForm() {
 
                     {/* Sender Information */}
                     <div className="mb-6">
-                        <h2 className="text-xl font-semibold text-[#020713] mb-4 border-b border-[#D2C29C] pb-2 flex items-center gap-2">
-                            <User className="w-5 h-5 text-orange-600" />
+                        <h2 className="text-xl font-semibold text-foreground mb-4 border-b border-border pb-2 flex items-center gap-2">
+                            <User className="w-5 h-5 text-primary" />
                             Your Information
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-medium text-muted-foreground mb-1">
                                     Full Name <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
                                     value={formData.senderName}
                                     onChange={(e) => setFormData({ ...formData, senderName: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                    className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
                                     required
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-medium text-muted-foreground mb-1">
                                     Email Address <span className="text-red-500">*</span>
                                 </label>
                                 <div className="relative">
-                                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                     <input
                                         type="email"
                                         value={formData.senderEmail}
                                         onChange={(e) => setFormData({ ...formData, senderEmail: e.target.value })}
-                                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                        className="w-full pl-10 pr-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
                                         required
                                     />
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                                <label className="block text-sm font-medium text-muted-foreground mb-1">Phone Number</label>
                                 <div className="relative">
-                                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                                     <input
                                         type="tel"
                                         value={formData.senderPhone}
                                         onChange={(e) => setFormData({ ...formData, senderPhone: e.target.value })}
-                                        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                        className="w-full pl-10 pr-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
                                         placeholder="+966 XX XXX XXXX"
                                     />
                                 </div>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Department/Station</label>
+                                <label className="block text-sm font-medium text-muted-foreground mb-1">Department/Station</label>
                                 <input
                                     type="text"
                                     value={formData.department}
                                     onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                    className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
                                     placeholder="e.g., Location N101"
                                 />
                             </div>
@@ -175,19 +173,19 @@ export function ComplaintContactForm() {
 
                     {/* Message Details */}
                     <div className="mb-6">
-                        <h2 className="text-xl font-semibold text-[#020713] mb-4 border-b border-[#D2C29C] pb-2 flex items-center gap-2">
-                            <MessageSquare className="w-5 h-5 text-orange-600" />
+                        <h2 className="text-xl font-semibold text-foreground mb-4 border-b border-border pb-2 flex items-center gap-2">
+                            <MessageSquare className="w-5 h-5 text-primary" />
                             Message Details
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-medium text-muted-foreground mb-1">
                                     Category <span className="text-red-500">*</span>
                                 </label>
                                 <select
                                     value={formData.category}
                                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                    className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
                                     required
                                 >
                                     <option value="">Select Category</option>
@@ -200,13 +198,13 @@ export function ComplaintContactForm() {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <label className="block text-sm font-medium text-muted-foreground mb-1">
                                     Priority <span className="text-red-500">*</span>
                                 </label>
                                 <select
                                     value={formData.priority}
                                     onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                    className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
                                     required
                                 >
                                     <option value="">Select Priority</option>
@@ -218,31 +216,31 @@ export function ComplaintContactForm() {
                             </div>
                         </div>
                         <div className="mb-4">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="block text-sm font-medium text-muted-foreground mb-1">
                                 Subject <span className="text-red-500">*</span>
                             </label>
                             <input
                                 type="text"
                                 value={formData.subject}
                                 onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
                                 placeholder="Brief summary of your message"
                                 required
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                            <label className="block text-sm font-medium text-muted-foreground mb-1">
                                 Message <span className="text-red-500">*</span>
                             </label>
                             <textarea
                                 value={formData.description}
                                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
                                 rows={6}
                                 placeholder="Please provide detailed information about your complaint, suggestion, or inquiry..."
                                 required
                             />
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-muted-foreground mt-1">
                                 Be as specific as possible to help us address your concerns effectively.
                             </p>
                         </div>
@@ -250,10 +248,10 @@ export function ComplaintContactForm() {
 
                     {/* Attachments */}
                     <div className="mb-6">
-                        <h2 className="text-xl font-semibold text-[#020713] mb-4 border-b border-[#D2C29C] pb-2">
+                        <h2 className="text-xl font-semibold text-foreground mb-4 border-b border-border pb-2">
                             Attachments (Optional)
                         </h2>
-                        <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-orange-400 transition-colors">
+                        <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors">
                             <label className="cursor-pointer">
                                 <input
                                     type="file"
@@ -262,12 +260,12 @@ export function ComplaintContactForm() {
                                     multiple
                                 />
                                 <div className="flex flex-col items-center gap-2">
-                                    <div className="w-12 h-12 bg-orange-100 rounded-full flex items-center justify-center">
-                                        <svg className="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
+                                        <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                                         </svg>
                                     </div>
-                                    <span className="text-sm font-medium text-gray-700">Upload supporting documents</span>
+                                    <span className="text-sm font-medium text-muted-foreground">Upload supporting documents</span>
                                     <span className="text-xs text-gray-500">PDF, DOC, DOCX, JPG, PNG (Max 10MB)</span>
                                 </div>
                             </label>
@@ -290,13 +288,13 @@ export function ComplaintContactForm() {
                                 description: "",
                                 status: "pending",
                             })}
-                            className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
+                            className="px-6 py-3 border border-border rounded-lg text-muted-foreground hover:bg-muted transition-all"
                         >
                             Clear Form
                         </button>
                         <button
                             type="submit"
-                            className="bg-[#f97316] hover:bg-[#fb923c] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors shadow-lg"
+                            className="btn-primary px-6 py-3 rounded-lg flex items-center gap-2 transition-all shadow-lg hover:shadow-primary/20"
                         >
                             <Send className="w-5 h-5" />
                             Send to CEO Office

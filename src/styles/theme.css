@@ -1,266 +1,215 @@
-@custom-variant dark (&:is(.dark *));
+/**
+ * DARB Station - Centralized Theme Configuration
+ * 
+ * This is the SINGLE SOURCE OF TRUTH for all colors in the application.
+ * To change the entire app's color scheme, modify only the HSL values below.
+ * 
+ * Color Scheme: Professional Orange & Grey
+ */
+
+@theme {
+  --color-primary: hsl(24 95% 53%);
+  --color-primary-foreground: hsla(0, 0%, 100%, 1.00);
+  --color-secondary: hsl(215 16% 75%);
+  --color-secondary-foreground: hsl(0 0% 100%);
+  --color-accent: hsl(24 90% 60%);
+  --color-accent-foreground: hsl(0 0% 100%);
+  --color-background: hsl(0 0% 100%);
+  --color-foreground: hsl(222 47% 11%);
+  --color-card: hsl(0 0% 100%);
+  --color-card-foreground: hsl(222 47% 11%);
+  --color-popover: hsl(0 0% 100%);
+  --color-popover-foreground: hsl(222 47% 11%);
+  --color-border: hsl(214 15% 91%);
+  --color-input: hsl(214 15% 91%);
+  --color-ring: hsl(24 95% 53%);
+  --color-muted: hsl(210 20% 98%);
+  --color-muted-foreground: hsl(215 16% 47%);
+  --color-destructive: hsl(0 84% 60%);
+  --color-destructive-foreground: hsl(0 0% 100%);
+  --color-success: hsl(142 76% 36%);
+  --color-success-foreground: hsl(0 0% 100%);
+  --color-warning: hsl(38 92% 50%);
+  --color-warning-foreground: hsl(0 0% 100%);
+  --color-error: hsl(0 84% 60%);
+  --color-error-foreground: hsl(0 0% 100%);
+  --color-info: hsl(215 16% 75%);
+  --color-info-foreground: hsl(222 47% 11%);
+
+  --shadow-primary: 0 10px 15px -3px hsl(24 95% 53% / 0.1), 0 4px 6px -2px hsl(24 95% 53% / 0.05);
+  --shadow-glow: 0 0 20px hsl(24 95% 53% / 0.3), 0 0 40px hsl(24 95% 53% / 0.15);
+}
 
 :root {
-  --font-size: 16px;
+  /* ========================================
+     PRIMARY COLORS - Orange Theme
+     ======================================== */
+  --primary: 24 95% 53%;           /* #f97316 - Main Orange */
+  --primary-foreground: 0 0% 100%; /* White text on primary */
   
-  /* Vibrant Blue/Purple/Pink Theme - Light Mode */
-  --background: 220 70% 98%; /* Very light blue-tinted background */
-  --foreground: 222 47% 11%;
-  --card: 0 0% 100%;
-  --card-foreground: 222 47% 11%;
-  --popover: 0 0% 100%;
-  --popover-foreground: 222 47% 11%;
+  --primary-50: 24 95% 97%;        /* Very light orange */
+  --primary-100: 24 95% 92%;       /* Light orange */
+  --primary-200: 24 95% 82%;       /* Lighter orange */
+  --primary-300: 24 95% 72%;       /* Light-medium orange */
+  --primary-400: 24 95% 62%;       /* Medium orange */
+  --primary-500: 24 95% 53%;       /* Base orange (same as primary) */
+  --primary-600: 24 95% 43%;       /* Dark orange */
+  --primary-700: 24 85% 35%;       /* Darker orange */
+  --primary-800: 24 75% 27%;       /* Very dark orange */
+  --primary-900: 24 65% 20%;       /* Deepest orange */
+
+  /* ========================================
+     SECONDARY COLORS - Slate Grey
+     ======================================== */
+  --secondary: 215 16% 75%;              /* Silver */
+  --secondary-foreground: 222 47% 11%;    /* Dark text on silver */
   
-  /* Primary: Electric Violet */
-  --primary: 250 95% 65%;
-  --primary-foreground: 210 40% 98%;
+  --secondary-50: 215 16% 95%;           /* Very light silver */
+  --secondary-100: 215 16% 90%;          /* Light silver */
+  --secondary-200: 215 16% 85%;          /* Lighter silver */
+  --secondary-300: 215 16% 80%;          /* Light-medium silver */
+  --secondary-400: 215 16% 75%;          /* Silver (same as secondary) */
+  --secondary-500: 215 16% 70%;          /* Medium silver */
+  --secondary-600: 215 16% 60%;          /* Dark silver */
+  --secondary-700: 215 16% 50%;          /* Darker silver */
+  --secondary-800: 215 16% 40%;          /* Very dark silver */
+  --secondary-900: 215 16% 20%;          /* Deepest silver */
+
+  /* ========================================
+     ACCENT COLORS
+     ======================================== */
+  --accent: 24 90% 60%;                  /* Light Orange accent */
+  --accent-foreground: 0 0% 100%;        /* White text on accent */
+
+  /* ========================================
+     BACKGROUND & SURFACE
+     ======================================== */
+  --background: 0 0% 100%;               /* Pure white */
+  --foreground: 222 47% 11%;             /* Dark grey text */
   
-  /* Secondary: Bright Cyan/Teal */
-  --secondary: 190 95% 50%;
-  --secondary-foreground: 222 47% 11%;
+  --card: 0 0% 100%;                     /* White cards */
+  --card-foreground: 222 47% 11%;        /* Dark text on cards */
   
-  /* Muted colors */
-  --muted: 220 14% 96%;
-  --muted-foreground: 220 9% 46%;
+  --popover: 0 0% 100%;                  /* White popovers */
+  --popover-foreground: 222 47% 11%;     /* Dark text on popovers */
+
+  /* ========================================
+     BORDERS & DIVIDERS
+     ======================================== */
+  --border: 214 15% 91%;                 /* Light grey borders */
+  --input: 214 15% 91%;                  /* Input borders */
+  --ring: 24 95% 53%;                    /* Orange focus rings */
+
+  /* ========================================
+     SEMANTIC COLORS (Status Indicators)
+     ======================================== */
+  --success: 142 76% 36%;                /* Green for success */
+  --success-foreground: 0 0% 100%;       /* White text */
   
-  /* Accent: Hot Pink */
-  --accent: 320 90% 60%;
-  --accent-foreground: 210 40% 98%;
+  --warning: 38 92% 50%;                 /* Amber for warnings */
+  --warning-foreground: 0 0% 100%;       /* White text */
   
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 210 40% 98%;
+  --error: 0 84% 60%;                    /* Red for errors */
+  --error-foreground: 0 0% 100%;         /* White text */
   
-  --border: 250 30% 88%;
-  --input: transparent;
-  --input-background: 220 14% 96%;
-  --switch-background: 220 13% 82%;
-  
-  --font-weight-medium: 500;
-  --font-weight-normal: 400;
-  --ring: 250 95% 65%;
-  
-  /* Vibrant Chart Colors */
-  --chart-1: 250 95% 65%; /* Electric Violet */
-  --chart-2: 280 90% 65%; /* Purple */
-  --chart-3: 320 90% 60%; /* Hot Pink */
-  --chart-4: 190 95% 50%; /* Cyan */
-  --chart-5: 45 93% 58%;  /* Amber */
-  
-  --radius: 0.75rem;
-  
-  /* Sidebar with gradient support */
-  --sidebar: 240 80% 10%;
-  --sidebar-foreground: 210 40% 98%;
-  --sidebar-primary: 250 95% 65%;
-  --sidebar-primary-foreground: 210 40% 98%;
-  --sidebar-accent: 250 50% 20%;
-  --sidebar-accent-foreground: 210 40% 98%;
-  --sidebar-border: 250 30% 25%;
-  --sidebar-ring: 250 95% 65%;
+  --info: 215 16% 75%;                   /* Silver for info */
+  --info-foreground: 222 47% 11%;          /* Dark text */
+
+  /* ========================================
+     STATUS COLORS (Project/Task States)
+     ======================================== */
+  --status-active: 24 95% 53%;           /* Orange - Active/In Progress */
+  --status-pending: 38 92% 50%;          /* Amber - Pending */
+  --status-completed: 142 76% 36%;       /* Green - Completed */
+  --status-rejected: 0 84% 60%;          /* Red - Rejected/Failed */
+  --status-planning: 215 16% 75%;        /* Silver - Planning */
+
+  /* ========================================
+     GRADIENTS
+     ======================================== */
+  --gradient-primary: linear-gradient(135deg, hsl(24 95% 53%) 0%, hsl(24 95% 43%) 100%);
+  --gradient-primary-to-secondary: linear-gradient(135deg, hsl(24 95% 53%) 0%, hsl(215 19% 35%) 100%);
+  --gradient-subtle: linear-gradient(135deg, hsl(24 95% 53% / 0.1) 0%, transparent 100%);
+  --gradient-card: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(24 95% 97%) 100%);
+
+  /* ========================================
+     SHADOWS
+     ======================================== */
+  --shadow-sm: 0 1px 2px 0 hsl(24 95% 53% / 0.05);
+  --shadow-md: 0 4px 6px -1px hsl(24 95% 53% / 0.1), 0 2px 4px -1px hsl(24 95% 53% / 0.06);
+  --shadow-lg: 0 10px 15px -3px hsl(24 95% 53% / 0.1), 0 4px 6px -2px hsl(24 95% 53% / 0.05);
+  --shadow-xl: 0 20px 25px -5px hsl(24 95% 53% / 0.1), 0 10px 10px -5px hsl(24 95% 53% / 0.04);
+  --shadow-2xl: 0 25px 50px -12px hsl(24 95% 53% / 0.25);
+  --shadow-glow: 0 0 20px hsl(24 95% 53% / 0.3), 0 0 40px hsl(24 95% 53% / 0.15);
+
+  /* ========================================
+     MUTED COLORS (For subtle elements)
+     ======================================== */
+  --muted: 210 20% 98%;                  /* Very light grey background */
+  --muted-foreground: 215 16% 47%;       /* Grey text */
+
+  /* ========================================
+     DESTRUCTIVE (Delete/Remove actions)
+     ======================================== */
+  --destructive: 0 84% 60%;              /* Red */
+  --destructive-foreground: 0 0% 100%;   /* White text */
+
+  /* ========================================
+     CHART COLORS (For data visualization)
+     ======================================== */
+  --chart-1: 24 95% 53%;                 /* Orange */
+  --chart-2: 215 16% 47%;                /* Grey */
+  --chart-3: 142 76% 36%;                /* Green */
+  --chart-4: 38 92% 50%;                 /* Amber */
+  --chart-5: 215 16% 75%;                /* Silver */
 }
 
+/* ========================================
+   DARK MODE THEME
+   ======================================== */
 .dark {
-  /* Vibrant Dark Mode */
-  --background: 224 71% 4%;
-  --foreground: 210 40% 98%;
-  --card: 224 71% 8%;
-  --card-foreground: 210 40% 98%;
-  --popover: 224 71% 8%;
-  --popover-foreground: 210 40% 98%;
+  --background: 222 47% 11%;             /* Deep slate background */
+  --foreground: 210 20% 98%;             /* Light text */
   
-  /* Primary: Electric Violet (slightly brighter for dark mode) */
-  --primary: 250 95% 70%;
-  --primary-foreground: 222 47% 11%;
+  --card: 217 33% 17%;                   /* Dark card background */
+  --card-foreground: 210 20% 98%;        /* Light text on cards */
   
-  /* Secondary: Bright Cyan */
-  --secondary: 190 95% 55%;
-  --secondary-foreground: 222 47% 11%;
+  --popover: 217 33% 17%;                /* Dark popover */
+  --popover-foreground: 210 20% 98%;     /* Light text */
   
-  --muted: 223 47% 15%;
-  --muted-foreground: 215 20% 65%;
+  --primary: 24 95% 53%;                 /* Keep orange bright */
+  --primary-foreground: 0 0% 100%;       /* White text */
   
-  /* Accent: Hot Pink */
-  --accent: 320 90% 65%;
-  --accent-foreground: 210 40% 98%;
+  --secondary: 215 25% 27%;              /* Darker grey */
+  --secondary-foreground: 210 20% 98%;   /* Light text */
   
-  --destructive: 0 84% 60%;
-  --destructive-foreground: 210 40% 98%;
+  --muted: 217 33% 17%;                  /* Dark muted background */
+  --muted-foreground: 214 13% 83%;       /* Light grey text */
   
-  --border: 223 47% 15%;
-  --input: 223 47% 15%;
-  --ring: 250 95% 70%;
+  --accent: 24 90% 60%;                  /* Bright orange accent */
+  --accent-foreground: 0 0% 100%;        /* White text */
   
-  --font-weight-medium: 500;
-  --font-weight-normal: 400;
+  --border: 215 25% 27%;                 /* Dark borders */
+  --input: 215 25% 27%;                  /* Dark input borders */
+  --ring: 24 95% 53%;                    /* Orange focus rings */
   
-  /* Vibrant Chart Colors for Dark Mode */
-  --chart-1: 250 95% 70%;
-  --chart-2: 280 90% 70%;
-  --chart-3: 320 90% 65%;
-  --chart-4: 190 95% 55%;
-  --chart-5: 45 93% 63%;
-  
-  --sidebar: 224 71% 4%;
-  --sidebar-foreground: 210 40% 98%;
-  --sidebar-primary: 250 95% 70%;
-  --sidebar-primary-foreground: 222 47% 11%;
-  --sidebar-accent: 223 47% 15%;
-  --sidebar-accent-foreground: 210 40% 98%;
-  --sidebar-border: 223 47% 15%;
-  --sidebar-ring: 250 95% 70%;
+  /* Dark mode gradients */
+  --gradient-primary: linear-gradient(135deg, hsl(24 95% 53%) 0%, hsl(24 95% 43%) 100%);
+  --gradient-primary-to-secondary: linear-gradient(135deg, hsl(24 95% 53%) 0%, hsl(215 25% 27%) 100%);
+  --gradient-subtle: linear-gradient(135deg, hsl(24 95% 53% / 0.15) 0%, transparent 100%);
+  --gradient-card: linear-gradient(135deg, hsl(217 33% 17%) 0%, hsl(222 47% 11%) 100%);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-destructive-foreground: var(--destructive-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-input-background: var(--input-background);
-  --color-switch-background: var(--switch-background);
-  --color-ring: var(--ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-}
-
+/* ========================================
+   BASE LAYER STYLES
+   ======================================== */
 @layer base {
   * {
-    @apply border-border outline-ring/50;
+    @apply border-border;
   }
-
+  
   body {
     @apply bg-background text-foreground;
-  }
-
-  /**
-  * Default typography styles for HTML elements (h1-h4, p, label, button, input).
-  * These are in @layer base, so Tailwind utility classes (like text-sm, text-lg) automatically override them.
-  */
-
-  html {
-    font-size: var(--font-size);
-  }
-
-  h1 {
-    font-size: var(--text-2xl);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-  }
-
-  h2 {
-    font-size: var(--text-xl);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-  }
-
-  h3 {
-    font-size: var(--text-lg);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-  }
-
-  h4 {
-    font-size: var(--text-base);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-  }
-
-  label {
-    font-size: var(--text-base);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-  }
-
-  button {
-    font-size: var(--text-base);
-    font-weight: var(--font-weight-medium);
-    line-height: 1.5;
-  }
-
-  input {
-    font-size: var(--text-base);
-    font-weight: var(--font-weight-normal);
-    line-height: 1.5;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 }
-
-/* --- RTL Support & Translation UI Cleanup --- */
-
-/* Hide Google Translate top bar */
-.goog-te-banner-frame.skiptranslate,
-.goog-te-gadget-icon,
-#goog-gt-tt,
-.goog-te-balloon-frame,
-.goog-tooltip,
-.goog-tooltip:hover {
-  display: none !important;
-}
-
-.goog-text-highlight {
-  background-color: transparent !important;
-  box-shadow: none !important;
-}
-
-/* Prevent body shift when translate bar is hidden */
-body {
-  top: 0 !important;
-}
-
-/* RTL Utilities */
-[dir="rtl"] {
-  text-align: right;
-}
-
-[dir="rtl"] .ml-auto {
-  margin-right: auto;
-  margin-left: 0;
-}
-
-[dir="rtl"] .mr-auto {
-  margin-left: auto;
-  margin-right: 0;
-}
-
-/* Fix sidebar icons and text padding in RTL */
-[dir="rtl"] aside .flex.items-center.gap-3 {
-  flex-direction: row-reverse;
-}
-
-/* Responsive sidebars for RTL */
-.ltr\:ml-72 { margin-left: 18rem !important; }
-.rtl\:mr-72 { margin-right: 0 !important; }
-[dir="rtl"] .rtl\:mr-72 { margin-right: 18rem !important; }
-[dir="rtl"] .ltr\:ml-72 { margin-left: 0 !important; }
-
-.ltr\:ml-20 { margin-left: 5rem !important; }
-.rtl\:mr-20 { margin-right: 0 !important; }
-[dir="rtl"] .rtl\:mr-20 { margin-right: 5rem !important; }
-[dir="rtl"] .ltr\:ml-20 { margin-left: 0 !important; }

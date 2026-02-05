@@ -32,17 +32,17 @@ export function FixedAssetsForm() {
     <div className="p-8">
       <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#020713]">Fixed Assets</h1>
-          <p className="text-gray-600 mt-2">Track and manage physical assets, equipment, and property</p>
+          <h1 className="text-3xl font-bold text-foreground">Fixed Assets</h1>
+          <p className="text-muted-foreground mt-2">Track and manage physical assets, equipment, and property</p>
         </div>
 
         {!isReadOnly && (
-          <div className="flex bg-gray-100 p-1 rounded-xl w-fit">
+          <div className="flex bg-muted p-1 rounded-xl w-fit">
             <button
               onClick={() => setViewMode('form')}
               className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'form'
-                ? 'bg-white text-[#f97316] shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'bg-card text-primary shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
                 }`}
             >
               <PlusCircle className="w-4 h-4" />
@@ -51,8 +51,8 @@ export function FixedAssetsForm() {
             <button
               onClick={() => setViewMode('records')}
               className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'records'
-                ? 'bg-white text-[#f97316] shadow-sm'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'bg-card text-primary shadow-sm'
+                : 'text-muted-foreground hover:text-foreground'
                 }`}
             >
               <List className="w-4 h-4" />
@@ -62,7 +62,7 @@ export function FixedAssetsForm() {
         )}
 
         {isReadOnly && (
-          <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg border border-blue-200">
+          <div className="flex items-center gap-2 px-4 py-2 bg-info/5 text-info rounded-lg border border-info/20">
             <Eye className="w-4 h-4" />
             <span className="text-sm font-semibold">View Only Mode</span>
           </div>
@@ -70,17 +70,17 @@ export function FixedAssetsForm() {
       </div>
 
       {viewMode === 'form' ? (
-        <form onSubmit={(e) => { e.preventDefault(); alert("Fixed Asset saved!"); }} className="bg-white rounded-xl shadow-xl p-8 vibrant-glow border-t-4 border-violet-600 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <form onSubmit={(e) => { e.preventDefault(); alert("Fixed Asset saved!"); }} className="bg-card rounded-xl shadow-xl p-8 card-glow border-t-4 border-primary relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Asset Code (PK) *</label>
+            <div><label className="block text-sm font-medium text-muted-foreground mb-1">Asset Code (PK) *</label>
               <input type="text" value={formData.assetCode} onChange={(e) => setFormData({ ...formData, assetCode: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" required disabled={isReadOnly} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Asset Name</label>
+                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground" required disabled={isReadOnly} /></div>
+            <div><label className="block text-sm font-medium text-muted-foreground mb-1">Asset Name</label>
               <input type="text" value={formData.assetName} onChange={(e) => setFormData({ ...formData, assetName: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Asset Group (Category)</label>
+                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground" disabled={isReadOnly} /></div>
+            <div><label className="block text-sm font-medium text-muted-foreground mb-1">Asset Group (Category)</label>
               <select value={formData.assetGroup} onChange={(e) => setFormData({ ...formData, assetGroup: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly}>
+                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground" disabled={isReadOnly}>
                 <option value="">Select Category</option>
                 <option value="equipment">Equipment</option>
                 <option value="furniture">Furniture</option>
@@ -89,35 +89,35 @@ export function FixedAssetsForm() {
                 <option value="machinery">Machinery</option>
               </select>
             </div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
+            <div><label className="block text-sm font-medium text-muted-foreground mb-1">Location</label>
               <input type="text" value={formData.location} onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Purchase Amount (SAR)</label>
+                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground" disabled={isReadOnly} /></div>
+            <div><label className="block text-sm font-medium text-muted-foreground mb-1">Purchase Amount (SAR)</label>
               <input type="number" value={formData.purchaseAmount} onChange={(e) => setFormData({ ...formData, purchaseAmount: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Vendor Name</label>
+                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground" disabled={isReadOnly} /></div>
+            <div><label className="block text-sm font-medium text-muted-foreground mb-1">Vendor Name</label>
               <input type="text" value={formData.vendorName} onChange={(e) => setFormData({ ...formData, vendorName: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Depreciation Amount (SAR)</label>
+                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground" disabled={isReadOnly} /></div>
+            <div><label className="block text-sm font-medium text-muted-foreground mb-1">Depreciation Amount (SAR)</label>
               <input type="number" value={formData.depreciationAmount} onChange={(e) => setFormData({ ...formData, depreciationAmount: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Remaining Balance (SAR)</label>
+                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground" disabled={isReadOnly} /></div>
+            <div><label className="block text-sm font-medium text-muted-foreground mb-1">Remaining Balance (SAR)</label>
               <input type="number" value={formData.remainingBalance} onChange={(e) => setFormData({ ...formData, remainingBalance: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Asset Owner</label>
+                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground" disabled={isReadOnly} /></div>
+            <div><label className="block text-sm font-medium text-muted-foreground mb-1">Asset Owner</label>
               <input type="text" value={formData.assetOwner} onChange={(e) => setFormData({ ...formData, assetOwner: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Cost Center</label>
+                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground" disabled={isReadOnly} /></div>
+            <div><label className="block text-sm font-medium text-muted-foreground mb-1">Cost Center</label>
               <input type="text" value={formData.costCenter} onChange={(e) => setFormData({ ...formData, costCenter: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
-            <div><label className="block text-sm font-medium text-gray-700 mb-1">Station Code (FK)</label>
+                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground" disabled={isReadOnly} /></div>
+            <div><label className="block text-sm font-medium text-muted-foreground mb-1">Station Code (FK)</label>
               <input type="text" value={formData.stationCode} onChange={(e) => setFormData({ ...formData, stationCode: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
+                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground" disabled={isReadOnly} /></div>
           </div>
 
           {!isReadOnly && (
             <div className="flex justify-end mt-6">
-              <button type="submit" className="bg-[#f97316] hover:bg-[#fb923c] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors">
+              <button type="submit" className="btn-primary px-6 py-3 rounded-lg flex items-center gap-2 transition-all shadow-lg hover:shadow-primary/20">
                 <Save className="w-5 h-5" /> Save Fixed Asset
               </button>
             </div>

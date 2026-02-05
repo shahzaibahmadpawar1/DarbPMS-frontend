@@ -23,35 +23,35 @@ export function ReportsPage() {
                     description: "Complete overview of all stations with their current status and information",
                     icon: <Building2 className="w-5 h-5" />,
                     path: "/reports/all-stations",
-                    color: "from-orange-500 to-orange-500",
+                    color: "from-primary to-primary",
                 },
                 {
                     title: "Under Process Stations",
                     description: "List of stations currently under development or construction",
                     icon: <Clock className="w-5 h-5" />,
                     path: "/reports/under-process",
-                    color: "from-blue-500 to-gray-500",
+                    color: "from-info to-muted",
                 },
                 {
                     title: "Delayed Stations",
                     description: "Stations experiencing delays with timeline analysis",
                     icon: <AlertCircle className="w-5 h-5" />,
                     path: "/reports/delayed-stations",
-                    color: "from-red-500 to-orange-500",
+                    color: "from-error to-primary",
                 },
                 {
                     title: "Completed Stations",
                     description: "All stations that have been completed and are operational",
                     icon: <CheckCircle className="w-5 h-5" />,
                     path: "/reports/completed-stations",
-                    color: "from-green-500 to-emerald-500",
+                    color: "from-success to-success/80",
                 },
                 {
                     title: "Opening Soon Stations",
                     description: "Stations scheduled to open in the near future",
                     icon: <Calendar className="w-5 h-5" />,
                     path: "/reports/opening-soon",
-                    color: "from-orange-500 to-pink-500",
+                    color: "from-primary to-secondary",
                 },
             ],
         },
@@ -63,14 +63,14 @@ export function ReportsPage() {
                     description: "Comprehensive list of all station owners and their contact information",
                     icon: <Users className="w-5 h-5" />,
                     path: "/reports/owner-details",
-                    color: "from-orange-500 to-gray-500",
+                    color: "from-primary to-secondary",
                 },
                 {
                     title: "Contract Status",
                     description: "Overview of all contracts and their current status",
                     icon: <FileText className="w-5 h-5" />,
                     path: "/reports/contract-status",
-                    color: "from-teal-500 to-gray-500",
+                    color: "from-secondary to-muted",
                 },
                 {
                     title: "Deed Information",
@@ -89,14 +89,14 @@ export function ReportsPage() {
                     description: "Filter stations by opening date (e.g., March 1-31)",
                     icon: <Calendar className="w-5 h-5" />,
                     path: "/reports/opening-by-date",
-                    color: "from-orange-500 to-red-500",
+                    color: "from-primary to-error",
                 },
                 {
                     title: "Project Timeline",
                     description: "Visual timeline of all projects and their milestones",
                     icon: <TrendingUp className="w-5 h-5" />,
                     path: "/reports/project-timeline",
-                    color: "from-orange-500 to-orange-500",
+                    color: "from-primary to-primary/80",
                 },
             ],
         },
@@ -108,21 +108,21 @@ export function ReportsPage() {
                     description: "Status of all licenses (Commercial, Salamah, Environmental, etc.)",
                     icon: <FileText className="w-5 h-5" />,
                     path: "/reports/license-status",
-                    color: "from-green-500 to-teal-500",
+                    color: "from-success to-info",
                 },
                 {
                     title: "Pending Licenses",
                     description: "All licenses that are pending approval",
                     icon: <Clock className="w-5 h-5" />,
                     path: "/reports/pending-licenses",
-                    color: "from-yellow-500 to-orange-500",
+                    color: "from-warning to-primary",
                 },
                 {
                     title: "Expired Licenses",
                     description: "Licenses that have expired and need renewal",
                     icon: <AlertCircle className="w-5 h-5" />,
                     path: "/reports/expired-licenses",
-                    color: "from-red-500 to-pink-500",
+                    color: "from-error to-secondary",
                 },
             ],
         },
@@ -134,14 +134,14 @@ export function ReportsPage() {
                     description: "Breakdown of stations by geographical region",
                     icon: <MapPin className="w-5 h-5" />,
                     path: "/reports/by-region",
-                    color: "from-blue-500 to-orange-500",
+                    color: "from-secondary to-primary",
                 },
                 {
                     title: "Stations by City",
                     description: "Detailed list of stations organized by city",
                     icon: <MapPin className="w-5 h-5" />,
                     path: "/reports/by-city",
-                    color: "from-gray-500 to-teal-500",
+                    color: "from-muted to-secondary",
                 },
             ],
         },
@@ -153,7 +153,7 @@ export function ReportsPage() {
                     description: "Status of all departments across all stations",
                     icon: <Building2 className="w-5 h-5" />,
                     path: "/reports/department-status",
-                    color: "from-orange-500 to-orange-500",
+                    color: "from-primary to-primary/80",
                 },
                 {
                     title: "Investment Reports",
@@ -177,13 +177,13 @@ export function ReportsPage() {
             </div>
 
             {/* Quick Actions */}
-            <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 vibrant-glow p-6 mb-8">
+            <div className="bg-card/80 backdrop-blur-xl rounded-2xl shadow-lg border border-border card-glow p-6 mb-8">
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                        <Filter className="w-5 h-5 text-orange-600" />
-                        <span className="font-semibold text-gray-700">Quick Filters</span>
+                        <Filter className="w-5 h-5 text-primary" />
+                        <span className="font-semibold text-muted-foreground">Quick Filters</span>
                     </div>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-600 to-gray-500 text-white rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-sm">
+                    <button className="flex items-center gap-2 px-4 py-2 gradient-primary text-primary-foreground rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-sm">
                         <Download className="w-4 h-4" />
                         Export All Reports
                     </button>
@@ -201,7 +201,7 @@ export function ReportsPage() {
                             <Link
                                 key={report.title}
                                 to={report.path}
-                                className="bg-white/80 backdrop-blur-xl rounded-xl shadow-md border border-white/40 p-6 hover:shadow-xl hover:scale-105 transition-all duration-200 vibrant-glow group"
+                                className="bg-card/80 backdrop-blur-xl rounded-xl shadow-md border border-border p-6 hover:shadow-xl hover:scale-105 transition-all duration-200 card-glow group"
                             >
                                 <div className="flex items-start gap-4">
                                     <div
@@ -210,16 +210,16 @@ export function ReportsPage() {
                                         {report.icon}
                                     </div>
                                     <div className="flex-1">
-                                        <h3 className="text-base font-bold text-gray-900 mb-1 group-hover:text-orange-600 transition-colors">
+                                        <h3 className="text-base font-bold text-foreground mb-1 group-hover:text-primary transition-colors">
                                             {report.title}
                                         </h3>
-                                        <p className="text-xs text-gray-600 leading-relaxed">
+                                        <p className="text-xs text-muted-foreground leading-relaxed">
                                             {report.description}
                                         </p>
                                     </div>
                                 </div>
                                 <div className="mt-4 flex items-center justify-end">
-                                    <span className="text-xs font-semibold text-orange-600 group-hover:text-orange-700">
+                                    <span className="text-xs font-semibold text-primary group-hover:text-primary/80">
                                         View Report →
                                     </span>
                                 </div>

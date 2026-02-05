@@ -18,24 +18,24 @@ export function StationStatusForm() {
     <div className="p-8">
       <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#020713]">Station Status (Master Data)</h1>
-          <p className="text-gray-600 mt-2">Manage station status classifications</p>
+          <h1 className="text-3xl font-bold text-foreground">Station Status (Master Data)</h1>
+          <p className="text-muted-foreground mt-2">Manage station status classifications</p>
         </div>
 
         {isReadOnly && (
-          <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg border border-blue-200">
+          <div className="flex items-center gap-2 px-4 py-2 bg-info/5 text-info rounded-lg border border-info/20">
             <Eye className="w-4 h-4" />
             <span className="text-sm font-semibold">View Only Mode</span>
           </div>
         )}
       </div>
 
-      <div className="bg-white rounded-xl shadow-xl p-8 vibrant-glow border-t-4 border-violet-600 relative overflow-hidden">
+      <div className="bg-card rounded-xl shadow-xl p-8 card-glow border-t-4 border-primary relative overflow-hidden">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-gray-200">
-              <th className="text-left py-3 px-4 font-semibold text-gray-700">Status Code (PK)</th>
-              <th className="text-left py-3 px-4 font-semibold text-gray-700">Description</th>
+            <tr className="border-b border-border">
+              <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Status Code (PK)</th>
+              <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Description</th>
             </tr>
           </thead>
           <tbody>
@@ -43,7 +43,7 @@ export function StationStatusForm() {
               <tr
                 key={status.code}
                 onClick={() => navigate("/total-stations")}
-                className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                className="border-b border-border/50 hover:bg-muted cursor-pointer transition-colors text-foreground"
                 title={`View all ${status.description} stations`}
               >
                 <td className="py-3 px-4">{status.code}</td>

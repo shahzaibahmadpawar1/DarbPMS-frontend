@@ -144,20 +144,20 @@ export function TasksPage() {
     ];
 
     const taskTypes = [
-        { value: "all", label: "All Types", icon: FileText, color: "text-gray-600" },
-        { value: "procurement", label: "Procurement", icon: Package, color: "text-blue-600" },
-        { value: "ceo_complaint", label: "CEO Complaints", icon: MessageSquare, color: "text-red-600" },
-        { value: "maintenance", label: "Maintenance", icon: Wrench, color: "text-orange-600" },
-        { value: "legal", label: "Legal", icon: FileText, color: "text-orange-600" },
-        { value: "investment", label: "Investment", icon: Building2, color: "text-green-600" },
+        { value: "all", label: "All Types", icon: FileText, color: "text-muted-foreground" },
+        { value: "procurement", label: "Procurement", icon: Package, color: "text-info" },
+        { value: "ceo_complaint", label: "CEO Complaints", icon: MessageSquare, color: "text-error" },
+        { value: "maintenance", label: "Maintenance", icon: Wrench, color: "text-primary" },
+        { value: "legal", label: "Legal", icon: FileText, color: "text-primary" },
+        { value: "investment", label: "Investment", icon: Building2, color: "text-success" },
     ];
 
     const statusOptions = [
-        { value: "all", label: "All Status", color: "bg-gray-100 text-gray-700" },
-        { value: "pending", label: "Pending", color: "bg-yellow-100 text-yellow-700" },
-        { value: "in_progress", label: "In Progress", color: "bg-blue-100 text-blue-700" },
-        { value: "completed", label: "Completed", color: "bg-green-100 text-green-700" },
-        { value: "rejected", label: "Rejected", color: "bg-red-100 text-red-700" },
+        { value: "all", label: "All Status", color: "bg-muted text-muted-foreground" },
+        { value: "pending", label: "Pending", color: "bg-warning/10 text-warning" },
+        { value: "in_progress", label: "In Progress", color: "bg-info/10 text-info" },
+        { value: "completed", label: "Completed", color: "bg-success/10 text-success" },
+        { value: "rejected", label: "Rejected", color: "bg-error/10 text-error" },
     ];
 
     const getStatusIcon = (status: string) => {
@@ -178,30 +178,30 @@ export function TasksPage() {
     const getStatusColor = (status: string) => {
         switch (status) {
             case "pending":
-                return "bg-yellow-100 text-yellow-700 border-yellow-200";
+                return "bg-warning/10 text-warning border-warning/20";
             case "in_progress":
-                return "bg-blue-100 text-blue-700 border-blue-200";
+                return "bg-info/10 text-info border-info/20";
             case "completed":
-                return "bg-green-100 text-green-700 border-green-200";
+                return "bg-success/10 text-success border-success/20";
             case "rejected":
-                return "bg-red-100 text-red-700 border-red-200";
+                return "bg-error/10 text-error border-error/20";
             default:
-                return "bg-gray-100 text-gray-700 border-gray-200";
+                return "bg-muted text-muted-foreground border-border";
         }
     };
 
     const getPriorityColor = (priority: string) => {
         switch (priority) {
             case "urgent":
-                return "bg-red-500 text-white";
+                return "bg-error text-error-foreground";
             case "high":
-                return "bg-orange-500 text-white";
+                return "bg-primary text-primary-foreground";
             case "medium":
-                return "bg-yellow-500 text-white";
+                return "bg-warning text-warning-foreground";
             case "low":
-                return "bg-green-500 text-white";
+                return "bg-success text-success-foreground";
             default:
-                return "bg-gray-500 text-white";
+                return "bg-muted text-muted-foreground";
         }
     };
 
@@ -245,64 +245,64 @@ export function TasksPage() {
 
             {/* Statistics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-md border border-white/40 p-6">
+                <div className="bg-card/80 backdrop-blur-xl rounded-xl shadow-md border border-border p-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-semibold text-gray-600">Total Tasks</p>
-                            <p className="text-3xl font-black text-gray-900 mt-1">{stats.total}</p>
+                            <p className="text-sm font-semibold text-muted-foreground">Total Tasks</p>
+                            <p className="text-3xl font-black text-foreground mt-1">{stats.total}</p>
                         </div>
-                        <FileText className="w-10 h-10 text-orange-600" />
+                        <FileText className="w-10 h-10 text-primary" />
                     </div>
                 </div>
 
-                <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-md border border-white/40 p-6">
+                <div className="bg-card/80 backdrop-blur-xl rounded-xl shadow-md border border-border p-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-semibold text-gray-600">Pending</p>
-                            <p className="text-3xl font-black text-yellow-600 mt-1">{stats.pending}</p>
+                            <p className="text-sm font-semibold text-muted-foreground">Pending</p>
+                            <p className="text-3xl font-black text-warning mt-1">{stats.pending}</p>
                         </div>
-                        <Clock className="w-10 h-10 text-yellow-600" />
+                        <Clock className="w-10 h-10 text-warning" />
                     </div>
                 </div>
 
-                <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-md border border-white/40 p-6">
+                <div className="bg-card/80 backdrop-blur-xl rounded-xl shadow-md border border-border p-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-semibold text-gray-600">In Progress</p>
-                            <p className="text-3xl font-black text-blue-600 mt-1">{stats.inProgress}</p>
+                            <p className="text-sm font-semibold text-muted-foreground">In Progress</p>
+                            <p className="text-3xl font-black text-info mt-1">{stats.inProgress}</p>
                         </div>
-                        <AlertCircle className="w-10 h-10 text-blue-600" />
+                        <AlertCircle className="w-10 h-10 text-info" />
                     </div>
                 </div>
 
-                <div className="bg-white/80 backdrop-blur-xl rounded-xl shadow-md border border-white/40 p-6">
+                <div className="bg-card/80 backdrop-blur-xl rounded-xl shadow-md border border-border p-6">
                     <div className="flex items-center justify-between">
                         <div>
-                            <p className="text-sm font-semibold text-gray-600">Completed</p>
-                            <p className="text-3xl font-black text-green-600 mt-1">{stats.completed}</p>
+                            <p className="text-sm font-semibold text-muted-foreground">Completed</p>
+                            <p className="text-3xl font-black text-success mt-1">{stats.completed}</p>
                         </div>
-                        <CheckCircle className="w-10 h-10 text-green-600" />
+                        <CheckCircle className="w-10 h-10 text-success" />
                     </div>
                 </div>
             </div>
 
             {/* Filters */}
-            <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 vibrant-glow p-6 mb-6">
+            <div className="bg-card/80 backdrop-blur-xl rounded-2xl shadow-lg border border-border card-glow p-6 mb-6">
                 <div className="flex items-center gap-4 mb-4">
-                    <Filter className="w-5 h-5 text-orange-600" />
-                    <h2 className="text-lg font-bold text-gray-900">Filters</h2>
+                    <Filter className="w-5 h-5 text-primary" />
+                    <h2 className="text-lg font-bold text-foreground">Filters</h2>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {/* Search */}
                     <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                         <input
                             type="text"
                             placeholder="Search tasks..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
+                            className="w-full pl-10 pr-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
                         />
                     </div>
 
@@ -311,7 +311,7 @@ export function TasksPage() {
                         <select
                             value={selectedFilter}
                             onChange={(e) => setSelectedFilter(e.target.value)}
-                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white appearance-none"
+                            className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background appearance-none"
                         >
                             {taskTypes.map((type) => (
                                 <option key={type.value} value={type.value}>
@@ -319,7 +319,7 @@ export function TasksPage() {
                                 </option>
                             ))}
                         </select>
-                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
                     </div>
 
                     {/* Status Filter */}
@@ -327,7 +327,7 @@ export function TasksPage() {
                         <select
                             value={selectedStatus}
                             onChange={(e) => setSelectedStatus(e.target.value)}
-                            className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white appearance-none"
+                            className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background appearance-none"
                         >
                             {statusOptions.map((status) => (
                                 <option key={status.value} value={status.value}>
@@ -335,7 +335,7 @@ export function TasksPage() {
                                 </option>
                             ))}
                         </select>
-                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
                     </div>
                 </div>
             </div>
@@ -352,7 +352,7 @@ export function TasksPage() {
                     filteredTasks.map((task) => (
                         <div
                             key={task.id}
-                            className="bg-white/80 backdrop-blur-xl rounded-xl shadow-md border border-white/40 p-6 hover:shadow-xl transition-all duration-200 vibrant-glow"
+                            className="bg-card/80 backdrop-blur-xl rounded-xl shadow-md border border-border p-6 hover:shadow-xl transition-all duration-200 card-glow"
                         >
                             <div className="flex items-start justify-between mb-4">
                                 <div className="flex items-start gap-4 flex-1">

@@ -22,42 +22,42 @@ export function LoginPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-orange-50 via-gray-50 to-pink-50 flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="min-h-screen bg-gradient-to-br from-muted via-background to-muted flex items-center justify-center p-4 relative overflow-hidden">
             {/* Language Switcher - Top Right */}
             <div className="absolute top-6 right-6 z-20">
                 <LanguageSwitcher />
             </div>
 
             {/* Animated mesh gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-orange-100/30 via-transparent to-gray-100/30 pointer-events-none"></div>
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.1),transparent_50%)] pointer-events-none"></div>
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(6,182,212,0.1),transparent_50%)] pointer-events-none"></div>
+            <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-secondary/5 pointer-events-none"></div>
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.05),transparent_50%)] pointer-events-none"></div>
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,hsl(var(--secondary)/0.05),transparent_50%)] pointer-events-none"></div>
 
             <div className="w-full max-w-md relative z-10 animate-in fade-in zoom-in duration-500">
-                <div className="bg-white/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/40 p-10 vibrant-glow relative overflow-hidden">
+                <div className="bg-card/80 backdrop-blur-xl rounded-3xl shadow-2xl border border-border card-glow p-10 relative overflow-hidden">
                     {/* Top accent line */}
-                    <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-orange-500 via-orange-500 to-gray-500"></div>
+                    <div className="absolute top-0 left-0 right-0 h-1.5 gradient-primary"></div>
 
                     <div className="text-center mb-8">
-                        <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-2xl shadow-xl shadow-orange-200 mb-6 group transition-transform hover:scale-110 duration-300 p-2">
+                        <div className="inline-flex items-center justify-center w-20 h-20 bg-background rounded-2xl shadow-xl shadow-primary/10 mb-6 group transition-transform hover:scale-110 duration-300 p-2 border border-border">
                             <img src={logo} alt="Darb Logo" className="w-full h-full object-contain" />
                         </div>
-                        <h1 className="text-3xl font-bold text-gray-900 tracking-tight"><BrandName /> Station</h1>
-                        <p className="text-gray-500 font-medium mt-2">Project Management System</p>
+                        <h1 className="text-3xl font-bold text-foreground tracking-tight"><BrandName /> Station</h1>
+                        <p className="text-muted-foreground font-medium mt-2">Project Management System</p>
                     </div>
 
                     <form onSubmit={handleLogin} className="space-y-6">
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold text-gray-700 ml-1">Username</label>
+                            <label className="text-sm font-semibold text-muted-foreground ml-1">Username</label>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <User className="h-5 w-5 text-gray-400 group-focus-within:text-orange-500 transition-colors" />
+                                    <User className="h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
                                 </div>
                                 <input
                                     type="text"
                                     value={username}
                                     onChange={(e) => setUsername(e.target.value)}
-                                    className="block w-full pl-11 pr-4 py-3.5 bg-white/50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all"
+                                    className="block w-full pl-11 pr-4 py-3.5 bg-background border border-border rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all"
                                     placeholder="Enter username"
                                     required
                                 />
@@ -65,16 +65,16 @@ export function LoginPage() {
                         </div>
 
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold text-gray-700 ml-1">Password</label>
+                            <label className="text-sm font-semibold text-muted-foreground ml-1">Password</label>
                             <div className="relative group">
                                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                    <Lock className="h-5 w-5 text-gray-400 group-focus-within:text-orange-500 transition-colors" />
+                                    <Lock className="h-5 w-5 text-muted-foreground group-focus-within:text-primary transition-colors" />
                                 </div>
                                 <input
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="block w-full pl-11 pr-4 py-3.5 bg-white/50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-orange-500/10 focus:border-orange-500 outline-none transition-all"
+                                    className="block w-full pl-11 pr-4 py-3.5 bg-background border border-border rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all"
                                     placeholder="Enter password"
                                     required
                                 />
@@ -87,14 +87,14 @@ export function LoginPage() {
                                     id="remember-me"
                                     name="remember-me"
                                     type="checkbox"
-                                    className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded cursor-pointer"
+                                    className="h-4 w-4 text-primary focus:ring-primary border-border rounded cursor-pointer"
                                 />
-                                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-600 cursor-pointer">
+                                <label htmlFor="remember-me" className="ml-2 block text-sm text-muted-foreground cursor-pointer">
                                     Remember me
                                 </label>
                             </div>
                             <div className="text-sm">
-                                <a href="#" className="font-semibold text-orange-600 hover:text-orange-500 transition-colors">
+                                <a href="#" className="font-semibold text-primary hover:text-primary/80 transition-colors">
                                     Forgot password?
                                 </a>
                             </div>
@@ -103,7 +103,7 @@ export function LoginPage() {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full vibrant-btn py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2 group relative overflow-hidden transition-all disabled:opacity-70"
+                            className="w-full btn-primary py-4 rounded-2xl font-bold text-white flex items-center justify-center gap-2 group relative overflow-hidden transition-all disabled:opacity-70"
                         >
                             {isLoading ? (
                                 <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
@@ -117,8 +117,8 @@ export function LoginPage() {
                     </form>
 
                     <div className="mt-10 text-center">
-                        <p className="text-sm text-gray-500">
-                            Powered by <span className="font-bold text-orange-600">Nocastra</span>
+                        <p className="text-sm text-muted-foreground">
+                            Powered by <span className="font-bold text-primary">Nocastra</span>
                         </p>
                     </div>
                 </div>

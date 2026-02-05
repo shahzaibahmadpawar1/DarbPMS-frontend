@@ -42,19 +42,19 @@ export function GenericDepartmentForm({ title, description, fields }: GenericFor
         <div className="p-8">
             <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold text-[#020713]">{title}</h1>
-                    <p className="text-gray-600 mt-2">
+                    <h1 className="text-3xl font-bold text-foreground">{title}</h1>
+                    <p className="text-muted-foreground mt-2">
                         {isReadOnly ? `View ${description.toLowerCase()}` : description}
                     </p>
                 </div>
 
                 {!isReadOnly && (
-                    <div className="flex bg-gray-100 p-1 rounded-xl w-fit">
+                    <div className="flex bg-muted p-1 rounded-xl w-fit">
                         <button
                             onClick={() => setViewMode('form')}
                             className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'form'
-                                ? 'bg-white text-[#f97316] shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700'
+                                ? 'bg-card text-primary shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'
                                 }`}
                         >
                             <PlusCircle className="w-4 h-4" />
@@ -63,8 +63,8 @@ export function GenericDepartmentForm({ title, description, fields }: GenericFor
                         <button
                             onClick={() => setViewMode('records')}
                             className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'records'
-                                ? 'bg-white text-[#f97316] shadow-sm'
-                                : 'text-gray-500 hover:text-gray-700'
+                                ? 'bg-card text-primary shadow-sm'
+                                : 'text-muted-foreground hover:text-foreground'
                                 }`}
                         >
                             <List className="w-4 h-4" />
@@ -74,7 +74,7 @@ export function GenericDepartmentForm({ title, description, fields }: GenericFor
                 )}
 
                 {isReadOnly && (
-                    <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg border border-blue-200">
+                    <div className="flex items-center gap-2 px-4 py-2 bg-info/5 text-info rounded-lg border border-info/20">
                         <Eye className="w-4 h-4" />
                         <span className="text-sm font-semibold">View Only Mode</span>
                     </div>
@@ -82,22 +82,22 @@ export function GenericDepartmentForm({ title, description, fields }: GenericFor
             </div>
 
             {viewMode === 'form' ? (
-                <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-xl p-8 vibrant-glow border-t-4 border-violet-600 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <form onSubmit={handleSubmit} className="bg-card rounded-xl shadow-xl p-8 card-glow border-t-4 border-primary relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
                     <div className="mb-6">
-                        <h2 className="text-xl font-semibold text-[#020713] mb-4 border-b border-[#D2C29C] pb-2">
+                        <h2 className="text-xl font-semibold text-foreground mb-4 border-b border-border pb-2">
                             {title} Information
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {fields.map((field) => (
                                 <div key={field.name} className={field.type === 'textarea' ? 'md:col-span-2' : ''}>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                        {field.label} {field.required && <span className="text-red-500">*</span>}
+                                    <label className="block text-sm font-medium text-muted-foreground mb-1">
+                                        {field.label} {field.required && <span className="text-error">*</span>}
                                     </label>
                                     {field.type === 'textarea' ? (
                                         <textarea
                                             value={formData[field.name]}
                                             onChange={(e) => handleChange(field.name, e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                            className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
                                             rows={3}
                                             required={field.required}
                                             disabled={isReadOnly}
@@ -106,7 +106,7 @@ export function GenericDepartmentForm({ title, description, fields }: GenericFor
                                         <select
                                             value={formData[field.name]}
                                             onChange={(e) => handleChange(field.name, e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                            className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
                                             required={field.required}
                                             disabled={isReadOnly}
                                         >
@@ -121,7 +121,7 @@ export function GenericDepartmentForm({ title, description, fields }: GenericFor
                                             type={field.type}
                                             value={formData[field.name]}
                                             onChange={(e) => handleChange(field.name, e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                            className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
                                             required={field.required}
                                             disabled={isReadOnly}
                                         />
@@ -135,7 +135,7 @@ export function GenericDepartmentForm({ title, description, fields }: GenericFor
                         <div className="flex justify-end">
                             <button
                                 type="submit"
-                                className="bg-[#f97316] hover:bg-[#fb923c] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
+                                className="btn-primary px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
                             >
                                 <Save className="w-5 h-5" />
                                 Save {title}

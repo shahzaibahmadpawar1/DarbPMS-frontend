@@ -16,7 +16,7 @@ import {
     AreaChart,
     ComposedChart,
 } from "recharts";
-import { AlertTriangle, TrendingUp, TrendingDown } from "lucide-react";
+import { AlertTriangle } from "lucide-react";
 import { BrandName } from "./BrandName";
 
 // Progress Gauge Component
@@ -46,15 +46,16 @@ function CircularProgressGauge({
                         cx={size / 2}
                         cy={size / 2}
                         r={radius}
-                        stroke="#e5e7eb"
+                        stroke="currentColor"
+                        className="text-border"
                         strokeWidth="8"
                         fill="none"
                     />
                     {/* Progress circle with vibrant gradient */}
                     <defs>
                         <linearGradient id={`circleGradient-${label}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor="#f97316" />
-                            <stop offset="100%" stopColor="#06b6d4" />
+                            <stop offset="0%" stopColor="hsl(var(--primary))" />
+                            <stop offset="100%" stopColor="hsl(var(--secondary))" />
                         </linearGradient>
                     </defs>
                     <circle
@@ -68,7 +69,7 @@ function CircularProgressGauge({
                         strokeDashoffset={offset}
                         strokeLinecap="round"
                         className="transition-all duration-1000"
-                        style={{ filter: 'drop-shadow(0 0 4px rgba(139, 92, 246, 0.3))' }}
+                        style={{ filter: 'drop-shadow(0 0 4px hsl(var(--primary) / 0.3))' }}
                     />
                 </svg>
                 {/* Center text */}
@@ -103,16 +104,17 @@ function SpeedometerGauge({ value, label, max = 100 }: { value: number; label: s
                     {/* Arc background */}
                     <path
                         d="M 20 70 A 50 50 0 0 1 120 70"
-                        stroke="#e5e7eb"
+                        stroke="currentColor"
+                        className="text-border"
                         strokeWidth="12"
                         fill="none"
                     />
                     {/* Arc gradient fill */}
                     <defs>
                         <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor="#ef4444" />
-                            <stop offset="50%" stopColor="#f97316" />
-                            <stop offset="100%" stopColor="#06b6d4" />
+                            <stop offset="0%" stopColor="hsl(var(--error))" />
+                            <stop offset="50%" stopColor="hsl(var(--primary))" />
+                            <stop offset="100%" stopColor="hsl(var(--secondary))" />
                         </linearGradient>
                     </defs>
                     <path
@@ -155,10 +157,10 @@ export function ExecutiveDashboard() {
 
     // Task tracking data for donut chart
     const taskData = [
-        { name: "Complete", value: 45, color: "#10b981" },
-        { name: "In Progress", value: 30, color: "#f97316" },
-        { name: "Pending", value: 15, color: "#f59e0b" },
-        { name: "Blocked", value: 10, color: "#ef4444" },
+        { name: "Complete", value: 45, color: "hsl(var(--success))" },
+        { name: "In Progress", value: 30, color: "hsl(var(--primary))" },
+        { name: "Pending", value: 15, color: "hsl(var(--warning))" },
+        { name: "Blocked", value: 10, color: "hsl(var(--error))" },
     ];
 
     // Monthly project spend data
@@ -267,14 +269,14 @@ export function ExecutiveDashboard() {
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50 p-6 rounded-xl shadow-sm overflow-hidden mt-8">
+        <div className="min-h-screen bg-background p-6 rounded-xl shadow-sm overflow-hidden mt-8">
             <div className="max-w-[1800px] mx-auto">
                 {/* Header */}
                 <div className="mb-6">
-                    <h1 className="text-3xl font-bold text-[#020713] mb-2">
+                    <h1 className="text-3xl font-bold text-foreground mb-2">
                         Project Progress YTD - March 2026
                     </h1>
-                    <p className="text-gray-600"><BrandName /> Station Executive Dashboard</p>
+                    <p className="text-muted-foreground"><BrandName /> Station Executive Dashboard</p>
                 </div>
 
                 {/* Top Section - Circular Progress Gauges */}
@@ -282,7 +284,7 @@ export function ExecutiveDashboard() {
                     {phaseProgress.map((phase, index) => (
                         <div
                             key={index}
-                            className="bg-white rounded-xl p-4 border border-gray-200 shadow-md vibrant-glow vibrant-glow-hover relative overflow-hidden"
+                            className="bg-card rounded-xl p-4 border border-border shadow-md card-glow relative overflow-hidden"
                         >
                             <CircularProgressGauge
                                 percentage={phase.percentage}
@@ -295,13 +297,13 @@ export function ExecutiveDashboard() {
 
                 {/* Middle Row with Gauges and Days Counter */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
-                    <div className="col-span-1 bg-white rounded-xl p-4 border border-gray-200 shadow-md vibrant-glow vibrant-glow-hover relative overflow-hidden">
+                    <div className="col-span-1 bg-card rounded-xl p-4 border border-border shadow-md card-glow relative overflow-hidden">
                         <SpeedometerGauge value={27} label="EAC Margin" />
                     </div>
-                    <div className="col-span-1 bg-white rounded-xl p-4 border border-gray-200 shadow-md vibrant-glow vibrant-glow-hover relative overflow-hidden flex flex-col items-center justify-center">
-                        <div className="text-5xl font-bold text-[#00C0A7]">256</div>
-                        <div className="text-sm text-gray-600 mt-2">Days</div>
-                        <div className="text-xs text-gray-500 mt-1">Launch Date</div>
+                    <div className="col-span-1 bg-card rounded-xl p-4 border border-border shadow-md card-glow relative overflow-hidden flex flex-col items-center justify-center">
+                        <div className="text-5xl font-bold text-success">256</div>
+                        <div className="text-sm text-muted-foreground mt-2">Days</div>
+                        <div className="text-xs text-muted-foreground mt-1">Launch Date</div>
                     </div>
                     <div className="lg:col-span-3"></div>
                 </div>
@@ -311,8 +313,8 @@ export function ExecutiveDashboard() {
                     {/* Left Column - Task Tracking & Monthly Spend */}
                     <div className="lg:col-span-3 space-y-6">
                         {/* Task Tracking Donut */}
-                        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md vibrant-glow vibrant-glow-hover relative overflow-hidden">
-                            <h3 className="text-sm font-semibold text-gray-700 mb-3">Task Tracking</h3>
+                        <div className="bg-card rounded-xl p-4 border border-border shadow-md card-glow relative overflow-hidden">
+                            <h3 className="text-sm font-semibold text-foreground mb-3">Task Tracking</h3>
                             <ResponsiveContainer width="100%" height={220}>
                                 <PieChart>
                                     <Pie
@@ -330,10 +332,10 @@ export function ExecutiveDashboard() {
                                     </Pie>
                                     <Tooltip
                                         contentStyle={{
-                                            backgroundColor: "#fff",
-                                            border: "1px solid #e2e8f0",
+                                            backgroundColor: "hsl(var(--card))",
+                                            border: "1px solid hsl(var(--border))",
                                             borderRadius: "8px",
-                                            color: "#1e293b",
+                                            color: "hsl(var(--foreground))",
                                         }}
                                     />
                                 </PieChart>
@@ -345,7 +347,7 @@ export function ExecutiveDashboard() {
                                             className="w-3 h-3 rounded-sm"
                                             style={{ backgroundColor: item.color }}
                                         />
-                                        <span className="text-xs text-gray-600">
+                                        <span className="text-xs text-muted-foreground">
                                             {item.name}: {item.value}
                                         </span>
                                     </div>
@@ -354,25 +356,25 @@ export function ExecutiveDashboard() {
                         </div>
 
                         {/* Monthly Project Spend */}
-                        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md vibrant-glow vibrant-glow-hover relative overflow-hidden">
-                            <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                        <div className="bg-card rounded-xl p-4 border border-border shadow-md card-glow relative overflow-hidden">
+                            <h3 className="text-sm font-semibold text-foreground mb-3">
                                 Month on Month Project Spend
                             </h3>
                             <ResponsiveContainer width="100%" height={200}>
                                 <LineChart data={monthlySpend}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                                     <XAxis
                                         dataKey="month"
-                                        stroke="#64748b"
+                                        stroke="hsl(var(--muted-foreground))"
                                         style={{ fontSize: "10px" }}
                                     />
-                                    <YAxis stroke="#64748b" style={{ fontSize: "10px" }} />
+                                    <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: "10px" }} />
                                     <Tooltip
                                         contentStyle={{
-                                            backgroundColor: "#fff",
-                                            border: "1px solid #e2e8f0",
+                                            backgroundColor: "hsl(var(--card))",
+                                            border: "1px solid hsl(var(--border))",
                                             borderRadius: "8px",
-                                            color: "#1e293b",
+                                            color: "hsl(var(--foreground))",
                                         }}
                                     />
                                     <Legend
@@ -382,7 +384,7 @@ export function ExecutiveDashboard() {
                                     <Line
                                         type="monotone"
                                         dataKey="planned"
-                                        stroke="#f97316"
+                                        stroke="hsl(var(--primary))"
                                         strokeWidth={2}
                                         dot={{ r: 3 }}
                                         name="Planned"
@@ -390,7 +392,7 @@ export function ExecutiveDashboard() {
                                     <Line
                                         type="monotone"
                                         dataKey="actual"
-                                        stroke="#10b981"
+                                        stroke="hsl(var(--success))"
                                         strokeWidth={2}
                                         dot={{ r: 3 }}
                                         name="Actual"
@@ -403,55 +405,55 @@ export function ExecutiveDashboard() {
                     {/* Center Column - Bar Charts */}
                     <div className="lg:col-span-5 space-y-6">
                         {/* Average Days per Task */}
-                        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md vibrant-glow vibrant-glow-hover relative overflow-hidden">
-                            <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                        <div className="bg-card rounded-xl p-4 border border-border shadow-md card-glow relative overflow-hidden">
+                            <h3 className="text-sm font-semibold text-foreground mb-3">
                                 Average Days per Task by Department
                             </h3>
                             <ResponsiveContainer width="100%" height={200}>
                                 <BarChart data={taskDaysData}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                                     <XAxis
                                         dataKey="department"
-                                        stroke="#64748b"
+                                        stroke="hsl(var(--muted-foreground))"
                                         style={{ fontSize: "10px" }}
                                         angle={-15}
                                         textAnchor="end"
                                         height={60}
                                     />
-                                    <YAxis stroke="#64748b" style={{ fontSize: "10px" }} />
+                                    <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: "10px" }} />
                                     <Tooltip
                                         contentStyle={{
-                                            backgroundColor: "#fff",
-                                            border: "1px solid #e2e8f0",
+                                            backgroundColor: "hsl(var(--card))",
+                                            border: "1px solid hsl(var(--border))",
                                             borderRadius: "8px",
-                                            color: "#1e293b",
+                                            color: "hsl(var(--foreground))",
                                         }}
                                     />
-                                    <Bar dataKey="days" fill="#f97316" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="days" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
 
                         {/* S-Curve Progress Tracking */}
-                        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md vibrant-glow vibrant-glow-hover relative overflow-hidden">
-                            <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                        <div className="bg-card rounded-xl p-4 border border-border shadow-md card-glow relative overflow-hidden">
+                            <h3 className="text-sm font-semibold text-foreground mb-3">
                                 S-Curve Progress Tracking
                             </h3>
                             <ResponsiveContainer width="100%" height={200}>
                                 <ComposedChart data={sCurveData}>
-                                    <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+                                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                                     <XAxis
                                         dataKey="month"
-                                        stroke="#64748b"
+                                        stroke="hsl(var(--muted-foreground))"
                                         style={{ fontSize: "10px" }}
                                     />
-                                    <YAxis stroke="#64748b" style={{ fontSize: "10px" }} />
+                                    <YAxis stroke="hsl(var(--muted-foreground))" style={{ fontSize: "10px" }} />
                                     <Tooltip
                                         contentStyle={{
-                                            backgroundColor: "#fff",
-                                            border: "1px solid #e2e8f0",
+                                            backgroundColor: "hsl(var(--card))",
+                                            border: "1px solid hsl(var(--border))",
                                             borderRadius: "8px",
-                                            color: "#1e293b",
+                                            color: "hsl(var(--foreground))",
                                         }}
                                     />
                                     <Legend
@@ -460,14 +462,14 @@ export function ExecutiveDashboard() {
                                     />
                                     <Bar
                                         dataKey="planned"
-                                        fill="#f97316"
+                                        fill="hsl(var(--primary))"
                                         radius={[4, 4, 0, 0]}
                                         name="Planned"
                                     />
                                     <Line
                                         type="monotone"
                                         dataKey="actual"
-                                        stroke="#10b981"
+                                        stroke="hsl(var(--success))"
                                         strokeWidth={3}
                                         dot={{ r: 4 }}
                                         name="Actual"
@@ -480,12 +482,12 @@ export function ExecutiveDashboard() {
                     {/* Right Column - Regional Expenses & Spend by Phase */}
                     <div className="lg:col-span-4 space-y-6">
                         {/* Regional Expenses Map */}
-                        <div className="bg-white p-4 rounded-xl shadow-md border border-gray-200 vibrant-glow vibrant-glow-hover relative overflow-hidden">
-                            <h3 className="text-sm font-semibold text-gray-700 mb-4">
+                        <div className="bg-card p-4 rounded-xl shadow-md border border-border card-glow relative overflow-hidden">
+                            <h3 className="text-sm font-semibold text-foreground mb-4">
                                 Project Locations
                             </h3>
 
-                            <div className="w-full h-64 bg-gray-100 rounded-lg overflow-hidden relative">
+                            <div className="w-full h-64 bg-muted rounded-lg overflow-hidden relative">
                                 <iframe
                                     title="Project Map"
                                     width="100%"
@@ -500,8 +502,8 @@ export function ExecutiveDashboard() {
                         </div>
 
                         {/* Spend by Phase Donut */}
-                        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-md vibrant-glow vibrant-glow-hover relative overflow-hidden">
-                            <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                        <div className="bg-card rounded-xl p-4 border border-border shadow-md card-glow relative overflow-hidden">
+                            <h3 className="text-sm font-semibold text-foreground mb-3">
                                 Overhead Construction Events
                             </h3>
                             <div className="h-48">
@@ -522,8 +524,8 @@ export function ExecutiveDashboard() {
                                         </Pie>
                                         <Tooltip
                                             contentStyle={{
-                                                backgroundColor: "white",
-                                                border: "1px solid #e5e7eb",
+                                                backgroundColor: "hsl(var(--card))",
+                                                border: "1px solid hsl(var(--border))",
                                                 borderRadius: "8px",
                                             }}
                                         />
@@ -537,30 +539,30 @@ export function ExecutiveDashboard() {
                 {/* Bottom Section */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 pb-6">
                     {/* Budget Spent */}
-                    <div className="lg:col-span-3 bg-white rounded-xl p-4 border border-gray-200 shadow-md vibrant-glow vibrant-glow-hover relative overflow-hidden">
-                        <h3 className="text-sm font-semibold text-gray-700 mb-4">
+                    <div className="lg:col-span-3 bg-card rounded-xl p-4 border border-border shadow-md card-glow relative overflow-hidden">
+                        <h3 className="text-sm font-semibold text-foreground mb-4">
                             Project Budget Spent to Date
                         </h3>
                         <div className="space-y-3">
                             {budgetData.map((item, index) => (
                                 <div key={index}>
                                     <div className="flex justify-between items-center mb-1">
-                                        <span className="text-xs text-gray-600">{item.task}</span>
-                                        <span className="text-xs font-semibold text-gray-800">
+                                        <span className="text-xs text-muted-foreground">{item.task}</span>
+                                        <span className="text-xs font-semibold text-foreground">
                                             {item.spent}%
                                         </span>
                                     </div>
-                                    <div className="w-full bg-gray-100 rounded-full h-2">
+                                    <div className="w-full bg-muted rounded-full h-2">
                                         <div
                                             className="h-2 rounded-full transition-all duration-500"
                                             style={{
                                                 width: `${item.spent}%`,
                                                 backgroundColor:
                                                     item.spent > 70
-                                                        ? "#10b981"
+                                                        ? "hsl(var(--success))"
                                                         : item.spent > 40
-                                                            ? "#f97316"
-                                                            : "#fb923c",
+                                                            ? "hsl(var(--primary))"
+                                                            : "hsl(var(--accent))",
                                             }}
                                         />
                                     </div>
@@ -570,24 +572,24 @@ export function ExecutiveDashboard() {
                     </div>
 
                     {/* Key Risks */}
-                    <div className="lg:col-span-5 bg-white rounded-xl p-4 border border-gray-200 shadow-md vibrant-glow vibrant-glow-hover relative overflow-hidden">
-                        <h3 className="text-sm font-semibold text-gray-700 mb-4">
+                    <div className="lg:col-span-5 bg-card rounded-xl p-4 border border-border shadow-md card-glow relative overflow-hidden">
+                        <h3 className="text-sm font-semibold text-foreground mb-4">
                             Key Risks to Project
                         </h3>
                         <div className="space-y-3">
                             {keyRisks.map((risk, index) => (
                                 <div
                                     key={index}
-                                    className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100"
+                                    className="flex items-start gap-3 p-3 bg-muted rounded-lg border border-border"
                                 >
                                     <div className="flex-shrink-0 mt-0.5">
                                         {risk.severity === "high" ? (
-                                            <AlertTriangle className="w-4 h-4 text-red-500" />
+                                            <AlertTriangle className="w-4 h-4 text-error" />
                                         ) : (
-                                            <AlertTriangle className="w-4 h-4 text-yellow-500" />
+                                            <AlertTriangle className="w-4 h-4 text-warning" />
                                         )}
                                     </div>
-                                    <p className="text-xs text-gray-700 leading-relaxed">
+                                    <p className="text-xs text-foreground leading-relaxed">
                                         {risk.message}
                                     </p>
                                 </div>
@@ -599,14 +601,14 @@ export function ExecutiveDashboard() {
                                 <AreaChart data={sCurveData}>
                                     <defs>
                                         <linearGradient id="colorRisk" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.2} />
-                                            <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                                            <stop offset="5%" stopColor="hsl(var(--success))" stopOpacity={0.2} />
+                                            <stop offset="95%" stopColor="hsl(var(--success))" stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
                                     <Area
                                         type="monotone"
                                         dataKey="actual"
-                                        stroke="#10b981"
+                                        stroke="hsl(var(--success))"
                                         fill="url(#colorRisk)"
                                     />
                                 </AreaChart>
@@ -615,19 +617,19 @@ export function ExecutiveDashboard() {
                     </div>
 
                     {/* Manpower Planning */}
-                    <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-gray-200 shadow-md vibrant-glow vibrant-glow-hover relative overflow-hidden">
-                        <h3 className="text-sm font-semibold text-gray-700 mb-4">
+                    <div className="lg:col-span-4 bg-card rounded-xl p-4 border border-border shadow-md card-glow relative overflow-hidden">
+                        <h3 className="text-sm font-semibold text-foreground mb-4">
                             Manpower Planning
                         </h3>
                         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             {/* Civil */}
-                            <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
-                                <div className="text-xs font-semibold text-[#10b981] mb-3">Civil</div>
+                            <div className="bg-muted rounded-lg p-3 border border-border">
+                                <div className="text-xs font-semibold text-success mb-3">Civil</div>
                                 <div className="space-y-2">
                                     {manpowerData.civil.map((item, index) => (
                                         <div key={index} className="flex justify-between items-center">
-                                            <span className="text-[10px] text-gray-600">{item.category}</span>
-                                            <span className="text-xs font-semibold text-gray-800">
+                                            <span className="text-[10px] text-muted-foreground">{item.category}</span>
+                                            <span className="text-xs font-semibold text-foreground">
                                                 {item.count}
                                             </span>
                                         </div>
@@ -636,15 +638,15 @@ export function ExecutiveDashboard() {
                             </div>
 
                             {/* Mechanical */}
-                            <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
-                                <div className="text-xs font-semibold text-[#f97316] mb-3">
+                            <div className="bg-muted rounded-lg p-3 border border-border">
+                                <div className="text-xs font-semibold text-primary mb-3">
                                     Mechanical
                                 </div>
                                 <div className="space-y-2">
                                     {manpowerData.mechanical.map((item, index) => (
                                         <div key={index} className="flex justify-between items-center">
-                                            <span className="text-[10px] text-gray-600">{item.category}</span>
-                                            <span className="text-xs font-semibold text-gray-800">
+                                            <span className="text-[10px] text-muted-foreground">{item.category}</span>
+                                            <span className="text-xs font-semibold text-foreground">
                                                 {item.count}
                                             </span>
                                         </div>
@@ -653,15 +655,15 @@ export function ExecutiveDashboard() {
                             </div>
 
                             {/* Electrical */}
-                            <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
-                                <div className="text-xs font-semibold text-[#f59e0b] mb-3">
+                            <div className="bg-muted rounded-lg p-3 border border-border">
+                                <div className="text-xs font-semibold text-warning mb-3">
                                     Electrical
                                 </div>
                                 <div className="space-y-2">
                                     {manpowerData.electrical.map((item, index) => (
                                         <div key={index} className="flex justify-between items-center">
-                                            <span className="text-[10px] text-gray-600">{item.category}</span>
-                                            <span className="text-xs font-semibold text-gray-800">
+                                            <span className="text-[10px] text-muted-foreground">{item.category}</span>
+                                            <span className="text-xs font-semibold text-foreground">
                                                 {item.count}
                                             </span>
                                         </div>

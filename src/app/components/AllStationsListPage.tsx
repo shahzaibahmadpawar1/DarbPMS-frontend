@@ -133,13 +133,13 @@ export function AllStationsListPage() {
     const getStatusColor = (status: string) => {
         switch (status) {
             case "Active":
-                return "bg-green-100 text-green-700 border-green-200";
+                return "bg-success/10 text-success border-success/20";
             case "Under Construction":
-                return "bg-yellow-100 text-yellow-700 border-yellow-200";
+                return "bg-warning/10 text-warning border-warning/20";
             case "Planning":
-                return "bg-blue-100 text-blue-700 border-blue-200";
+                return "bg-info/10 text-info border-info/20";
             default:
-                return "bg-gray-100 text-gray-700 border-gray-200";
+                return "bg-muted text-muted-foreground border-border";
         }
     };
 
@@ -151,20 +151,20 @@ export function AllStationsListPage() {
     return (
         <div className="max-w-7xl mx-auto">
             <div className="mb-8">
-                <h1 className="text-4xl font-black text-gray-900 mb-2 tracking-tight">All Stations</h1>
-                <p className="text-gray-600 font-medium">Manage all stations and their associated forms</p>
+                <h1 className="text-4xl font-black text-foreground mb-2 tracking-tight">All Stations</h1>
+                <p className="text-muted-foreground font-medium">Manage all stations and their associated forms</p>
             </div>
 
             {/* Search Bar */}
             <div className="mb-6">
                 <div className="relative">
-                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                     <input
                         type="text"
                         placeholder="Search stations by name..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white shadow-sm"
+                        className="w-full pl-12 pr-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background shadow-sm"
                     />
                 </div>
             </div>
@@ -176,11 +176,11 @@ export function AllStationsListPage() {
                     return (
                         <div
                             key={station.id}
-                            className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 vibrant-glow overflow-hidden"
+                            className="bg-card/80 backdrop-blur-xl rounded-2xl shadow-lg border border-border card-glow overflow-hidden"
                         >
                             {/* Station Header */}
                             <div
-                                className="p-6 cursor-pointer hover:bg-orange-50/50 transition-colors"
+                                className="p-6 cursor-pointer hover:bg-primary/5 transition-colors"
                                 onClick={() => toggleStation(station.id)}
                             >
                                 <div className="flex items-center justify-between">
@@ -190,7 +190,7 @@ export function AllStationsListPage() {
                                         </div>
                                         <div className="flex-1">
                                             <div className="flex items-center gap-3 mb-2">
-                                                <h3 className="text-xl font-bold text-gray-900">{station.name}</h3>
+                                                <h3 className="text-xl font-bold text-foreground">{station.name}</h3>
                                                 <span
                                                     className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(
                                                         station.status
@@ -199,21 +199,21 @@ export function AllStationsListPage() {
                                                     {station.status}
                                                 </span>
                                             </div>
-                                            <p className="text-sm text-gray-600 mb-3">
+                                            <p className="text-sm text-muted-foreground mb-3">
                                                 {station.region} • {station.city} • {station.project}
                                             </p>
 
                                             {/* Progress Bar */}
                                             <div className="max-w-md">
                                                 <div className="flex items-center justify-between mb-1">
-                                                    <span className="text-xs font-semibold text-gray-600">Form Completion</span>
-                                                    <span className="text-xs font-bold text-orange-600">
+                                                    <span className="text-xs font-semibold text-muted-foreground">Form Completion</span>
+                                                    <span className="text-xs font-bold text-primary">
                                                         {station.formsCompleted}/{station.totalForms} ({completionPercentage}%)
                                                     </span>
                                                 </div>
-                                                <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                                                     <div
-                                                        className="h-full bg-gradient-to-r from-orange-600 to-gray-500 rounded-full transition-all duration-500"
+                                                        className="h-full gradient-primary rounded-full transition-all duration-500"
                                                         style={{ width: `${completionPercentage}%` }}
                                                     ></div>
                                                 </div>
@@ -224,16 +224,16 @@ export function AllStationsListPage() {
                                         <Link
                                             to={`/station/${station.id}/analytics`}
                                             onClick={(e) => e.stopPropagation()}
-                                            className="flex items-center gap-2 px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors font-semibold text-sm"
+                                            className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors font-semibold text-sm"
                                         >
                                             <Activity className="w-4 h-4" />
                                             Analytics
                                         </Link>
-                                        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                                        <button className="p-2 hover:bg-muted rounded-lg transition-colors">
                                             {expandedStations.includes(station.id) ? (
-                                                <ChevronDown className="w-5 h-5 text-gray-600" />
+                                                <ChevronDown className="w-5 h-5 text-muted-foreground" />
                                             ) : (
-                                                <ChevronRight className="w-5 h-5 text-gray-600" />
+                                                <ChevronRight className="w-5 h-5 text-muted-foreground" />
                                             )}
                                         </button>
                                     </div>
@@ -254,8 +254,8 @@ export function AllStationsListPage() {
                                                         key={item.title}
                                                         to={`/station/${station.id}/form/${item.title.toLowerCase().replace(/\s+/g, "-")}`}
                                                         className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg transition-colors text-sm font-medium border group ${item.completed
-                                                                ? 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100 hover:border-green-300'
-                                                                : 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100 hover:border-red-300'
+                                                            ? 'bg-success/5 text-success border-success/20 hover:bg-success/10 hover:border-success/30'
+                                                            : 'bg-error/5 text-error border-error/20 hover:bg-error/10 hover:border-error/30'
                                                             }`}
                                                     >
                                                         <div className="flex items-center gap-2">
@@ -263,9 +263,9 @@ export function AllStationsListPage() {
                                                             <span>{item.title}</span>
                                                         </div>
                                                         {item.completed ? (
-                                                            <CheckCircle className="w-4 h-4 text-green-600 flex-shrink-0" />
+                                                            <CheckCircle className="w-4 h-4 text-success flex-shrink-0" />
                                                         ) : (
-                                                            <XCircle className="w-4 h-4 text-red-600 flex-shrink-0" />
+                                                            <XCircle className="w-4 h-4 text-error flex-shrink-0" />
                                                         )}
                                                     </Link>
                                                 ))}

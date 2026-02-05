@@ -49,13 +49,13 @@ export function LanguageSwitcher() {
         <div className="relative">
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-xl hover:border-orange-500 transition-all shadow-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-background border border-border rounded-xl hover:border-primary transition-all shadow-sm"
             >
-                <Languages className="w-4 h-4 text-orange-600" />
-                <span className="text-sm font-bold text-[#020713]">
+                <Languages className="w-4 h-4 text-primary" />
+                <span className="text-sm font-bold text-foreground">
                     {lang === "en" ? "English" : "العربية"}
                 </span>
-                <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                <ChevronDown className={`w-3 h-3 text-muted-foreground transition-transform ${isOpen ? 'rotate-180' : ''}`} />
             </button>
 
             {isOpen && (
@@ -64,16 +64,16 @@ export function LanguageSwitcher() {
                         className="fixed inset-0 z-10"
                         onClick={() => setIsOpen(false)}
                     />
-                    <div className="absolute top-full mt-2 right-0 w-32 bg-white border border-gray-100 rounded-xl shadow-xl z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                    <div className="absolute top-full mt-2 right-0 w-32 bg-card border border-border rounded-xl shadow-xl z-20 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                         <button
                             onClick={() => applyLanguage("en")}
-                            className={`w-full text-left px-4 py-3 text-sm font-medium hover:bg-orange-50 transition-colors ${lang === "en" ? "text-orange-600 bg-orange-50/50" : "text-gray-700"}`}
+                            className={`w-full text-left px-4 py-3 text-sm font-medium hover:bg-primary/10 transition-colors ${lang === "en" ? "text-primary bg-primary/5" : "text-foreground"}`}
                         >
                             English
                         </button>
                         <button
                             onClick={() => applyLanguage("ar")}
-                            className={`w-full text-left px-4 py-3 text-sm font-medium hover:bg-orange-50 transition-colors ${lang === "ar" ? "text-orange-600 bg-orange-50/50" : "text-gray-700"}`}
+                            className={`w-full text-left px-4 py-3 text-sm font-medium hover:bg-primary/10 transition-colors ${lang === "ar" ? "text-primary bg-primary/5" : "text-foreground"}`}
                         >
                             العربية
                         </button>

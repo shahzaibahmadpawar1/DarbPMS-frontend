@@ -1,18 +1,17 @@
-import { Building2, Clock, AlertCircle, CheckCircle, Calendar } from "lucide-react";
+import { Clock, AlertCircle, CheckCircle, Calendar } from "lucide-react";
 import { BrandName } from "./BrandName";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { ExecutiveDashboard } from "./ExecutiveDashboard";
 import logo from "../../assets/logo.png";
 
 export function Dashboard() {
-  const navigate = useNavigate();
   const stats = [
     {
       title: "Total Stations",
       value: "156",
       icon: <img src={logo} alt="" className="w-8 h-8 object-contain brightness-0 invert" />,
       change: "+12%",
-      color: "bg-[#f97316]",
+      color: "bg-primary",
       path: "/total-stations",
     },
     {
@@ -20,7 +19,7 @@ export function Dashboard() {
       value: "42",
       icon: <Clock className="w-8 h-8" />,
       change: "+5%",
-      color: "bg-blue-500",
+      color: "bg-info",
       path: "/active-licenses",
     },
     {
@@ -28,7 +27,7 @@ export function Dashboard() {
       value: "8",
       icon: <AlertCircle className="w-8 h-8" />,
       change: "-3%",
-      color: "bg-red-500",
+      color: "bg-error",
       path: "/pending-permits",
     },
     {
@@ -36,7 +35,7 @@ export function Dashboard() {
       value: "98",
       icon: <CheckCircle className="w-8 h-8" />,
       change: "+18%",
-      color: "bg-green-500",
+      color: "bg-success",
       path: "/active-projects",
     },
     {
@@ -44,7 +43,7 @@ export function Dashboard() {
       value: "8",
       icon: <Calendar className="w-8 h-8" />,
       change: "+2%",
-      color: "bg-orange-500",
+      color: "bg-primary",
       path: "/active-projects",
     },
   ];
@@ -76,42 +75,42 @@ export function Dashboard() {
           <Link
             key={index}
             to={stat.path}
-            className="bg-white rounded-xl shadow-md p-6 vibrant-glow-hover vibrant-glow transition-all block group relative overflow-hidden"
+            className="bg-card rounded-xl shadow-md p-6 card-glow transition-all block group relative overflow-hidden"
           >
-            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-transparent via-orange-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-transparent via-primary to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
             <div className="flex items-center justify-between mb-4">
-              <div className={`${stat.color} text-white p-3 rounded-xl shadow-lg shadow-orange-200`}>
+              <div className={`${stat.color} text-white p-3 rounded-xl shadow-lg shadow-primary/20`}>
                 {stat.icon}
               </div>
-              <span className={`text-sm font-semibold ${stat.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
+              <span className={`text-sm font-semibold ${stat.change.startsWith('+') ? 'text-success' : 'text-error'}`}>
                 {stat.change}
               </span>
             </div>
-            <h3 className="text-gray-600 text-sm font-medium mb-1">{stat.title}</h3>
-            <p className="text-3xl font-bold text-[#020713]">{stat.value}</p>
+            <h3 className="text-muted-foreground text-sm font-medium mb-1">{stat.title}</h3>
+            <p className="text-3xl font-bold text-foreground">{stat.value}</p>
           </Link>
         ))}
       </div>
 
       {/* Total Stations Progress Widget */}
-      <div className="bg-white rounded-xl shadow-xl p-8 mb-8 vibrant-glow relative overflow-hidden">
+      <div className="bg-card rounded-xl shadow-xl p-8 mb-8 card-glow relative overflow-hidden">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-[#020713]">Total Stations Progress</h2>
-          <Link to="/total-stations" className="text-[#f97316] text-sm font-semibold hover:underline">View All</Link>
+          <h2 className="text-xl font-bold text-foreground">Total Stations Progress</h2>
+          <Link to="/total-stations" className="text-primary text-sm font-semibold hover:underline">View All</Link>
         </div>
         <div className="space-y-6">
           {stations.map((station, index) => (
             <div key={index} className="space-y-2">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-bold text-[#020713]">{station.name}</p>
-                  <span className="text-xs text-gray-500">{station.status}</span>
+                  <p className="font-bold text-foreground">{station.name}</p>
+                  <span className="text-xs text-muted-foreground">{station.status}</span>
                 </div>
-                <span className="text-sm font-bold text-[#f97316]">{station.completion}%</span>
+                <span className="text-sm font-bold text-primary">{station.completion}%</span>
               </div>
-              <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+              <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-orange-500 via-orange-500 to-gray-500 transition-all duration-500"
+                  className="h-full progress-bar transition-all duration-500"
                   style={{ width: `${station.completion}%` }}
                 />
               </div>
@@ -121,27 +120,27 @@ export function Dashboard() {
       </div>
 
       {/* Recent Activities */}
-      <div className="bg-white rounded-xl shadow-xl p-8 mb-12 vibrant-glow relative overflow-hidden">
-        <h2 className="text-xl font-bold text-[#020713] mb-4">Recent Activities</h2>
+      <div className="bg-card rounded-xl shadow-xl p-8 mb-12 card-glow relative overflow-hidden">
+        <h2 className="text-xl font-bold text-foreground mb-4">Recent Activities</h2>
         <div className="space-y-4">
           {recentActivities.map((activity, index) => (
             <div
               key={index}
-              className="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:border-orange-400 hover:shadow-lg hover:shadow-orange-100 transition-all bg-white/50 backdrop-blur-sm"
+              className="flex items-center justify-between p-4 border border-border rounded-xl hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10 transition-all bg-card/50 backdrop-blur-sm"
             >
               <div>
-                <p className="font-medium text-[#020713]">{activity.action}</p>
-                <p className="text-sm text-gray-600">{activity.station}</p>
+                <p className="font-medium text-foreground">{activity.action}</p>
+                <p className="text-sm text-muted-foreground">{activity.station}</p>
               </div>
-              <span className="text-sm text-gray-500">{activity.time}</span>
+              <span className="text-sm text-muted-foreground">{activity.time}</span>
             </div>
           ))}
         </div>
       </div>
 
       {/* Executive Analytics Section */}
-      <div className="mt-8 border-t border-gray-200 pt-12">
-        <h2 className="text-2xl font-bold text-[#020713] mb-6 px-4">Executive Analytics</h2>
+      <div className="mt-8 border-t border-border pt-12">
+        <h2 className="text-2xl font-bold text-foreground mb-6 px-4">Executive Analytics</h2>
         <ExecutiveDashboard />
       </div>
     </div>
