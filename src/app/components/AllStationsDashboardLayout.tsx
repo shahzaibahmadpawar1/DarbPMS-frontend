@@ -53,7 +53,7 @@ export function AllStationsDashboardLayout() {
                 {/* Sidebar */}
                 <aside
                     className={`${sidebarOpen ? "w-72" : "w-20"
-                        } transition-all duration-300 bg-gradient-to-br from-primary-600 via-primary to-secondary-600 text-white flex flex-col fixed inset-y-4 ltr:left-4 rtl:right-4 z-10 shadow-2xl backdrop-blur-xl rounded-[2.5rem] overflow-hidden`}
+                        } transition-all duration-300 sidebar-gradient text-sidebar-foreground flex flex-col fixed inset-y-4 ltr:left-4 rtl:right-4 z-10 shadow-2xl backdrop-blur-xl rounded-[2.5rem] overflow-hidden`}
                     style={{
                         boxShadow: '0 0 60px hsl(var(--primary) / 0.2), 0 0 120px hsl(var(--secondary) / 0.1)'
                     }}
@@ -94,7 +94,7 @@ export function AllStationsDashboardLayout() {
                                 key={item.path}
                                 to={item.path}
                                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${location.pathname === item.path
-                                    ? "bg-white/25 text-white shadow-lg backdrop-blur-sm"
+                                    ? "bg-gradient-to-r from-primary to-secondary text-white shadow-lg"
                                     : "text-white/80 hover:bg-white/15 hover:text-white"
                                     }`}
                             >
@@ -139,7 +139,7 @@ export function AllStationsDashboardLayout() {
                         <div className="flex items-center gap-4">
                             <Link
                                 to="/add-new-project"
-                                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-secondary text-white rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-sm"
+                                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-secondary text-primary-foreground rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-sm"
                             >
                                 <PlusCircle className="w-4 h-4" />
                                 <span>Add New Project</span>

@@ -282,7 +282,7 @@ export function StationSelectionPage() {
                                             key={location}
                                             onClick={() => handleLocationSelect(location)}
                                             className={`group p-6 rounded-2xl border transition-all text-left flex items-center justify-between ${selectedLocation === location
-                                                ? 'bg-primary border-primary text-white shadow-xl shadow-primary/20'
+                                                ? 'bg-gradient-to-r from-primary to-secondary border-primary text-white shadow-xl shadow-primary/20'
                                                 : 'bg-white/50 border-border text-foreground hover:border-primary/40 hover:shadow-lg'
                                                 }`}
                                         >

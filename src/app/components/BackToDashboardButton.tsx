@@ -28,7 +28,7 @@ export function BackToDashboardButton() {
 
             <button
                 onClick={() => navigate(dashboardPath)}
-                className="flex items-center gap-2 px-4 py-2 bg-[#f97316] hover:bg-[#fb923c] text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-secondary text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
                 title="Return to dashboard"
             >
                 <Home className="w-4 h-4" />

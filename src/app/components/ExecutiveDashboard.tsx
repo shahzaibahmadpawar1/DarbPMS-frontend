@@ -259,13 +259,12 @@ export function ExecutiveDashboard() {
         ],
     };
 
-    // Spend by phase data
     const spendByPhase = [
-        { phase: "Phase 1", value: 85, color: "#10b981" },
-        { phase: "Phase 2", value: 68, color: "#f97316" },
-        { phase: "Phase 3", value: 52, color: "#f97316" },
-        { phase: "Phase 4", value: 35, color: "#f59e0b" },
-        { phase: "Phase 5", value: 20, color: "#ef4444" },
+        { phase: "Phase 1", value: 85, color: "hsl(var(--success))" },
+        { phase: "Phase 2", value: 68, color: "hsl(var(--primary))" },
+        { phase: "Phase 3", value: 52, color: "hsl(var(--primary))" },
+        { phase: "Phase 4", value: 35, color: "hsl(var(--warning))" },
+        { phase: "Phase 5", value: 20, color: "hsl(var(--error))" },
     ];
 
     return (
@@ -554,15 +553,14 @@ export function ExecutiveDashboard() {
                                     </div>
                                     <div className="w-full bg-muted rounded-full h-2">
                                         <div
-                                            className="h-2 rounded-full transition-all duration-500"
+                                            className={`h-2 rounded-full transition-all duration-500 ${item.spent > 70
+                                                ? "bg-success"
+                                                : item.spent > 40
+                                                    ? "bg-gradient-to-r from-primary to-secondary"
+                                                    : "bg-warning"
+                                                }`}
                                             style={{
                                                 width: `${item.spent}%`,
-                                                backgroundColor:
-                                                    item.spent > 70
-                                                        ? "hsl(var(--success))"
-                                                        : item.spent > 40
-                                                            ? "hsl(var(--primary))"
-                                                            : "hsl(var(--accent))",
                                             }}
                                         />
                                     </div>

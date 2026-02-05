@@ -50,7 +50,7 @@ export function SingleStationAnalytics() {
                     </div>
                     <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
                         <div
-                            className="h-full bg-gradient-to-r from-orange-600 to-gray-600 rounded-full transition-all duration-500"
+                            className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all duration-500"
                             style={{ width: `${Math.round((stationData.formsCompleted / stationData.totalForms) * 100)}%` }}
                         ></div>
                     </div>
@@ -61,8 +61,8 @@ export function SingleStationAnalytics() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 vibrant-glow p-6">
                     <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                            <Activity className="w-5 h-5 text-green-600" />
+                        <div className="w-10 h-10 bg-success/10 rounded-lg flex items-center justify-center">
+                            <Activity className="w-5 h-5 text-success" />
                         </div>
                         <span className="text-sm font-bold text-gray-600">Status</span>
                     </div>
@@ -91,8 +91,8 @@ export function SingleStationAnalytics() {
 
                 <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 vibrant-glow p-6">
                     <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                            <AlertCircle className="w-5 h-5 text-orange-600" />
+                        <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
+                            <AlertCircle className="w-5 h-5 text-primary" />
                         </div>
                         <span className="text-sm font-bold text-gray-600">Spent</span>
                     </div>
@@ -144,7 +144,7 @@ export function SingleStationAnalytics() {
                     </div>
                     <div className="mt-6 grid grid-cols-2 gap-4">
                         <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-orange-600 to-gray-600"></div>
+                            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-primary to-secondary"></div>
                             <span className="text-sm font-medium text-gray-700">Completed: {stationData.formsCompleted}</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -165,7 +165,7 @@ export function SingleStationAnalytics() {
                             </div>
                             <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full bg-gradient-to-r from-orange-600 to-gray-600 rounded-full transition-all duration-500"
+                                    className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all duration-500"
                                     style={{ width: '72%' }}
                                 ></div>
                             </div>
@@ -194,7 +194,7 @@ export function SingleStationAnalytics() {
                 <h3 className="text-xl font-black text-gray-900 mb-6">Project Timeline</h3>
                 <div className="relative">
                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-gray-200"></div>
-                    <div className="absolute left-0 top-0 w-1 bg-gradient-to-b from-orange-600 to-gray-600" style={{ height: '75%' }}></div>
+                    <div className="absolute left-0 top-0 w-1 bg-gradient-to-b from-primary to-secondary" style={{ height: '75%' }}></div>
 
                     <div className="space-y-6 pl-8">
                         <div className="relative">
@@ -245,11 +245,11 @@ export function SingleStationAnalytics() {
                         { name: "Energy License", status: "Active", color: "green" },
                         { name: "Taqyees License", status: "Pending", color: "yellow" },
                     ].map((license) => (
-                        <div key={license.name} className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
-                            <span className="text-sm font-semibold text-gray-700">{license.name}</span>
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${license.color === "green"
-                                ? "bg-green-100 text-green-700"
-                                : "bg-yellow-100 text-yellow-700"
+                        <div key={license.name} className="flex items-center justify-between p-4 bg-muted/30 rounded-xl border border-border">
+                            <span className="text-sm font-semibold text-foreground">{license.name}</span>
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold border ${license.color === "green"
+                                ? "bg-success/10 text-success border-success/20"
+                                : "bg-warning/10 text-warning border-warning/20"
                                 }`}>
                                 {license.status}
                             </span>

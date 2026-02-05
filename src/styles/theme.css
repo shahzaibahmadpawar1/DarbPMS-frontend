@@ -10,8 +10,10 @@
 @theme {
   --color-primary: hsl(24 95% 53%);
   --color-primary-foreground: hsla(0, 0%, 100%, 1.00);
-  --color-secondary: hsl(215 16% 75%);
+  --color-secondary: hsl(215 16% 47%);
   --color-secondary-foreground: hsl(0 0% 100%);
+  --color-sidebar: hsl(222 47% 11%);
+  --color-sidebar-foreground: hsl(0 0% 100%);
   --color-accent: hsl(24 90% 60%);
   --color-accent-foreground: hsl(0 0% 100%);
   --color-background: hsl(0 0% 100%);
@@ -33,8 +35,8 @@
   --color-warning-foreground: hsl(0 0% 100%);
   --color-error: hsl(0 84% 60%);
   --color-error-foreground: hsl(0 0% 100%);
-  --color-info: hsl(215 16% 75%);
-  --color-info-foreground: hsl(222 47% 11%);
+  --color-info: hsl(215 16% 47%);
+  --color-info-foreground: hsl(0 0% 100%);
 
   --shadow-primary: 0 10px 15px -3px hsl(24 95% 53% / 0.1), 0 4px 6px -2px hsl(24 95% 53% / 0.05);
   --shadow-glow: 0 0 20px hsl(24 95% 53% / 0.3), 0 0 40px hsl(24 95% 53% / 0.15);
@@ -61,19 +63,22 @@
   /* ========================================
      SECONDARY COLORS - Slate Grey
      ======================================== */
-  --secondary: 215 16% 75%;              /* Silver */
-  --secondary-foreground: 222 47% 11%;    /* Dark text on silver */
+  --secondary: 215 16% 47%;              /* Slate Grey */
+  --secondary-foreground: 0 0% 100%;      /* White text on slate */
   
-  --secondary-50: 215 16% 95%;           /* Very light silver */
-  --secondary-100: 215 16% 90%;          /* Light silver */
-  --secondary-200: 215 16% 85%;          /* Lighter silver */
-  --secondary-300: 215 16% 80%;          /* Light-medium silver */
-  --secondary-400: 215 16% 75%;          /* Silver (same as secondary) */
-  --secondary-500: 215 16% 70%;          /* Medium silver */
-  --secondary-600: 215 16% 60%;          /* Dark silver */
-  --secondary-700: 215 16% 50%;          /* Darker silver */
-  --secondary-800: 215 16% 40%;          /* Very dark silver */
-  --secondary-900: 215 16% 20%;          /* Deepest silver */
+  --sidebar: 222 47% 11%;                 /* Dark Slate Sidebar */
+  --sidebar-foreground: 0 0% 100%;        /* White text on sidebar */
+  
+  --secondary-50: 215 16% 95%;           /* Very light slate */
+  --secondary-100: 215 16% 90%;          /* Light slate */
+  --secondary-200: 215 16% 80%;          /* Lighter slate */
+  --secondary-300: 215 16% 70%;          /* Light-medium slate */
+  --secondary-400: 215 16% 60%;          /* Medium slate */
+  --secondary-500: 215 16% 47%;          /* Base slate (same as secondary) */
+  --secondary-600: 215 16% 40%;          /* Dark slate */
+  --secondary-700: 215 16% 30%;          /* Darker slate */
+  --secondary-800: 215 16% 20%;          /* Very dark slate */
+  --secondary-900: 215 16% 10%;          /* Deepest slate */
 
   /* ========================================
      ACCENT COLORS
@@ -112,8 +117,8 @@
   --error: 0 84% 60%;                    /* Red for errors */
   --error-foreground: 0 0% 100%;         /* White text */
   
-  --info: 215 16% 75%;                   /* Silver for info */
-  --info-foreground: 222 47% 11%;          /* Dark text */
+  --info: 215 16% 47%;                   /* Slate for info */
+  --info-foreground: 0 0% 100%;          /* White text */
 
   /* ========================================
      STATUS COLORS (Project/Task States)
@@ -122,7 +127,7 @@
   --status-pending: 38 92% 50%;          /* Amber - Pending */
   --status-completed: 142 76% 36%;       /* Green - Completed */
   --status-rejected: 0 84% 60%;          /* Red - Rejected/Failed */
-  --status-planning: 215 16% 75%;        /* Silver - Planning */
+  --status-planning: 215 16% 47%;        /* Slate - Planning */
 
   /* ========================================
      GRADIENTS
@@ -161,7 +166,7 @@
   --chart-2: 215 16% 47%;                /* Grey */
   --chart-3: 142 76% 36%;                /* Green */
   --chart-4: 38 92% 50%;                 /* Amber */
-  --chart-5: 215 16% 75%;                /* Silver */
+  --chart-5: 215 16% 47%;                /* Slate */
 }
 
 /* ========================================

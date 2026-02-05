@@ -97,7 +97,7 @@ input:focus, select:focus, textarea:focus {
    BUTTON UTILITIES (Using Theme Variables)
    ======================================== */
 .btn-primary {
-  background: var(--gradient-primary) !important;
+  background: var(--gradient-primary-to-secondary) !important;
   color: hsl(var(--primary-foreground)) !important;
   box-shadow: var(--shadow-md) !important;
   border: none !important;
@@ -145,7 +145,7 @@ input:focus, select:focus, textarea:focus {
    GRADIENT UTILITIES (Using Theme Variables)
    ======================================== */
 .gradient-primary {
-  background: var(--gradient-primary);
+  background: var(--gradient-primary-to-secondary);
 }
 
 .gradient-primary-to-secondary {
@@ -158,6 +158,10 @@ input:focus, select:focus, textarea:focus {
 
 .gradient-card {
   background: var(--gradient-card);
+}
+
+.sidebar-gradient {
+  background: var(--gradient-primary-to-secondary) !important;
 }
 
 /* ========================================

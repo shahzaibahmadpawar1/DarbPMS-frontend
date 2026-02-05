@@ -11,7 +11,7 @@ export function Dashboard() {
       value: "156",
       icon: <img src={logo} alt="" className="w-8 h-8 object-contain brightness-0 invert" />,
       change: "+12%",
-      color: "bg-primary",
+      color: "bg-gradient-to-br from-primary to-secondary",
       path: "/total-stations",
     },
     {
@@ -43,7 +43,7 @@ export function Dashboard() {
       value: "8",
       icon: <Calendar className="w-8 h-8" />,
       change: "+2%",
-      color: "bg-primary",
+      color: "bg-gradient-to-br from-primary to-secondary",
       path: "/active-projects",
     },
   ];
