@@ -46,10 +46,10 @@ const getTitle = (type: string) => {
 
 const getIcon = (type: string) => {
     switch (type) {
-        case "active-licenses": return <FileText className="w-5 h-5 text-[#6366f1]" />;
-        case "pending-permits": return <Clock className="w-5 h-5 text-[#6366f1]" />;
-        case "active-projects": return <Activity className="w-5 h-5 text-[#6366f1]" />;
-        default: return <FileText className="w-5 h-5 text-[#6366f1]" />;
+        case "active-licenses": return <FileText className="w-5 h-5 text-[#f97316]" />;
+        case "pending-permits": return <Clock className="w-5 h-5 text-[#f97316]" />;
+        case "active-projects": return <Activity className="w-5 h-5 text-[#f97316]" />;
+        default: return <FileText className="w-5 h-5 text-[#f97316]" />;
     }
 };
 
@@ -82,7 +82,7 @@ export function StatItemsList() {
                         <input
                             type="text"
                             placeholder={`Search ${title.toLowerCase()}...`}
-                            className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#6366f1] min-w-[300px]"
+                            className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#f97316] min-w-[300px]"
                         />
                     </div>
                 </div>

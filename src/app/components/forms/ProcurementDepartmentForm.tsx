@@ -97,7 +97,7 @@ export function ProcurementDepartmentForm() {
                                 type="text"
                                 value={formData.productName || ""}
                                 onChange={(e) => setFormData({ ...formData, productName: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
                                 disabled={isReadOnly}
                             />
                         </div>
@@ -107,7 +107,7 @@ export function ProcurementDepartmentForm() {
                                 type="number"
                                 value={formData.quantity || ""}
                                 onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
                                 disabled={isReadOnly}
                             />
                         </div>
@@ -117,7 +117,7 @@ export function ProcurementDepartmentForm() {
                                 type="text"
                                 value={formData.supplier || ""}
                                 onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
                                 disabled={isReadOnly}
                             />
                         </div>
@@ -127,7 +127,7 @@ export function ProcurementDepartmentForm() {
                                 type="number"
                                 value={formData.estimatedCost || ""}
                                 onChange={(e) => setFormData({ ...formData, estimatedCost: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
                                 disabled={isReadOnly}
                             />
                         </div>
@@ -137,7 +137,7 @@ export function ProcurementDepartmentForm() {
                                 type="date"
                                 value={formData.deliveryDate || ""}
                                 onChange={(e) => setFormData({ ...formData, deliveryDate: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
                                 disabled={isReadOnly}
                             />
                         </div>
@@ -146,7 +146,7 @@ export function ProcurementDepartmentForm() {
                             <textarea
                                 value={formData.productDescription || ""}
                                 onChange={(e) => setFormData({ ...formData, productDescription: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
                                 rows={3}
                                 disabled={isReadOnly}
                             />
@@ -162,7 +162,7 @@ export function ProcurementDepartmentForm() {
                             <select
                                 value={formData.itemType || ""}
                                 onChange={(e) => setFormData({ ...formData, itemType: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
                                 disabled={isReadOnly}
                             >
                                 <option value="">Select Item Type</option>
@@ -178,7 +178,7 @@ export function ProcurementDepartmentForm() {
                                 type="text"
                                 value={formData.size || ""}
                                 onChange={(e) => setFormData({ ...formData, size: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
                                 placeholder="e.g., S, M, L, XL"
                                 disabled={isReadOnly}
                             />
@@ -189,7 +189,7 @@ export function ProcurementDepartmentForm() {
                                 type="text"
                                 value={formData.color || ""}
                                 onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
                                 disabled={isReadOnly}
                             />
                         </div>
@@ -199,7 +199,7 @@ export function ProcurementDepartmentForm() {
                                 type="number"
                                 value={formData.quantity || ""}
                                 onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
                                 disabled={isReadOnly}
                             />
                         </div>
@@ -209,7 +209,7 @@ export function ProcurementDepartmentForm() {
                                 type="number"
                                 value={formData.estimatedCost || ""}
                                 onChange={(e) => setFormData({ ...formData, estimatedCost: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
                                 disabled={isReadOnly}
                             />
                         </div>
@@ -272,7 +272,7 @@ export function ProcurementDepartmentForm() {
                             <textarea
                                 value={formData.specifications || ""}
                                 onChange={(e) => setFormData({ ...formData, specifications: e.target.value })}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
                                 rows={3}
                                 placeholder="Add any additional notes or requirements for this quotation request"
                                 disabled={isReadOnly}
@@ -304,7 +304,7 @@ export function ProcurementDepartmentForm() {
                         <button
                             onClick={() => setViewMode('form')}
                             className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'form'
-                                ? 'bg-white text-[#6366f1] shadow-sm'
+                                ? 'bg-white text-[#f97316] shadow-sm'
                                 : 'text-gray-500 hover:text-gray-700'
                                 }`}
                         >
@@ -314,7 +314,7 @@ export function ProcurementDepartmentForm() {
                         <button
                             onClick={() => setViewMode('records')}
                             className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'records'
-                                ? 'bg-white text-[#6366f1] shadow-sm'
+                                ? 'bg-white text-[#f97316] shadow-sm'
                                 : 'text-gray-500 hover:text-gray-700'
                                 }`}
                         >
@@ -347,7 +347,7 @@ export function ProcurementDepartmentForm() {
                                 <select
                                     value={formData.requestType}
                                     onChange={(e) => setFormData({ ...formData, requestType: e.target.value as RequestType })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
                                     required
                                     disabled={isReadOnly}
                                 >
@@ -367,7 +367,7 @@ export function ProcurementDepartmentForm() {
                                     type="text"
                                     value={formData.requestNumber}
                                     onChange={(e) => setFormData({ ...formData, requestNumber: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
                                     required
                                     disabled={isReadOnly}
                                 />
@@ -378,7 +378,7 @@ export function ProcurementDepartmentForm() {
                                     type="date"
                                     value={formData.requestDate}
                                     onChange={(e) => setFormData({ ...formData, requestDate: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
                                     disabled={isReadOnly}
                                 />
                             </div>
@@ -388,7 +388,7 @@ export function ProcurementDepartmentForm() {
                                     type="text"
                                     value={formData.requester}
                                     onChange={(e) => setFormData({ ...formData, requester: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
                                     disabled={isReadOnly}
                                 />
                             </div>
@@ -398,7 +398,7 @@ export function ProcurementDepartmentForm() {
                                     type="text"
                                     value={formData.department}
                                     onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
                                     disabled={isReadOnly}
                                 />
                             </div>
@@ -407,7 +407,7 @@ export function ProcurementDepartmentForm() {
                                 <select
                                     value={formData.priority}
                                     onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
                                     disabled={isReadOnly}
                                 >
                                     <option value="">Select Priority</option>
@@ -422,7 +422,7 @@ export function ProcurementDepartmentForm() {
                                 <select
                                     value={formData.status}
                                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
                                     disabled={isReadOnly}
                                 >
                                     <option value="">Select Status</option>
@@ -459,7 +459,7 @@ export function ProcurementDepartmentForm() {
                                 <textarea
                                     value={formData.notes}
                                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
                                     rows={4}
                                     placeholder="Add any additional notes or comments"
                                     disabled={isReadOnly}
@@ -515,7 +515,7 @@ export function ProcurementDepartmentForm() {
                         <div className="flex justify-end">
                             <button
                                 type="submit"
-                                className="bg-[#6366f1] hover:bg-[#818cf8] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
+                                className="bg-[#f97316] hover:bg-[#fb923c] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
                             >
                                 <Save className="w-5 h-5" />
                                 Save Procurement Request

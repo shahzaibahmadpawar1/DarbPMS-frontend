@@ -9,9 +9,11 @@ import {
     MessageCircle,
     FileText,
     PlusCircle,
+    ClipboardList,
 } from "lucide-react";
 import { BackToDashboardButton } from "./BackToDashboardButton";
 import { LanguageSwitcher } from "./LanguageSwitcher";
+import { BrandName } from "./BrandName";
 import { ChatWidget } from "./ChatWidget";
 import logo from "../../assets/logo.png";
 
@@ -25,6 +27,7 @@ const navigation: NavItem[] = [
     { title: "Dashboard", path: "/all-stations-dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
     { title: "Analytics", path: "/all-stations-analytics", icon: <Activity className="w-5 h-5" /> },
     { title: "Stations", path: "/all-stations-list", icon: <img src={logo} alt="" className="w-5 h-5 object-contain brightness-0 invert" /> },
+    { title: "Tasks", path: "/all-stations-tasks", icon: <ClipboardList className="w-5 h-5" /> },
     { title: "Reports", path: "/all-stations-reports", icon: <FileText className="w-5 h-5" /> },
     { title: "Contact CEO Office", path: "/all-stations-contact-ceo", icon: <MessageCircle className="w-5 h-5" /> },
 ];
@@ -39,9 +42,9 @@ export function AllStationsDashboardLayout() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-violet-50 via-cyan-50 to-pink-50 flex relative overflow-hidden">
+        <div className="min-h-screen bg-gradient-to-br from-orange-50 via-gray-50 to-pink-50 flex relative overflow-hidden">
             {/* Animated mesh gradient overlay */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-violet-100/30 via-transparent to-cyan-100/30 pointer-events-none"></div>
+            <div className="absolute inset-0 bg-gradient-to-tr from-orange-100/30 via-transparent to-gray-100/30 pointer-events-none"></div>
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.08),transparent_50%)] pointer-events-none"></div>
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(6,182,212,0.08),transparent_50%)] pointer-events-none"></div>
 
@@ -50,9 +53,9 @@ export function AllStationsDashboardLayout() {
                 {/* Sidebar */}
                 <aside
                     className={`${sidebarOpen ? "w-72" : "w-20"
-                        } transition-all duration-300 bg-gradient-to-br from-violet-600 via-purple-600 to-cyan-500 text-white flex flex-col fixed inset-y-4 ltr:left-4 rtl:right-4 z-10 shadow-2xl backdrop-blur-xl rounded-[2.5rem] overflow-hidden`}
+                        } transition-all duration-300 bg-gradient-to-br from-orange-600 via-orange-500 to-gray-600 text-white flex flex-col fixed inset-y-4 ltr:left-4 rtl:right-4 z-10 shadow-2xl backdrop-blur-xl rounded-[2.5rem] overflow-hidden`}
                     style={{
-                        boxShadow: '0 0 60px rgba(139, 92, 246, 0.4), 0 0 120px rgba(6, 182, 212, 0.2)'
+                        boxShadow: '0 0 60px rgba(249, 115, 22, 0.4), 0 0 120px rgba(107, 114, 128, 0.2)'
                     }}
                 >
                     {/* Logo & Toggle */}
@@ -63,7 +66,7 @@ export function AllStationsDashboardLayout() {
                                     <img src={logo} alt="Darb Logo" className="w-full h-full object-contain" />
                                 </div>
                                 <div>
-                                    <h1 className="font-bold text-lg text-white drop-shadow-lg">Darb</h1>
+                                    <h1 className="font-bold text-lg text-white drop-shadow-lg"><BrandName /></h1>
                                     <p className="text-xs text-white/80">All Stations</p>
                                 </div>
                             </div>
@@ -131,12 +134,12 @@ export function AllStationsDashboardLayout() {
                         } transition-all duration-300 relative z-0`}
                 >
                     {/* Header */}
-                    <header className="bg-white/80 backdrop-blur-xl m-4 rounded-2xl border border-violet-100 px-8 py-4 sticky top-4 z-10 shadow-lg shadow-violet-100/50 flex items-center justify-between">
+                    <header className="bg-white/80 backdrop-blur-xl m-4 rounded-2xl border border-orange-100 px-8 py-4 sticky top-4 z-10 shadow-lg shadow-orange-100/50 flex items-center justify-between">
                         <BackToDashboardButton />
                         <div className="flex items-center gap-4">
                             <Link
                                 to="/add-new-project"
-                                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-violet-600 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-sm"
+                                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-orange-600 to-gray-500 text-white rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-sm"
                             >
                                 <PlusCircle className="w-4 h-4" />
                                 <span>Add New Project</span>

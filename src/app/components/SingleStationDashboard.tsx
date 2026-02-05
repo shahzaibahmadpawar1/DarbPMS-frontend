@@ -129,7 +129,7 @@ export function SingleStationDashboard() {
                     </div>
                     <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
                         <div
-                            className="h-full bg-gradient-to-r from-violet-600 to-cyan-500 rounded-full transition-all duration-500"
+                            className="h-full bg-gradient-to-r from-orange-600 to-gray-600 rounded-full transition-all duration-500"
                             style={{ width: `${stationData.completion}%` }}
                         ></div>
                     </div>

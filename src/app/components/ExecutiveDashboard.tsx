@@ -17,6 +17,7 @@ import {
     ComposedChart,
 } from "recharts";
 import { AlertTriangle, TrendingUp, TrendingDown } from "lucide-react";
+import { BrandName } from "./BrandName";
 
 // Progress Gauge Component
 function CircularProgressGauge({
@@ -52,7 +53,7 @@ function CircularProgressGauge({
                     {/* Progress circle with vibrant gradient */}
                     <defs>
                         <linearGradient id={`circleGradient-${label}`} x1="0%" y1="0%" x2="100%" y2="0%">
-                            <stop offset="0%" stopColor="#8b5cf6" />
+                            <stop offset="0%" stopColor="#f97316" />
                             <stop offset="100%" stopColor="#06b6d4" />
                         </linearGradient>
                     </defs>
@@ -110,7 +111,7 @@ function SpeedometerGauge({ value, label, max = 100 }: { value: number; label: s
                     <defs>
                         <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                             <stop offset="0%" stopColor="#ef4444" />
-                            <stop offset="50%" stopColor="#8b5cf6" />
+                            <stop offset="50%" stopColor="#f97316" />
                             <stop offset="100%" stopColor="#06b6d4" />
                         </linearGradient>
                     </defs>
@@ -155,7 +156,7 @@ export function ExecutiveDashboard() {
     // Task tracking data for donut chart
     const taskData = [
         { name: "Complete", value: 45, color: "#10b981" },
-        { name: "In Progress", value: 30, color: "#3b82f6" },
+        { name: "In Progress", value: 30, color: "#f97316" },
         { name: "Pending", value: 15, color: "#f59e0b" },
         { name: "Blocked", value: 10, color: "#ef4444" },
     ];
@@ -198,9 +199,9 @@ export function ExecutiveDashboard() {
 
     // Regional expenses
     // const regionalData = [
-    //   { region: "North America", amount: 14.2, color: "#3b82f6" },
+    //   { region: "North America", amount: 14.2, color: "#f97316" },
     //   { region: "South America", amount: 9.1, color: "#10b981" },
-    //   { region: "Europe", amount: 2.5, color: "#8b5cf6" },
+    //   { region: "Europe", amount: 2.5, color: "#f97316" },
     //   { region: "Asia Pacific", amount: 5.8, color: "#f59e0b" },
     //   { region: "Middle East", amount: 11.8, color: "#ef4444" },
     //   { region: "Africa", amount: 8.0, color: "#06b6d4" },
@@ -259,8 +260,8 @@ export function ExecutiveDashboard() {
     // Spend by phase data
     const spendByPhase = [
         { phase: "Phase 1", value: 85, color: "#10b981" },
-        { phase: "Phase 2", value: 68, color: "#3b82f6" },
-        { phase: "Phase 3", value: 52, color: "#8b5cf6" },
+        { phase: "Phase 2", value: 68, color: "#f97316" },
+        { phase: "Phase 3", value: 52, color: "#f97316" },
         { phase: "Phase 4", value: 35, color: "#f59e0b" },
         { phase: "Phase 5", value: 20, color: "#ef4444" },
     ];
@@ -273,7 +274,7 @@ export function ExecutiveDashboard() {
                     <h1 className="text-3xl font-bold text-[#020713] mb-2">
                         Project Progress YTD - March 2026
                     </h1>
-                    <p className="text-gray-600">Darb Station Executive Dashboard</p>
+                    <p className="text-gray-600"><BrandName /> Station Executive Dashboard</p>
                 </div>
 
                 {/* Top Section - Circular Progress Gauges */}
@@ -381,7 +382,7 @@ export function ExecutiveDashboard() {
                                     <Line
                                         type="monotone"
                                         dataKey="planned"
-                                        stroke="#3b82f6"
+                                        stroke="#f97316"
                                         strokeWidth={2}
                                         dot={{ r: 3 }}
                                         name="Planned"
@@ -426,7 +427,7 @@ export function ExecutiveDashboard() {
                                             color: "#1e293b",
                                         }}
                                     />
-                                    <Bar dataKey="days" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                                    <Bar dataKey="days" fill="#f97316" radius={[4, 4, 0, 0]} />
                                 </BarChart>
                             </ResponsiveContainer>
                         </div>
@@ -459,7 +460,7 @@ export function ExecutiveDashboard() {
                                     />
                                     <Bar
                                         dataKey="planned"
-                                        fill="#6366f1"
+                                        fill="#f97316"
                                         radius={[4, 4, 0, 0]}
                                         name="Planned"
                                     />
@@ -558,8 +559,8 @@ export function ExecutiveDashboard() {
                                                     item.spent > 70
                                                         ? "#10b981"
                                                         : item.spent > 40
-                                                            ? "#3b82f6"
-                                                            : "#60a5fa",
+                                                            ? "#f97316"
+                                                            : "#fb923c",
                                             }}
                                         />
                                     </div>
@@ -636,7 +637,7 @@ export function ExecutiveDashboard() {
 
                             {/* Mechanical */}
                             <div className="bg-gray-50 rounded-lg p-3 border border-gray-100">
-                                <div className="text-xs font-semibold text-[#3b82f6] mb-3">
+                                <div className="text-xs font-semibold text-[#f97316] mb-3">
                                     Mechanical
                                 </div>
                                 <div className="space-y-2">

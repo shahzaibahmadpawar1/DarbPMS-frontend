@@ -51,7 +51,7 @@ export function SingleStationAnalytics() {
                     </div>
                     <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
                         <div
-                            className="h-full bg-gradient-to-r from-violet-600 to-cyan-500 rounded-full transition-all duration-500"
+                            className="h-full bg-gradient-to-r from-orange-600 to-gray-600 rounded-full transition-all duration-500"
                             style={{ width: `${Math.round((stationData.formsCompleted / stationData.totalForms) * 100)}%` }}
                         ></div>
                     </div>
@@ -132,7 +132,7 @@ export function SingleStationAnalytics() {
                                 />
                                 <defs>
                                     <linearGradient id="gradient1" x1="0%" y1="0%" x2="100%" y2="100%">
-                                        <stop offset="0%" stopColor="#8b5cf6" />
+                                        <stop offset="0%" stopColor="#f97316" />
                                         <stop offset="100%" stopColor="#06b6d4" />
                                     </linearGradient>
                                 </defs>
@@ -145,7 +145,7 @@ export function SingleStationAnalytics() {
                     </div>
                     <div className="mt-6 grid grid-cols-2 gap-4">
                         <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-violet-600 to-cyan-500"></div>
+                            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-orange-600 to-gray-600"></div>
                             <span className="text-sm font-medium text-gray-700">Completed: {stationData.formsCompleted}</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -166,7 +166,7 @@ export function SingleStationAnalytics() {
                             </div>
                             <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full bg-gradient-to-r from-violet-600 to-cyan-500 rounded-full transition-all duration-500"
+                                    className="h-full bg-gradient-to-r from-orange-600 to-gray-600 rounded-full transition-all duration-500"
                                     style={{ width: '72%' }}
                                 ></div>
                             </div>
@@ -195,7 +195,7 @@ export function SingleStationAnalytics() {
                 <h3 className="text-xl font-black text-gray-900 mb-6">Project Timeline</h3>
                 <div className="relative">
                     <div className="absolute left-0 top-0 bottom-0 w-1 bg-gray-200"></div>
-                    <div className="absolute left-0 top-0 w-1 bg-gradient-to-b from-violet-600 to-cyan-500" style={{ height: '75%' }}></div>
+                    <div className="absolute left-0 top-0 w-1 bg-gradient-to-b from-orange-600 to-gray-600" style={{ height: '75%' }}></div>
 
                     <div className="space-y-6 pl-8">
                         <div className="relative">

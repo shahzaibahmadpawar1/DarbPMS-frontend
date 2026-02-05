@@ -48,7 +48,7 @@ export function OwnerInformationForm() {
             <button
               onClick={() => setViewMode('form')}
               className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'form'
-                ? 'bg-white text-[#6366f1] shadow-sm'
+                ? 'bg-white text-[#f97316] shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
                 }`}
             >
@@ -58,7 +58,7 @@ export function OwnerInformationForm() {
             <button
               onClick={() => setViewMode('records')}
               className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'records'
-                ? 'bg-white text-[#6366f1] shadow-sm'
+                ? 'bg-white text-[#f97316] shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
                 }`}
             >
@@ -87,7 +87,7 @@ export function OwnerInformationForm() {
                 type="text"
                 value={formData.ownerId}
                 onChange={(e) => setFormData({ ...formData, ownerId: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                 required
                 disabled={isReadOnly}
               />
@@ -100,7 +100,7 @@ export function OwnerInformationForm() {
                 type="text"
                 value={formData.ownerName}
                 onChange={(e) => setFormData({ ...formData, ownerName: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                 required
                 disabled={isReadOnly}
               />
@@ -111,7 +111,7 @@ export function OwnerInformationForm() {
                 type="date"
                 value={formData.idIssueDate}
                 onChange={(e) => setFormData({ ...formData, idIssueDate: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                 disabled={isReadOnly}
               />
             </div>
@@ -121,7 +121,7 @@ export function OwnerInformationForm() {
                 type="text"
                 value={formData.idIssuePlace}
                 onChange={(e) => setFormData({ ...formData, idIssuePlace: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                 disabled={isReadOnly}
               />
             </div>
@@ -131,7 +131,7 @@ export function OwnerInformationForm() {
                 type="tel"
                 value={formData.ownerMobile}
                 onChange={(e) => setFormData({ ...formData, ownerMobile: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                 disabled={isReadOnly}
               />
             </div>
@@ -141,7 +141,7 @@ export function OwnerInformationForm() {
                 type="email"
                 value={formData.ownerEmail}
                 onChange={(e) => setFormData({ ...formData, ownerEmail: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                 disabled={isReadOnly}
               />
             </div>
@@ -150,7 +150,7 @@ export function OwnerInformationForm() {
               <textarea
                 value={formData.ownerAddress}
                 onChange={(e) => setFormData({ ...formData, ownerAddress: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                 rows={3}
                 disabled={isReadOnly}
               />
@@ -160,7 +160,7 @@ export function OwnerInformationForm() {
               <select
                 value={formData.stationTypeCode}
                 onChange={(e) => setFormData({ ...formData, stationTypeCode: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                 disabled={isReadOnly}
               >
                 <option value="">Select Type</option>
@@ -176,7 +176,7 @@ export function OwnerInformationForm() {
                 type="text"
                 value={formData.stationCode}
                 onChange={(e) => setFormData({ ...formData, stationCode: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                 disabled={isReadOnly}
               />
             </div>
@@ -186,7 +186,7 @@ export function OwnerInformationForm() {
             <div className="flex justify-end mt-6">
               <button
                 type="submit"
-                className="bg-[#6366f1] hover:bg-[#818cf8] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
+                className="bg-[#f97316] hover:bg-[#fb923c] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
               >
                 <Save className="w-5 h-5" />
                 Save Owner Information

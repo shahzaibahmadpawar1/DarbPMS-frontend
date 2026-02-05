@@ -62,7 +62,7 @@ export function StationInformationForm() {
             <button
               onClick={() => setViewMode('form')}
               className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'form'
-                ? 'bg-white text-[#6366f1] shadow-sm'
+                ? 'bg-white text-[#f97316] shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
                 }`}
             >
@@ -72,7 +72,7 @@ export function StationInformationForm() {
             <button
               onClick={() => setViewMode('records')}
               className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'records'
-                ? 'bg-white text-[#6366f1] shadow-sm'
+                ? 'bg-white text-[#f97316] shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
                 }`}
             >
@@ -91,7 +91,7 @@ export function StationInformationForm() {
       </div>
 
       {viewMode === 'form' ? (
-        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-xl p-8 vibrant-glow border-t-4 border-violet-600 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <form onSubmit={handleSubmit} className="bg-white rounded-xl shadow-xl p-8 vibrant-glow border-t-4 border-orange-600 relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
           {/* Basic Information */}
           <div className="mb-6">
             <h2 className="text-xl font-semibold text-[#020713] mb-4 border-b border-[#D2C29C] pb-2">
@@ -106,7 +106,7 @@ export function StationInformationForm() {
                   type="text"
                   value={formData.stationCode}
                   onChange={(e) => setFormData({ ...formData, stationCode: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   required
                   disabled={isReadOnly}
                 />
@@ -119,7 +119,7 @@ export function StationInformationForm() {
                   type="text"
                   value={formData.stationName}
                   onChange={(e) => setFormData({ ...formData, stationName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   required
                   disabled={isReadOnly}
                 />
@@ -131,7 +131,7 @@ export function StationInformationForm() {
                 <select
                   value={formData.stationTypeCode}
                   onChange={(e) => setFormData({ ...formData, stationTypeCode: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   disabled={isReadOnly}
                 >
                   <option value="">Select Type</option>
@@ -156,7 +156,7 @@ export function StationInformationForm() {
                   type="text"
                   value={formData.areaRegion}
                   onChange={(e) => setFormData({ ...formData, areaRegion: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   disabled={isReadOnly}
                 />
               </div>
@@ -166,7 +166,7 @@ export function StationInformationForm() {
                   type="text"
                   value={formData.city}
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   disabled={isReadOnly}
                 />
               </div>
@@ -176,7 +176,7 @@ export function StationInformationForm() {
                   type="text"
                   value={formData.sector}
                   onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   disabled={isReadOnly}
                 />
               </div>
@@ -186,7 +186,7 @@ export function StationInformationForm() {
                   type="text"
                   value={formData.district}
                   onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   disabled={isReadOnly}
                 />
               </div>
@@ -196,7 +196,7 @@ export function StationInformationForm() {
                   type="text"
                   value={formData.street}
                   onChange={(e) => setFormData({ ...formData, street: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   disabled={isReadOnly}
                 />
               </div>
@@ -206,7 +206,7 @@ export function StationInformationForm() {
                   type="url"
                   value={formData.geographicLocation}
                   onChange={(e) => setFormData({ ...formData, geographicLocation: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   placeholder="https://maps.google.com/..."
                   disabled={isReadOnly}
                 />
@@ -226,7 +226,7 @@ export function StationInformationForm() {
                   type="number"
                   value={formData.stationSpace}
                   onChange={(e) => setFormData({ ...formData, stationSpace: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   disabled={isReadOnly}
                 />
               </div>
@@ -236,7 +236,7 @@ export function StationInformationForm() {
                   type="number"
                   value={formData.canopySpace}
                   onChange={(e) => setFormData({ ...formData, canopySpace: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   disabled={isReadOnly}
                 />
               </div>
@@ -246,7 +246,7 @@ export function StationInformationForm() {
                   type="number"
                   value={formData.frontYardsSpace}
                   onChange={(e) => setFormData({ ...formData, frontYardsSpace: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   disabled={isReadOnly}
                 />
               </div>
@@ -256,7 +256,7 @@ export function StationInformationForm() {
                   type="number"
                   value={formData.throwbackYardsSpace}
                   onChange={(e) => setFormData({ ...formData, throwbackYardsSpace: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   disabled={isReadOnly}
                 />
               </div>
@@ -266,7 +266,7 @@ export function StationInformationForm() {
                   type="number"
                   value={formData.mosqueSpace}
                   onChange={(e) => setFormData({ ...formData, mosqueSpace: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   disabled={isReadOnly}
                 />
               </div>
@@ -276,7 +276,7 @@ export function StationInformationForm() {
                   type="number"
                   value={formData.restRoomSpace}
                   onChange={(e) => setFormData({ ...formData, restRoomSpace: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   disabled={isReadOnly}
                 />
               </div>
@@ -286,7 +286,7 @@ export function StationInformationForm() {
                   type="number"
                   value={formData.residentLaborSpace}
                   onChange={(e) => setFormData({ ...formData, residentLaborSpace: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   disabled={isReadOnly}
                 />
               </div>
@@ -296,7 +296,7 @@ export function StationInformationForm() {
                   type="number"
                   value={formData.officeSpace}
                   onChange={(e) => setFormData({ ...formData, officeSpace: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   disabled={isReadOnly}
                 />
               </div>
@@ -306,7 +306,7 @@ export function StationInformationForm() {
                   type="number"
                   value={formData.rentalUnitsSpace}
                   onChange={(e) => setFormData({ ...formData, rentalUnitsSpace: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   disabled={isReadOnly}
                 />
               </div>
@@ -325,7 +325,7 @@ export function StationInformationForm() {
                   type="number"
                   value={formData.numberOfRentalUnits}
                   onChange={(e) => setFormData({ ...formData, numberOfRentalUnits: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   disabled={isReadOnly}
                 />
               </div>
@@ -335,7 +335,7 @@ export function StationInformationForm() {
                   type="number"
                   value={formData.numberOfUndergroundTanks}
                   onChange={(e) => setFormData({ ...formData, numberOfUndergroundTanks: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   disabled={isReadOnly}
                 />
               </div>
@@ -344,7 +344,7 @@ export function StationInformationForm() {
                 <select
                   value={formData.stationStatusCode}
                   onChange={(e) => setFormData({ ...formData, stationStatusCode: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   disabled={isReadOnly}
                 >
                   <option value="">Select Status</option>
@@ -362,7 +362,7 @@ export function StationInformationForm() {
             <div className="flex justify-end">
               <button
                 type="submit"
-                className="bg-[#6366f1] hover:bg-[#818cf8] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
+                className="bg-[#f97316] hover:bg-[#fb923c] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
               >
                 <Save className="w-5 h-5" />
                 Save Station Information

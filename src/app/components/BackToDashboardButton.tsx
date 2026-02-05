@@ -19,7 +19,7 @@ export function BackToDashboardButton() {
         <div className="flex gap-2">
             <button
                 onClick={() => navigate(-1)}
-                className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-[#6366f1] hover:bg-gray-100 rounded-lg transition-all duration-200 border border-gray-300 hover:border-[#6366f1]"
+                className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-[#f97316] hover:bg-gray-100 rounded-lg transition-all duration-200 border border-gray-300 hover:border-[#f97316]"
                 title="Go back to previous page"
             >
                 <ArrowLeft className="w-4 h-4" />
@@ -28,7 +28,7 @@ export function BackToDashboardButton() {
 
             <button
                 onClick={() => navigate(dashboardPath)}
-                className="flex items-center gap-2 px-4 py-2 bg-[#6366f1] hover:bg-[#818cf8] text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                className="flex items-center gap-2 px-4 py-2 bg-[#f97316] hover:bg-[#fb923c] text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
                 title="Return to dashboard"
             >
                 <Home className="w-4 h-4" />

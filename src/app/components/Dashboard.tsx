@@ -1,4 +1,5 @@
-import { FileCheck, Clock, Activity, AlertCircle, CheckCircle, Calendar } from "lucide-react";
+import { Building2, Clock, AlertCircle, CheckCircle, Calendar } from "lucide-react";
+import { BrandName } from "./BrandName";
 import { Link, useNavigate } from "react-router-dom";
 import { ExecutiveDashboard } from "./ExecutiveDashboard";
 import logo from "../../assets/logo.png";
@@ -11,7 +12,7 @@ export function Dashboard() {
       value: "156",
       icon: <img src={logo} alt="" className="w-8 h-8 object-contain brightness-0 invert" />,
       change: "+12%",
-      color: "bg-[#6366f1]",
+      color: "bg-[#f97316]",
       path: "/total-stations",
     },
     {
@@ -43,7 +44,7 @@ export function Dashboard() {
       value: "8",
       icon: <Calendar className="w-8 h-8" />,
       change: "+2%",
-      color: "bg-violet-500",
+      color: "bg-orange-500",
       path: "/active-projects",
     },
   ];
@@ -65,8 +66,8 @@ export function Dashboard() {
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#020713] mb-2">Dashboard</h1>
-        <p className="text-gray-600">Darb Project Management & Tracking System</p>
+        <h1 className="text-4xl font-black text-gray-900 mb-2 tracking-tight">Dashboard</h1>
+        <p className="text-gray-600"><BrandName /> Project Management & Tracking System</p>
       </div>
 
       {/* Stats Grid */}
@@ -77,9 +78,9 @@ export function Dashboard() {
             to={stat.path}
             className="bg-white rounded-xl shadow-md p-6 vibrant-glow-hover vibrant-glow transition-all block group relative overflow-hidden"
           >
-            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-transparent via-violet-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-transparent via-orange-500 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
             <div className="flex items-center justify-between mb-4">
-              <div className={`${stat.color} text-white p-3 rounded-xl shadow-lg shadow-violet-200`}>
+              <div className={`${stat.color} text-white p-3 rounded-xl shadow-lg shadow-orange-200`}>
                 {stat.icon}
               </div>
               <span className={`text-sm font-semibold ${stat.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
@@ -96,7 +97,7 @@ export function Dashboard() {
       <div className="bg-white rounded-xl shadow-xl p-8 mb-8 vibrant-glow relative overflow-hidden">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-xl font-bold text-[#020713]">Total Stations Progress</h2>
-          <Link to="/total-stations" className="text-[#6366f1] text-sm font-semibold hover:underline">View All</Link>
+          <Link to="/total-stations" className="text-[#f97316] text-sm font-semibold hover:underline">View All</Link>
         </div>
         <div className="space-y-6">
           {stations.map((station, index) => (
@@ -106,11 +107,11 @@ export function Dashboard() {
                   <p className="font-bold text-[#020713]">{station.name}</p>
                   <span className="text-xs text-gray-500">{station.status}</span>
                 </div>
-                <span className="text-sm font-bold text-[#6366f1]">{station.completion}%</span>
+                <span className="text-sm font-bold text-[#f97316]">{station.completion}%</span>
               </div>
               <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-violet-500 via-indigo-500 to-cyan-500 transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-orange-500 via-orange-500 to-gray-500 transition-all duration-500"
                   style={{ width: `${station.completion}%` }}
                 />
               </div>
@@ -126,7 +127,7 @@ export function Dashboard() {
           {recentActivities.map((activity, index) => (
             <div
               key={index}
-              className="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:border-violet-400 hover:shadow-lg hover:shadow-violet-100 transition-all bg-white/50 backdrop-blur-sm"
+              className="flex items-center justify-between p-4 border border-gray-100 rounded-xl hover:border-orange-400 hover:shadow-lg hover:shadow-orange-100 transition-all bg-white/50 backdrop-blur-sm"
             >
               <div>
                 <p className="font-medium text-[#020713]">{activity.action}</p>

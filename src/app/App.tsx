@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { DashboardLayout } from "@/app/components/DashboardLayout";
 import { Dashboard } from "@/app/components/Dashboard";
 import { ExecutiveDashboard } from "@/app/components/ExecutiveDashboard";
@@ -43,6 +43,7 @@ import { SingleStationAnalytics } from "@/app/components/SingleStationAnalytics"
 import { SingleStationDashboard } from "@/app/components/SingleStationDashboard";
 import { ReportsPage } from "@/app/components/ReportsPage";
 import { AddNewProjectForm } from "@/app/components/AddNewProjectForm";
+import { TasksPage } from "@/app/components/TasksPage";
 import { StationProvider } from "@/app/context/StationContext";
 
 function App() {
@@ -62,6 +63,7 @@ function App() {
             <Route path="/all-stations-dashboard" element={<Dashboard />} />
             <Route path="/all-stations-analytics" element={<ExecutiveDashboard />} />
             <Route path="/all-stations-list" element={<AllStationsListPage />} />
+            <Route path="/all-stations-tasks" element={<TasksPage />} />
             <Route path="/all-stations-reports" element={<ReportsPage />} />
             <Route path="/station/:stationId/analytics" element={<StationAnalyticsPage />} />
             <Route path="/all-stations-contact-ceo" element={<ComplaintContactForm />} />
@@ -102,6 +104,7 @@ function App() {
           <Route path="/dashboard" element={<DashboardLayout />}>
             <Route index element={<SingleStationDashboard />} />
             <Route path="executive-analytics" element={<SingleStationAnalytics />} />
+            <Route path="tasks" element={<TasksPage />} />
             <Route path="reports" element={<ReportsPage />} />
 
             {/* Stats Lists */}

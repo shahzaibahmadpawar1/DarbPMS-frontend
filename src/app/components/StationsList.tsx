@@ -45,12 +45,12 @@ export function StationsList() {
                         <input
                             type="text"
                             placeholder="Search stations..."
-                            className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#6366f1] min-w-[300px]"
+                            className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#f97316] min-w-[300px]"
                         />
                     </div>
                     <button
                         onClick={() => navigate("/station-information")}
-                        className="bg-[#6366f1] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#818cf8] transition-colors"
+                        className="bg-[#f97316] text-white px-4 py-2 rounded-lg font-medium hover:bg-[#fb923c] transition-colors"
                     >
                         Add New Station
                     </button>
@@ -74,7 +74,7 @@ export function StationsList() {
                                 <tr key={station.id} className="hover:bg-gray-50/50 transition-colors group">
                                     <td className="px-6 py-4">
                                         <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-violet-50 rounded-lg text-[#6366f1]">
+                                            <div className="p-2 bg-violet-50 rounded-lg text-[#f97316]">
                                                 <Gauge className="w-5 h-5" />
                                             </div>
                                             <div>
@@ -107,7 +107,7 @@ export function StationsList() {
                                             </div>
                                             <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
                                                 <div
-                                                    className="h-full bg-gradient-to-r from-[#6366f1] to-[#818cf8] transition-all duration-500"
+                                                    className="h-full bg-gradient-to-r from-[#f97316] to-[#fb923c] transition-all duration-500"
                                                     style={{ width: `${station.completion}%` }}
                                                 />
                                             </div>

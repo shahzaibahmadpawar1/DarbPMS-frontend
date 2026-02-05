@@ -43,7 +43,7 @@ export function InvestmentForm() {
                         <button
                             onClick={() => setViewMode('form')}
                             className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'form'
-                                ? 'bg-white text-[#6366f1] shadow-sm'
+                                ? 'bg-white text-[#f97316] shadow-sm'
                                 : 'text-gray-500 hover:text-gray-700'
                                 }`}
                         >
@@ -53,7 +53,7 @@ export function InvestmentForm() {
                         <button
                             onClick={() => setViewMode('records')}
                             className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'records'
-                                ? 'bg-white text-[#6366f1] shadow-sm'
+                                ? 'bg-white text-[#f97316] shadow-sm'
                                 : 'text-gray-500 hover:text-gray-700'
                                 }`}
                         >
@@ -86,7 +86,7 @@ export function InvestmentForm() {
                                     type="text"
                                     value={formData.projectId}
                                     onChange={(e) => setFormData({ ...formData, projectId: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                                     required
                                     disabled={isReadOnly}
                                 />
@@ -97,7 +97,7 @@ export function InvestmentForm() {
                                     type="text"
                                     value={formData.projectName}
                                     onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                                     disabled={isReadOnly}
                                 />
                             </div>
@@ -107,7 +107,7 @@ export function InvestmentForm() {
                                     type="number"
                                     value={formData.investmentAmount}
                                     onChange={(e) => setFormData({ ...formData, investmentAmount: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                                     disabled={isReadOnly}
                                 />
                             </div>
@@ -117,7 +117,7 @@ export function InvestmentForm() {
                                     type="date"
                                     value={formData.startDate}
                                     onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                                     disabled={isReadOnly}
                                 />
                             </div>
@@ -127,7 +127,7 @@ export function InvestmentForm() {
                                     type="number"
                                     value={formData.expectedROI}
                                     onChange={(e) => setFormData({ ...formData, expectedROI: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                                     disabled={isReadOnly}
                                 />
                             </div>
@@ -136,7 +136,7 @@ export function InvestmentForm() {
                                 <select
                                     value={formData.status}
                                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                                     disabled={isReadOnly}
                                 >
                                     <option value="">Select Status</option>
@@ -152,7 +152,7 @@ export function InvestmentForm() {
                                     type="text"
                                     value={formData.investorName}
                                     onChange={(e) => setFormData({ ...formData, investorName: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                                     disabled={isReadOnly}
                                 />
                             </div>
@@ -161,7 +161,7 @@ export function InvestmentForm() {
                                 <textarea
                                     value={formData.notes}
                                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                                     rows={3}
                                     disabled={isReadOnly}
                                 />
@@ -173,7 +173,7 @@ export function InvestmentForm() {
                         <div className="flex justify-end">
                             <button
                                 type="submit"
-                                className="bg-[#6366f1] hover:bg-[#818cf8] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
+                                className="bg-[#f97316] hover:bg-[#fb923c] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
                             >
                                 <Save className="w-5 h-5" />
                                 Save Investment

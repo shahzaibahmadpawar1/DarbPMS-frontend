@@ -55,7 +55,7 @@ export function DeedInformationForm() {
             <button
               onClick={() => setViewMode('form')}
               className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'form'
-                ? 'bg-white text-[#6366f1] shadow-sm'
+                ? 'bg-white text-[#f97316] shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
                 }`}
             >
@@ -65,7 +65,7 @@ export function DeedInformationForm() {
             <button
               onClick={() => setViewMode('records')}
               className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'records'
-                ? 'bg-white text-[#6366f1] shadow-sm'
+                ? 'bg-white text-[#f97316] shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
                 }`}
             >
@@ -88,59 +88,59 @@ export function DeedInformationForm() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Deed Number (PK) *</label>
               <input type="text" value={formData.deedNumber} onChange={(e) => setFormData({ ...formData, deedNumber: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed" required disabled={isReadOnly} /></div>
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" required disabled={isReadOnly} /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Deed Date</label>
               <input type="date" value={formData.deedDate} onChange={(e) => setFormData({ ...formData, deedDate: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Deed Issued By</label>
               <input type="text" value={formData.deedIssuedBy} onChange={(e) => setFormData({ ...formData, deedIssuedBy: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Real Estate Unit Number</label>
               <input type="text" value={formData.realEstateUnitNumber} onChange={(e) => setFormData({ ...formData, realEstateUnitNumber: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Area (sqm)</label>
               <input type="number" value={formData.area} onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Nationality</label>
               <input type="text" value={formData.nationality} onChange={(e) => setFormData({ ...formData, nationality: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Ownership Percentage (%)</label>
               <input type="number" value={formData.ownershipPercentage} onChange={(e) => setFormData({ ...formData, ownershipPercentage: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
             <div className="md:col-span-2"><label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
               <input type="text" value={formData.address} onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">ID Type</label>
               <input type="text" value={formData.idType} onChange={(e) => setFormData({ ...formData, idType: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">ID Date</label>
               <input type="date" value={formData.idDate} onChange={(e) => setFormData({ ...formData, idDate: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Land Number</label>
               <input type="text" value={formData.landNumber} onChange={(e) => setFormData({ ...formData, landNumber: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Block Number</label>
               <input type="text" value={formData.blockNumber} onChange={(e) => setFormData({ ...formData, blockNumber: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">District</label>
               <input type="text" value={formData.district} onChange={(e) => setFormData({ ...formData, district: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">City</label>
               <input type="text" value={formData.city} onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Unit Type</label>
               <input type="text" value={formData.unitType} onChange={(e) => setFormData({ ...formData, unitType: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Status Code</label>
               <input type="text" value={formData.statusCode} onChange={(e) => setFormData({ ...formData, statusCode: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
             <div><label className="block text-sm font-medium text-gray-700 mb-1">Station Code (FK)</label>
               <input type="text" value={formData.stationCode} onChange={(e) => setFormData({ ...formData, stationCode: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed" disabled={isReadOnly} /></div>
           </div>
           {!isReadOnly && (
             <div className="flex justify-end mt-6">
-              <button type="submit" className="bg-[#6366f1] hover:bg-[#818cf8] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors">
+              <button type="submit" className="bg-[#f97316] hover:bg-[#fb923c] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors">
                 <Save className="w-5 h-5" /> Save Deed Information
               </button>
             </div>

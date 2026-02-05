@@ -53,7 +53,7 @@ export function GenericDepartmentForm({ title, description, fields }: GenericFor
                         <button
                             onClick={() => setViewMode('form')}
                             className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'form'
-                                ? 'bg-white text-[#6366f1] shadow-sm'
+                                ? 'bg-white text-[#f97316] shadow-sm'
                                 : 'text-gray-500 hover:text-gray-700'
                                 }`}
                         >
@@ -63,7 +63,7 @@ export function GenericDepartmentForm({ title, description, fields }: GenericFor
                         <button
                             onClick={() => setViewMode('records')}
                             className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'records'
-                                ? 'bg-white text-[#6366f1] shadow-sm'
+                                ? 'bg-white text-[#f97316] shadow-sm'
                                 : 'text-gray-500 hover:text-gray-700'
                                 }`}
                         >
@@ -97,7 +97,7 @@ export function GenericDepartmentForm({ title, description, fields }: GenericFor
                                         <textarea
                                             value={formData[field.name]}
                                             onChange={(e) => handleChange(field.name, e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                                             rows={3}
                                             required={field.required}
                                             disabled={isReadOnly}
@@ -106,7 +106,7 @@ export function GenericDepartmentForm({ title, description, fields }: GenericFor
                                         <select
                                             value={formData[field.name]}
                                             onChange={(e) => handleChange(field.name, e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                                             required={field.required}
                                             disabled={isReadOnly}
                                         >
@@ -121,7 +121,7 @@ export function GenericDepartmentForm({ title, description, fields }: GenericFor
                                             type={field.type}
                                             value={formData[field.name]}
                                             onChange={(e) => handleChange(field.name, e.target.value)}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                                             required={field.required}
                                             disabled={isReadOnly}
                                         />
@@ -135,7 +135,7 @@ export function GenericDepartmentForm({ title, description, fields }: GenericFor
                         <div className="flex justify-end">
                             <button
                                 type="submit"
-                                className="bg-[#6366f1] hover:bg-[#818cf8] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
+                                className="bg-[#f97316] hover:bg-[#fb923c] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors"
                             >
                                 <Save className="w-5 h-5" />
                                 Save {title}

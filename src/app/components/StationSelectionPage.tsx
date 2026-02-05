@@ -125,27 +125,27 @@ export function StationSelectionPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-violet-50 via-cyan-50 to-pink-50 flex items-center justify-center p-4 relative overflow-hidden">
+        <div className="min-h-screen bg-gradient-to-br from-orange-50 via-gray-50 to-pink-50 flex items-center justify-center p-4 relative overflow-hidden">
             {/* Language Switcher - Top Right */}
             <div className="absolute top-6 right-6 z-20">
                 <LanguageSwitcher />
             </div>
 
             {/* Mesh Gradients */}
-            <div className="absolute inset-0 bg-gradient-to-tr from-violet-100/30 via-transparent to-cyan-100/30 pointer-events-none"></div>
+            <div className="absolute inset-0 bg-gradient-to-tr from-orange-100/30 via-transparent to-gray-100/30 pointer-events-none"></div>
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.1),transparent_50%)] pointer-events-none"></div>
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(6,182,212,0.1),transparent_50%)] pointer-events-none"></div>
 
             <div className="w-full max-w-4xl relative z-10 animate-in fade-in zoom-in duration-500">
                 <div className="bg-white/80 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border border-white/40 p-8 md:p-12 vibrant-glow relative overflow-hidden min-h-[600px] flex flex-col">
                     {/* Top accent line */}
-                    <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-violet-500 via-purple-500 to-cyan-500"></div>
+                    <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-orange-500 via-orange-500 to-gray-500"></div>
 
                     {/* Breadcrumbs / Steps */}
                     <div className="flex items-center gap-2 mb-10 overflow-x-auto pb-4 no-scrollbar">
                         <button
                             onClick={() => resetToStep(1)}
-                            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${step >= 1 ? 'text-violet-600 bg-violet-50' : 'text-gray-400'}`}
+                            className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${step >= 1 ? 'text-orange-600 bg-orange-50' : 'text-gray-400'}`}
                         >
                             <MapIcon className="w-4 h-4" />
                             Region {selectedRegion && `: ${selectedRegion.name}`}
@@ -156,7 +156,7 @@ export function StationSelectionPage() {
                             <button
                                 onClick={() => resetToStep(2)}
                                 disabled={step < 2}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${step >= 2 ? 'text-purple-600 bg-purple-50' : 'text-gray-400'}`}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${step >= 2 ? 'text-orange-600 bg-orange-50' : 'text-gray-400'}`}
                             >
                                 <MapPin className="w-4 h-4" />
                                 City {selectedCity && `: ${selectedCity.name}`}
@@ -168,7 +168,7 @@ export function StationSelectionPage() {
                             <button
                                 onClick={() => resetToStep(3)}
                                 disabled={step < 3}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${step >= 3 ? 'text-indigo-600 bg-indigo-50' : 'text-gray-400'}`}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${step >= 3 ? 'text-orange-600 bg-orange-50' : 'text-gray-400'}`}
                             >
                                 <Layout className="w-4 h-4" />
                                 Project {selectedProject && `: ${selectedProject.name}`}
@@ -179,7 +179,7 @@ export function StationSelectionPage() {
                         {(selectedProject || step === 4) && (
                             <button
                                 disabled={step < 4}
-                                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${step >= 4 ? 'text-cyan-600 bg-cyan-50' : 'text-gray-400'}`}
+                                className={`flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold transition-all whitespace-nowrap ${step >= 4 ? 'text-gray-600 bg-gray-50' : 'text-gray-400'}`}
                             >
                                 <img src={logo} alt="Location" className="w-4 h-4 object-contain" />
                                 Location
@@ -197,15 +197,15 @@ export function StationSelectionPage() {
                                         <button
                                             key={region.id}
                                             onClick={() => handleRegionSelect(region)}
-                                            className="group bg-white/50 border border-gray-100 p-6 rounded-2xl hover:border-violet-400 hover:shadow-xl hover:shadow-violet-100 hover:-translate-y-1 transition-all text-left flex items-center justify-between"
+                                            className="group bg-white/50 border border-gray-100 p-6 rounded-2xl hover:border-orange-400 hover:shadow-xl hover:shadow-orange-100 hover:-translate-y-1 transition-all text-left flex items-center justify-between"
                                         >
                                             <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 bg-violet-100 rounded-xl flex items-center justify-center group-hover:bg-violet-600 transition-colors">
-                                                    <MapIcon className="w-6 h-6 text-violet-600 group-hover:text-white" />
+                                                <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center group-hover:bg-orange-600 transition-colors">
+                                                    <MapIcon className="w-6 h-6 text-orange-600 group-hover:text-white" />
                                                 </div>
                                                 <span className="text-xl font-bold text-gray-800 tracking-tight">{region.name}</span>
                                             </div>
-                                            <ArrowRight className="w-5 h-5 text-gray-300 group-hover:text-violet-600 group-hover:translate-x-1 transition-all" />
+                                            <ArrowRight className="w-5 h-5 text-gray-300 group-hover:text-orange-600 group-hover:translate-x-1 transition-all" />
                                         </button>
                                     ))}
                                 </div>
@@ -215,8 +215,8 @@ export function StationSelectionPage() {
                         {step === 2 && (
                             <div className="animate-in slide-in-from-right-8 duration-500">
                                 <div className="flex items-center gap-2 mb-2 group cursor-pointer" onClick={() => setStep(1)}>
-                                    <ChevronLeft className="w-5 h-5 text-gray-400 group-hover:text-violet-600" />
-                                    <span className="text-sm font-bold text-gray-400 group-hover:text-violet-600">Back to Regions</span>
+                                    <ChevronLeft className="w-5 h-5 text-gray-400 group-hover:text-orange-600" />
+                                    <span className="text-sm font-bold text-gray-400 group-hover:text-orange-600">Back to Regions</span>
                                 </div>
                                 <h2 className="text-4xl font-black text-gray-900 mb-2 leading-tight">Select City</h2>
                                 <p className="text-gray-500 font-medium mb-8">In {selectedRegion?.name}</p>
@@ -225,15 +225,15 @@ export function StationSelectionPage() {
                                         <button
                                             key={city.id}
                                             onClick={() => handleCitySelect(city)}
-                                            className="group bg-white/50 border border-gray-100 p-6 rounded-2xl hover:border-purple-400 hover:shadow-xl hover:shadow-purple-100 hover:-translate-y-1 transition-all text-left flex items-center justify-between"
+                                            className="group bg-white/50 border border-gray-100 p-6 rounded-2xl hover:border-orange-400 hover:shadow-xl hover:shadow-orange-100 hover:-translate-y-1 transition-all text-left flex items-center justify-between"
                                         >
                                             <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center group-hover:bg-purple-600 transition-colors">
-                                                    <MapPin className="w-6 h-6 text-purple-600 group-hover:text-white" />
+                                                <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center group-hover:bg-orange-600 transition-colors">
+                                                    <MapPin className="w-6 h-6 text-orange-600 group-hover:text-white" />
                                                 </div>
                                                 <span className="text-xl font-bold text-gray-800 tracking-tight">{city.name}</span>
                                             </div>
-                                            <ArrowRight className="w-5 h-5 text-gray-300 group-hover:text-purple-600 group-hover:translate-x-1 transition-all" />
+                                            <ArrowRight className="w-5 h-5 text-gray-300 group-hover:text-orange-600 group-hover:translate-x-1 transition-all" />
                                         </button>
                                     ))}
                                 </div>
@@ -243,8 +243,8 @@ export function StationSelectionPage() {
                         {step === 3 && (
                             <div className="animate-in slide-in-from-right-8 duration-500">
                                 <div className="flex items-center gap-2 mb-2 group cursor-pointer" onClick={() => setStep(2)}>
-                                    <ChevronLeft className="w-5 h-5 text-gray-400 group-hover:text-purple-600" />
-                                    <span className="text-sm font-bold text-gray-400 group-hover:text-purple-600">Back to Cities</span>
+                                    <ChevronLeft className="w-5 h-5 text-gray-400 group-hover:text-orange-600" />
+                                    <span className="text-sm font-bold text-gray-400 group-hover:text-orange-600">Back to Cities</span>
                                 </div>
                                 <h2 className="text-4xl font-black text-gray-900 mb-2 leading-tight">Select Project</h2>
                                 <p className="text-gray-500 font-medium mb-8">In {selectedCity?.name}</p>
@@ -253,15 +253,15 @@ export function StationSelectionPage() {
                                         <button
                                             key={project.id}
                                             onClick={() => handleProjectSelect(project)}
-                                            className="group bg-white/50 border border-gray-100 p-6 rounded-2xl hover:border-indigo-400 hover:shadow-xl hover:shadow-indigo-100 hover:-translate-y-1 transition-all text-left flex items-center justify-between"
+                                            className="group bg-white/50 border border-gray-100 p-6 rounded-2xl hover:border-orange-400 hover:shadow-xl hover:shadow-orange-100 hover:-translate-y-1 transition-all text-left flex items-center justify-between"
                                         >
                                             <div className="flex items-center gap-4">
-                                                <div className="w-12 h-12 bg-indigo-100 rounded-xl flex items-center justify-center group-hover:bg-indigo-600 transition-colors">
-                                                    <Layout className="w-6 h-6 text-indigo-600 group-hover:text-white" />
+                                                <div className="w-12 h-12 bg-orange-100 rounded-xl flex items-center justify-center group-hover:bg-orange-600 transition-colors">
+                                                    <Layout className="w-6 h-6 text-orange-600 group-hover:text-white" />
                                                 </div>
                                                 <span className="text-xl font-bold text-gray-800 tracking-tight">{project.name}</span>
                                             </div>
-                                            <ArrowRight className="w-5 h-5 text-gray-300 group-hover:text-indigo-600 group-hover:translate-x-1 transition-all" />
+                                            <ArrowRight className="w-5 h-5 text-gray-300 group-hover:text-orange-600 group-hover:translate-x-1 transition-all" />
                                         </button>
                                     ))}
                                 </div>
@@ -271,8 +271,8 @@ export function StationSelectionPage() {
                         {step === 4 && (
                             <div className="animate-in slide-in-from-right-8 duration-500">
                                 <div className="flex items-center gap-2 mb-2 group cursor-pointer" onClick={() => setStep(3)}>
-                                    <ChevronLeft className="w-5 h-5 text-gray-400 group-hover:text-indigo-600" />
-                                    <span className="text-sm font-bold text-gray-400 group-hover:text-indigo-600">Back to Projects</span>
+                                    <ChevronLeft className="w-5 h-5 text-gray-400 group-hover:text-orange-600" />
+                                    <span className="text-sm font-bold text-gray-400 group-hover:text-orange-600">Back to Projects</span>
                                 </div>
                                 <h2 className="text-4xl font-black text-gray-900 mb-2 leading-tight">Select Location</h2>
                                 <p className="text-gray-500 font-medium mb-8">For project: {selectedProject?.name}</p>
@@ -282,8 +282,8 @@ export function StationSelectionPage() {
                                             key={location}
                                             onClick={() => handleLocationSelect(location)}
                                             className={`group p-6 rounded-2xl border transition-all text-left flex items-center justify-between ${selectedLocation === location
-                                                ? 'bg-cyan-600 border-cyan-600 text-white shadow-xl shadow-cyan-200'
-                                                : 'bg-white/50 border-gray-100 text-gray-800 hover:border-cyan-400 hover:shadow-lg'
+                                                ? 'bg-gray-600 border-gray-600 text-white shadow-xl shadow-gray-200'
+                                                : 'bg-white/50 border-gray-100 text-gray-800 hover:border-gray-400 hover:shadow-lg'
                                                 }`}
                                         >
                                             <div className="flex items-center gap-4">

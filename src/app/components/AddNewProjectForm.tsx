@@ -112,7 +112,7 @@ export function AddNewProjectForm() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-violet-50 via-cyan-50 to-pink-50 p-8">
+        <div className="min-h-screen bg-gradient-to-br from-orange-50 via-gray-50 to-gray-50 p-8">
             <div className="max-w-5xl mx-auto">
                 {/* Header */}
                 <div className="mb-8">
@@ -130,7 +130,7 @@ export function AddNewProjectForm() {
                         {/* Project Information Section */}
                         <div className="mb-8">
                             <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                                <Building2 className="w-5 h-5 text-violet-600" />
+                                <Building2 className="w-5 h-5 text-orange-600" />
                                 Project Information
                             </h2>
 
@@ -146,7 +146,7 @@ export function AddNewProjectForm() {
                                         value={formData.projectName}
                                         onChange={handleInputChange}
                                         required
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent bg-white"
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
                                         placeholder="Enter project name"
                                     />
                                 </div>
@@ -162,7 +162,7 @@ export function AddNewProjectForm() {
                                         value={formData.projectCode}
                                         onChange={handleInputChange}
                                         required
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent bg-white"
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
                                         placeholder="e.g., PRJ-2024-001"
                                     />
                                 </div>
@@ -177,7 +177,7 @@ export function AddNewProjectForm() {
                                         value={formData.description}
                                         onChange={handleInputChange}
                                         rows={4}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent bg-white resize-none"
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white resize-none"
                                         placeholder="Enter project description"
                                     />
                                 </div>
@@ -187,7 +187,7 @@ export function AddNewProjectForm() {
                         {/* Location Information Section */}
                         <div className="mb-8">
                             <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                                <MapPin className="w-5 h-5 text-violet-600" />
+                                <MapPin className="w-5 h-5 text-orange-600" />
                                 Location Information
                             </h2>
 
@@ -202,7 +202,7 @@ export function AddNewProjectForm() {
                                         value={formData.region}
                                         onChange={handleInputChange}
                                         required
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent bg-white"
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
                                     >
                                         <option value="">Select Region</option>
                                         {regions.map((region) => (
@@ -223,7 +223,7 @@ export function AddNewProjectForm() {
                                         value={formData.city}
                                         onChange={handleInputChange}
                                         required
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent bg-white"
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
                                     >
                                         <option value="">Select City</option>
                                         {cities.map((city) => (
@@ -239,7 +239,7 @@ export function AddNewProjectForm() {
                         {/* Stations Section */}
                         <div className="mb-8">
                             <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                                <Map className="w-5 h-5 text-violet-600" />
+                                <Map className="w-5 h-5 text-orange-600" />
                                 Assigned Stations
                             </h2>
 
@@ -248,7 +248,7 @@ export function AddNewProjectForm() {
                                 <select
                                     value={newStation}
                                     onChange={(e) => setNewStation(e.target.value)}
-                                    className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent bg-white"
+                                    className="flex-1 px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
                                 >
                                     <option value="">Select a station to add</option>
                                     {availableStations
@@ -263,7 +263,7 @@ export function AddNewProjectForm() {
                                     type="button"
                                     onClick={handleAddStation}
                                     disabled={!newStation}
-                                    className="px-6 py-3 bg-violet-600 text-white rounded-lg hover:bg-violet-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2 font-semibold"
+                                    className="px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center gap-2 font-semibold"
                                 >
                                     <Plus className="w-4 h-4" />
                                     Add Station
@@ -302,7 +302,7 @@ export function AddNewProjectForm() {
                         {/* Project Details Section */}
                         <div className="mb-8">
                             <h2 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                                <FileText className="w-5 h-5 text-violet-600" />
+                                <FileText className="w-5 h-5 text-orange-600" />
                                 Project Details
                             </h2>
 
@@ -318,7 +318,7 @@ export function AddNewProjectForm() {
                                         value={formData.startDate}
                                         onChange={handleInputChange}
                                         required
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent bg-white"
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
                                     />
                                 </div>
 
@@ -333,7 +333,7 @@ export function AddNewProjectForm() {
                                         value={formData.expectedEndDate}
                                         onChange={handleInputChange}
                                         required
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent bg-white"
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
                                     />
                                 </div>
 
@@ -348,7 +348,7 @@ export function AddNewProjectForm() {
                                         value={formData.projectManager}
                                         onChange={handleInputChange}
                                         required
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent bg-white"
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
                                         placeholder="Enter project manager name"
                                     />
                                 </div>
@@ -363,7 +363,7 @@ export function AddNewProjectForm() {
                                         name="budget"
                                         value={formData.budget}
                                         onChange={handleInputChange}
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent bg-white"
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
                                         placeholder="Enter budget amount"
                                     />
                                 </div>
@@ -378,7 +378,7 @@ export function AddNewProjectForm() {
                                         value={formData.status}
                                         onChange={handleInputChange}
                                         required
-                                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent bg-white"
+                                        className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white"
                                     >
                                         {projectStatuses.map((status) => (
                                             <option key={status} value={status}>
@@ -403,7 +403,7 @@ export function AddNewProjectForm() {
                         </button>
                         <button
                             type="submit"
-                            className="px-6 py-3 bg-gradient-to-r from-violet-600 to-cyan-500 text-white rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold flex items-center gap-2"
+                            className="px-6 py-3 bg-gradient-to-r from-orange-600 to-gray-500 text-white rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold flex items-center gap-2"
                         >
                             <Save className="w-4 h-4" />
                             Create Project

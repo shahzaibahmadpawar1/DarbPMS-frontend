@@ -164,7 +164,7 @@ export function AllStationsListPage() {
                         placeholder="Search stations by name..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent bg-white shadow-sm"
+                        className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-white shadow-sm"
                     />
                 </div>
             </div>
@@ -180,7 +180,7 @@ export function AllStationsListPage() {
                         >
                             {/* Station Header */}
                             <div
-                                className="p-6 cursor-pointer hover:bg-violet-50/50 transition-colors"
+                                className="p-6 cursor-pointer hover:bg-orange-50/50 transition-colors"
                                 onClick={() => toggleStation(station.id)}
                             >
                                 <div className="flex items-center justify-between">
@@ -207,13 +207,13 @@ export function AllStationsListPage() {
                                             <div className="max-w-md">
                                                 <div className="flex items-center justify-between mb-1">
                                                     <span className="text-xs font-semibold text-gray-600">Form Completion</span>
-                                                    <span className="text-xs font-bold text-violet-600">
+                                                    <span className="text-xs font-bold text-orange-600">
                                                         {station.formsCompleted}/{station.totalForms} ({completionPercentage}%)
                                                     </span>
                                                 </div>
                                                 <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
                                                     <div
-                                                        className="h-full bg-gradient-to-r from-violet-600 to-cyan-500 rounded-full transition-all duration-500"
+                                                        className="h-full bg-gradient-to-r from-orange-600 to-gray-500 rounded-full transition-all duration-500"
                                                         style={{ width: `${completionPercentage}%` }}
                                                     ></div>
                                                 </div>
@@ -224,7 +224,7 @@ export function AllStationsListPage() {
                                         <Link
                                             to={`/station/${station.id}/analytics`}
                                             onClick={(e) => e.stopPropagation()}
-                                            className="flex items-center gap-2 px-4 py-2 bg-violet-100 text-violet-700 rounded-lg hover:bg-violet-200 transition-colors font-semibold text-sm"
+                                            className="flex items-center gap-2 px-4 py-2 bg-orange-100 text-orange-700 rounded-lg hover:bg-orange-200 transition-colors font-semibold text-sm"
                                         >
                                             <Activity className="w-4 h-4" />
                                             Analytics

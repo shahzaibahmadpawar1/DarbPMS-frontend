@@ -47,7 +47,7 @@ export function BuildingPermitForm() {
             <button
               onClick={() => setViewMode('form')}
               className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'form'
-                ? 'bg-white text-[#6366f1] shadow-sm'
+                ? 'bg-white text-[#f97316] shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
                 }`}
             >
@@ -57,7 +57,7 @@ export function BuildingPermitForm() {
             <button
               onClick={() => setViewMode('records')}
               className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'records'
-                ? 'bg-white text-[#6366f1] shadow-sm'
+                ? 'bg-white text-[#f97316] shadow-sm'
                 : 'text-gray-500 hover:text-gray-700'
                 }`}
             >
@@ -83,7 +83,7 @@ export function BuildingPermitForm() {
                 <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</label>
                 <input type={key.includes('Date') ? 'date' : key.includes('Number') || key.includes('Area') ? 'number' : 'text'}
                   value={value} onChange={(e) => setFormData({ ...formData, [key]: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#6366f1] disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100 disabled:cursor-not-allowed"
                   disabled={isReadOnly}
                 />
               </div>
@@ -91,7 +91,7 @@ export function BuildingPermitForm() {
           </div>
           {!isReadOnly && (
             <div className="flex justify-end mt-6">
-              <button type="submit" className="bg-[#6366f1] hover:bg-[#818cf8] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors">
+              <button type="submit" className="bg-[#f97316] hover:bg-[#fb923c] text-white px-6 py-3 rounded-lg flex items-center gap-2 transition-colors">
                 <Save className="w-5 h-5" /> Save Building Permit
               </button>
             </div>

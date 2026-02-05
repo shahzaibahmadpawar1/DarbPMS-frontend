@@ -15,7 +15,7 @@ export function FormRecordsList({ title, columns, records }: FormRecordsListProp
                     <input
                         type="text"
                         placeholder={`Search ${title.toLowerCase()} records...`}
-                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#6366f1]"
+                        className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:border-[#f97316]"
                     />
                 </div>
                 <div className="flex gap-2">
@@ -46,7 +46,7 @@ export function FormRecordsList({ title, columns, records }: FormRecordsListProp
                                         <td key={vIdx} className="px-6 py-4">
                                             {vIdx === 0 ? (
                                                 <div className="flex items-center gap-3">
-                                                    <div className="p-2 bg-violet-50 rounded text-[#6366f1]">
+                                                    <div className="p-2 bg-orange-50 rounded text-[#f97316]">
                                                         <FileText className="w-4 h-4" />
                                                     </div>
                                                     <span className="font-bold text-[#020713]">{val}</span>
@@ -58,7 +58,7 @@ export function FormRecordsList({ title, columns, records }: FormRecordsListProp
                                     ))}
                                     <td className="px-6 py-4 text-right">
                                         <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <button className="p-2 text-gray-400 hover:text-[#6366f1] hover:bg-violet-50 rounded-lg">
+                                            <button className="p-2 text-gray-400 hover:text-[#f97316] hover:bg-orange-50 rounded-lg">
                                                 <ExternalLink className="w-4 h-4" />
                                             </button>
                                             <button className="p-2 text-gray-400 hover:text-gray-600">
