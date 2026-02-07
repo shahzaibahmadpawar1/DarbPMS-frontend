@@ -55,7 +55,7 @@ export function DashboardLayout() {
         {/* Sidebar */}
         <aside
           className={`${sidebarOpen ? "w-72" : "w-20"
-            } transition-all duration-300 bg-gradient-to-br from-primary-600 via-primary to-secondary-600 text-white flex flex-col fixed inset-y-4 ltr:left-4 rtl:right-4 z-10 shadow-2xl backdrop-blur-xl rounded-[2.5rem] overflow-hidden`}
+            } transition-all duration-300 sidebar-gradient text-white flex flex-col fixed inset-y-4 ltr:left-4 rtl:right-4 z-10 shadow-2xl backdrop-blur-xl rounded-[2.5rem] overflow-hidden`}
           style={{
             boxShadow: '0 0 60px hsl(var(--primary) / 0.2), 0 0 120px hsl(var(--secondary) / 0.1)'
           }}
@@ -79,9 +79,13 @@ export function DashboardLayout() {
             )}
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="p-2 hover:bg-white/20 rounded-lg transition-all"
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors backdrop-blur-sm"
             >
-              {sidebarOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+              {sidebarOpen ? (
+                <X className="w-5 h-5 text-white" />
+              ) : (
+                <Menu className="w-5 h-5 text-white" />
+              )}
             </button>
           </div>
 
@@ -92,7 +96,7 @@ export function DashboardLayout() {
                 key={item.path}
                 to={item.path}
                 className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${location.pathname === item.path
-                  ? "bg-white/25 text-white shadow-lg backdrop-blur-sm"
+                  ? "bg-gradient-to-r from-primary to-secondary text-white shadow-lg"
                   : "text-white/80 hover:bg-white/15 hover:text-white"
                   }`}
               >
@@ -132,19 +136,19 @@ export function DashboardLayout() {
             } transition-all duration-300`}
         >
           {/* Header with Back to Dashboard Button */}
-          <div className="bg-card/80 backdrop-blur-xl m-4 rounded-2xl border border-border px-8 py-4 sticky top-4 z-10 shadow-lg shadow-primary/10 flex items-center justify-between">
+          <header className="bg-card/80 backdrop-blur-xl m-4 rounded-2xl border border-border px-8 py-4 sticky top-4 z-10 shadow-lg shadow-primary/10 flex items-center justify-between">
             <BackToDashboardButton />
             <div className="flex items-center gap-4">
               <Link
                 to="/add-new-project"
-                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-secondary text-white rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-secondary text-primary-foreground rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-sm"
               >
                 <PlusCircle className="w-4 h-4" />
                 <span>Add New Project</span>
               </Link>
               <LanguageSwitcher />
             </div>
-          </div>
+          </header>
 
           <Outlet />
         </main>

@@ -19,7 +19,7 @@ export function BackToDashboardButton() {
         <div className="flex gap-2">
             <button
                 onClick={() => navigate(-1)}
-                className="flex items-center gap-2 px-4 py-2 text-gray-600 hover:text-[#f97316] hover:bg-gray-100 rounded-lg transition-all duration-200 border border-gray-300 hover:border-[#f97316]"
+                className="flex items-center gap-2 px-4 py-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-all duration-200 border border-border hover:border-primary"
                 title="Go back to previous page"
             >
                 <ArrowLeft className="w-4 h-4" />
