@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import {
     LayoutDashboard,
@@ -15,27 +15,47 @@ import { BackToDashboardButton } from "./BackToDashboardButton";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { BrandName } from "./BrandName";
 import { ChatWidget } from "./ChatWidget";
+import { useTranslation } from "../../utils/translations";
 import logo from "../../assets/logo.png";
 
 interface NavItem {
-    title: string;
+    titleKey: "dashboard" | "analytics" | "stations" | "tasks" | "reports" | "contactCEO";
     path: string;
     icon: React.ReactNode;
 }
 
-const navigation: NavItem[] = [
-    { title: "Dashboard", path: "/all-stations-dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
-    { title: "Analytics", path: "/all-stations-analytics", icon: <Activity className="w-5 h-5" /> },
-    { title: "Stations", path: "/all-stations-list", icon: <img src={logo} alt="" className="w-5 h-5 object-contain brightness-0 invert" /> },
-    { title: "Tasks", path: "/all-stations-tasks", icon: <ClipboardList className="w-5 h-5" /> },
-    { title: "Reports", path: "/all-stations-reports", icon: <FileText className="w-5 h-5" /> },
-    { title: "Contact CEO Office", path: "/all-stations-contact-ceo", icon: <MessageCircle className="w-5 h-5" /> },
-];
-
 export function AllStationsDashboardLayout() {
-    const [sidebarOpen, setSidebarOpen] = useState(true);
+    // Start open on desktop (>= 1024px), closed on mobile
+    const [sidebarOpen, setSidebarOpen] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return window.innerWidth >= 1024;
+        }
+        return false;
+    });
     const [chatOpen, setChatOpen] = useState(false);
     const location = useLocation();
+    const { t } = useTranslation();
+
+    // Update sidebar state on window resize
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth >= 1024) {
+                setSidebarOpen(true);
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    const navigation: NavItem[] = [
+        { titleKey: "dashboard", path: "/all-stations-dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
+        { titleKey: "analytics", path: "/all-stations-analytics", icon: <Activity className="w-5 h-5" /> },
+        { titleKey: "stations", path: "/all-stations-list", icon: <img src={logo} alt="" className="w-5 h-5 object-contain brightness-0 invert" /> },
+        { titleKey: "tasks", path: "/all-stations-tasks", icon: <ClipboardList className="w-5 h-5" /> },
+        { titleKey: "reports", path: "/all-stations-reports", icon: <FileText className="w-5 h-5" /> },
+        { titleKey: "contactCEO", path: "/all-stations-contact-ceo", icon: <MessageCircle className="w-5 h-5" /> },
+    ];
 
     const handleChatClick = () => {
         setChatOpen(!chatOpen);
@@ -52,8 +72,12 @@ export function AllStationsDashboardLayout() {
             <div className="relative z-0 flex w-full">
                 {/* Sidebar */}
                 <aside
-                    className={`${sidebarOpen ? "w-72" : "w-20"
-                        } transition-all duration-300 sidebar-gradient text-sidebar-foreground flex flex-col fixed inset-y-4 ltr:left-4 rtl:right-4 z-10 shadow-2xl backdrop-blur-xl rounded-[2.5rem] overflow-hidden`}
+                    className={`
+                        ${sidebarOpen ? "translate-x-0" : "ltr:-translate-x-full rtl:translate-x-full"}
+                        lg:translate-x-0
+                        ${sidebarOpen ? "lg:w-72" : "lg:w-16"}
+                        w-72 transition-all duration-300 sidebar-gradient text-sidebar-foreground flex flex-col fixed inset-y-0 lg:inset-y-4 ltr:left-0 rtl:right-0 ltr:lg:left-4 rtl:lg:right-4 z-50 lg:z-10 shadow-2xl backdrop-blur-xl lg:rounded-[2.5rem] overflow-hidden hover:shadow-[0_0_80px_hsl(var(--primary)/0.3)]
+                    `}
                     style={{
                         boxShadow: '0 0 60px hsl(var(--primary) / 0.2), 0 0 120px hsl(var(--secondary) / 0.1)'
                     }}
@@ -66,8 +90,8 @@ export function AllStationsDashboardLayout() {
                                     <img src={logo} alt="Darb Logo" className="w-full h-full object-contain" />
                                 </div>
                                 <div>
-                                    <h1 className="font-bold text-lg text-white drop-shadow-lg"><BrandName /></h1>
-                                    <p className="text-xs text-white/80">All Stations</p>
+                                    <h1 className="font-bold text-base lg:text-lg text-white drop-shadow-lg"><BrandName /></h1>
+                                    <p className="text-xs text-white/80">{t("allStations")}</p>
                                 </div>
                             </div>
                         ) : (
@@ -88,68 +112,93 @@ export function AllStationsDashboardLayout() {
                     </div>
 
                     {/* Navigation */}
-                    <nav className="flex-1 overflow-y-auto p-4 space-y-2">
+                    <nav className={`flex-1 overflow-y-auto ${sidebarOpen ? 'p-4' : 'p-2'} space-y-2`}>
                         {navigation.map((item) => (
                             <Link
                                 key={item.path}
                                 to={item.path}
-                                className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 ${location.pathname === item.path
+                                onClick={() => window.innerWidth < 1024 && setSidebarOpen(false)}
+                                className={`flex items-center ${sidebarOpen ? 'gap-3 px-4' : 'justify-center px-2'} py-3 rounded-lg transition-all duration-200 ${location.pathname === item.path
                                     ? "bg-gradient-to-r from-primary to-secondary text-white shadow-lg"
                                     : "text-white/80 hover:bg-white/15 hover:text-white"
                                     }`}
+                                title={!sidebarOpen ? t(item.titleKey) : undefined}
                             >
                                 {item.icon}
-                                {sidebarOpen && <span className="text-sm font-medium">{item.title}</span>}
+                                {sidebarOpen && <span className="text-sm font-medium">{t(item.titleKey)}</span>}
                             </Link>
                         ))}
                         <button
                             onClick={handleChatClick}
-                            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all duration-200 text-white/80 hover:bg-white/15 hover:text-white relative"
+                            className={`w-full flex items-center ${sidebarOpen ? 'gap-3 px-4' : 'justify-center px-2'} py-3 rounded-lg transition-all duration-200 text-white/80 hover:bg-white/15 hover:text-white relative`}
+                            title={!sidebarOpen ? t("chat") : undefined}
                         >
                             <MessageCircle className="w-5 h-5" />
-                            {sidebarOpen && <span className="text-sm font-medium">Chat</span>}
-                            <span className="absolute top-2 left-8 w-4 h-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-white">
-                                3
-                            </span>
+                            {sidebarOpen && <span className="text-sm font-medium">{t("chat")}</span>}
+                            {sidebarOpen && (
+                                <span className="absolute top-2 left-8 w-4 h-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-white">
+                                    3
+                                </span>
+                            )}
                         </button>
                     </nav>
 
                     {/* Logout Section */}
-                    <div className="p-4 border-t border-white/20">
+                    <div className={`${sidebarOpen ? 'p-4' : 'p-2'} border-t border-white/20`}>
                         <Link
                             to="/login"
-                            className="flex items-center gap-3 px-4 py-3 mx-2 rounded-lg text-white/80 hover:bg-white/15 hover:text-white transition-all duration-200"
+                            className={`flex items-center ${sidebarOpen ? 'gap-3 px-4 mx-2' : 'justify-center px-2'} py-3 rounded-lg text-white/80 hover:bg-white/15 hover:text-white transition-all duration-200`}
+                            title={!sidebarOpen ? t("logout") : undefined}
                         >
                             <LogOut className="w-5 h-5" />
-                            {sidebarOpen && <span className="text-sm font-medium">Log out</span>}
+                            {sidebarOpen && <span className="text-sm font-medium">{t("logout")}</span>}
                         </Link>
                     </div>
                 </aside>
 
+                {/* Mobile overlay - only covers content, not sidebar */}
+                {sidebarOpen && (
+                    <div
+                        className="fixed inset-y-0 ltr:left-72 ltr:right-0 rtl:right-72 rtl:left-0 bg-black/50 z-40 lg:hidden"
+                        onClick={() => setSidebarOpen(false)}
+                    ></div>
+                )}
+
                 {/* Main Content */}
                 <main
-                    className={`flex-1 ${sidebarOpen
-                        ? "ltr:ml-80 rtl:mr-80"
-                        : "ltr:ml-28 rtl:mr-28"
+                    className={`flex-1 ${sidebarOpen ? "ltr:lg:ml-80 rtl:lg:mr-80" : "ltr:lg:ml-24 rtl:lg:mr-24"
                         } transition-all duration-300 relative z-0`}
                 >
-                    {/* Header */}
-                    <header className="bg-card/80 backdrop-blur-xl m-4 rounded-2xl border border-border px-8 py-4 sticky top-4 z-10 shadow-lg shadow-primary/10 flex items-center justify-between">
+                    {/* Mobile Header with Hamburger */}
+                    <div className="lg:hidden bg-card/80 backdrop-blur-xl mx-2 my-2 rounded-lg border border-border px-2 sm:px-4 py-2 sm:py-3 sticky top-2 z-10 shadow-lg flex items-center justify-between gap-2">
+                        <button
+                            onClick={() => setSidebarOpen(true)}
+                            className="p-1.5 sm:p-2 hover:bg-muted rounded-lg transition-colors flex-shrink-0"
+                        >
+                            <Menu className="w-5 h-5" />
+                        </button>
+                        <h2 className="text-xs sm:text-sm font-bold truncate flex-1 min-w-0">{t("allStations")}</h2>
+                        <LanguageSwitcher />
+                    </div>
+
+                    {/* Desktop Header */}
+                    <header className="hidden lg:flex bg-card/80 backdrop-blur-xl m-4 rounded-2xl border border-border px-4 md:px-6 lg:px-8 py-4 sticky top-4 z-10 shadow-lg shadow-primary/10 items-center justify-between flex-wrap gap-4">
                         <BackToDashboardButton />
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 md:gap-4">
                             <Link
                                 to="/add-new-project"
-                                className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary to-secondary text-primary-foreground rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-sm"
+                                className="flex items-center gap-2 px-3 md:px-4 py-2 bg-gradient-to-r from-primary to-secondary text-primary-foreground rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-xs md:text-sm"
                             >
                                 <PlusCircle className="w-4 h-4" />
-                                <span>Add New Project</span>
+                                <span className="hidden sm:inline">{t("addNewProject")}</span>
+                                <span className="sm:hidden">{t("addNewProject").split(" ")[0]}</span>
                             </Link>
                             <LanguageSwitcher />
                         </div>
                     </header>
 
                     {/* Page Content */}
-                    <div className="p-8">
+                    <div className="p-2 sm:p-4 md:p-6 lg:p-8">
                         <Outlet />
                     </div>
                 </main>

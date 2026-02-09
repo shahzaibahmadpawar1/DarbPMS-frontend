@@ -45,118 +45,122 @@ import { ReportsPage } from "@/app/components/ReportsPage";
 import { AddNewProjectForm } from "@/app/components/AddNewProjectForm";
 import { TasksPage } from "@/app/components/TasksPage";
 import { StationProvider } from "@/app/context/StationContext";
+import { AuthProvider } from "@/context/AuthContext";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 
 function App() {
   return (
-    <StationProvider>
-      <BrowserRouter>
-        <Routes>
-          {/* Entry points */}
-          <Route path="/" element={<LoginPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/mode-selection" element={<ModeSelectionPage />} />
-          <Route path="/select-station" element={<StationSelectionPage />} />
-          <Route path="/add-new-project" element={<AddNewProjectForm />} />
+    <AuthProvider>
+      <StationProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Entry points */}
+            <Route path="/" element={<LoginPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/mode-selection" element={<ProtectedRoute><ModeSelectionPage /></ProtectedRoute>} />
+            <Route path="/select-station" element={<ProtectedRoute><StationSelectionPage /></ProtectedRoute>} />
+            <Route path="/add-new-project" element={<ProtectedRoute><AddNewProjectForm /></ProtectedRoute>} />
 
-          {/* All Stations Dashboard */}
-          <Route element={<AllStationsDashboardLayout />}>
-            <Route path="/all-stations-dashboard" element={<Dashboard />} />
-            <Route path="/all-stations-analytics" element={<ExecutiveDashboard />} />
-            <Route path="/all-stations-list" element={<AllStationsListPage />} />
-            <Route path="/all-stations-tasks" element={<TasksPage />} />
-            <Route path="/all-stations-reports" element={<ReportsPage />} />
-            <Route path="/station/:stationId/analytics" element={<StationAnalyticsPage />} />
-            <Route path="/all-stations-contact-ceo" element={<ComplaintContactForm />} />
+            {/* All Stations Dashboard */}
+            <Route element={<ProtectedRoute><AllStationsDashboardLayout /></ProtectedRoute>}>
+              <Route path="/all-stations-dashboard" element={<Dashboard />} />
+              <Route path="/all-stations-analytics" element={<ExecutiveDashboard />} />
+              <Route path="/all-stations-list" element={<AllStationsListPage />} />
+              <Route path="/all-stations-tasks" element={<TasksPage />} />
+              <Route path="/all-stations-reports" element={<ReportsPage />} />
+              <Route path="/station/:stationId/analytics" element={<StationAnalyticsPage />} />
+              <Route path="/all-stations-contact-ceo" element={<ComplaintContactForm />} />
 
-            {/* Station-specific forms */}
-            <Route path="/station/:stationId/form/station-information" element={<StationInformationForm />} />
-            <Route path="/station/:stationId/form/station-type" element={<StationTypeForm />} />
-            <Route path="/station/:stationId/form/station-status" element={<StationStatusForm />} />
-            <Route path="/station/:stationId/form/owner-information" element={<OwnerInformationForm />} />
-            <Route path="/station/:stationId/form/deed-information" element={<DeedInformationForm />} />
-            <Route path="/station/:stationId/form/contract" element={<ContractForm />} />
-            <Route path="/station/:stationId/form/investment" element={<InvestmentForm />} />
-            <Route path="/station/:stationId/form/projects" element={<ProjectsForm />} />
-            <Route path="/station/:stationId/form/operations-management" element={<OperationsManagementForm />} />
-            <Route path="/station/:stationId/form/franchise-management" element={<FranchiseManagementForm />} />
-            <Route path="/station/:stationId/form/property-management" element={<PropertyManagementForm />} />
-            <Route path="/station/:stationId/form/quality-management" element={<QualityManagementForm />} />
-            <Route path="/station/:stationId/form/procurement-department" element={<ProcurementDepartmentForm />} />
-            <Route path="/station/:stationId/form/maintenance-department" element={<MaintenanceDepartmentForm />} />
-            <Route path="/station/:stationId/form/legal-department" element={<LegalDepartmentForm />} />
-            <Route path="/station/:stationId/form/marketing-department" element={<MarketingDepartmentForm />} />
-            <Route path="/station/:stationId/form/government-relations-department" element={<GovernmentRelationsDepartmentForm />} />
-            <Route path="/station/:stationId/form/it-management" element={<ITManagementForm />} />
-            <Route path="/station/:stationId/form/human-resource" element={<HumanResourceForm />} />
-            <Route path="/station/:stationId/form/finance" element={<FinanceForm />} />
-            <Route path="/station/:stationId/form/safety" element={<SafetyForm />} />
-            <Route path="/station/:stationId/form/certificates" element={<CertificatesForm />} />
-            <Route path="/station/:stationId/form/commercial-license" element={<CommercialLicenseForm />} />
-            <Route path="/station/:stationId/form/salamah-license" element={<SalamahLicenseForm />} />
-            <Route path="/station/:stationId/form/taqyees-license" element={<TaqyeesLicenseForm />} />
-            <Route path="/station/:stationId/form/environmental-license" element={<EnvironmentalLicenseForm />} />
-            <Route path="/station/:stationId/form/energy-license" element={<EnergyLicenseForm />} />
-            <Route path="/station/:stationId/form/fixed-assets" element={<FixedAssetsForm />} />
-          </Route>
+              {/* Station-specific forms */}
+              <Route path="/station/:stationId/form/station-information" element={<StationInformationForm />} />
+              <Route path="/station/:stationId/form/station-type" element={<StationTypeForm />} />
+              <Route path="/station/:stationId/form/station-status" element={<StationStatusForm />} />
+              <Route path="/station/:stationId/form/owner-information" element={<OwnerInformationForm />} />
+              <Route path="/station/:stationId/form/deed-information" element={<DeedInformationForm />} />
+              <Route path="/station/:stationId/form/contract" element={<ContractForm />} />
+              <Route path="/station/:stationId/form/investment" element={<InvestmentForm />} />
+              <Route path="/station/:stationId/form/projects" element={<ProjectsForm />} />
+              <Route path="/station/:stationId/form/operations-management" element={<OperationsManagementForm />} />
+              <Route path="/station/:stationId/form/franchise-management" element={<FranchiseManagementForm />} />
+              <Route path="/station/:stationId/form/property-management" element={<PropertyManagementForm />} />
+              <Route path="/station/:stationId/form/quality-management" element={<QualityManagementForm />} />
+              <Route path="/station/:stationId/form/procurement-department" element={<ProcurementDepartmentForm />} />
+              <Route path="/station/:stationId/form/maintenance-department" element={<MaintenanceDepartmentForm />} />
+              <Route path="/station/:stationId/form/legal-department" element={<LegalDepartmentForm />} />
+              <Route path="/station/:stationId/form/marketing-department" element={<MarketingDepartmentForm />} />
+              <Route path="/station/:stationId/form/government-relations-department" element={<GovernmentRelationsDepartmentForm />} />
+              <Route path="/station/:stationId/form/it-management" element={<ITManagementForm />} />
+              <Route path="/station/:stationId/form/human-resource" element={<HumanResourceForm />} />
+              <Route path="/station/:stationId/form/finance" element={<FinanceForm />} />
+              <Route path="/station/:stationId/form/safety" element={<SafetyForm />} />
+              <Route path="/station/:stationId/form/certificates" element={<CertificatesForm />} />
+              <Route path="/station/:stationId/form/commercial-license" element={<CommercialLicenseForm />} />
+              <Route path="/station/:stationId/form/salamah-license" element={<SalamahLicenseForm />} />
+              <Route path="/station/:stationId/form/taqyees-license" element={<TaqyeesLicenseForm />} />
+              <Route path="/station/:stationId/form/environmental-license" element={<EnvironmentalLicenseForm />} />
+              <Route path="/station/:stationId/form/energy-license" element={<EnergyLicenseForm />} />
+              <Route path="/station/:stationId/form/fixed-assets" element={<FixedAssetsForm />} />
+            </Route>
 
 
-          {/* Single Station Dashboard (after selection) */}
-          <Route path="/dashboard" element={<DashboardLayout />}>
-            <Route index element={<SingleStationDashboard />} />
-            <Route path="executive-analytics" element={<SingleStationAnalytics />} />
-            <Route path="tasks" element={<TasksPage />} />
-            <Route path="reports" element={<ReportsPage />} />
+            {/* Single Station Dashboard (after selection) */}
+            <Route path="/dashboard" element={<ProtectedRoute><DashboardLayout /></ProtectedRoute>}>
+              <Route index element={<SingleStationDashboard />} />
+              <Route path="executive-analytics" element={<SingleStationAnalytics />} />
+              <Route path="tasks" element={<TasksPage />} />
+              <Route path="reports" element={<ReportsPage />} />
 
-            {/* Stats Lists */}
-            <Route path="total-stations" element={<StationsList />} />
-            <Route path="active-licenses" element={<StatItemsList />} />
-            <Route path="pending-permits" element={<StatItemsList />} />
-            <Route path="active-projects" element={<StatItemsList />} />
+              {/* Stats Lists */}
+              <Route path="total-stations" element={<StationsList />} />
+              <Route path="active-licenses" element={<StatItemsList />} />
+              <Route path="pending-permits" element={<StatItemsList />} />
+              <Route path="active-projects" element={<StatItemsList />} />
 
-            {/* Station Essentials */}
-            <Route path="station-information" element={<StationInformationForm />} />
-            <Route path="station-type" element={<StationTypeForm />} />
-            <Route path="station-status" element={<StationStatusForm />} />
+              {/* Station Essentials */}
+              <Route path="station-information" element={<StationInformationForm />} />
+              <Route path="station-type" element={<StationTypeForm />} />
+              <Route path="station-status" element={<StationStatusForm />} />
 
-            {/* Ownership & Legal */}
-            <Route path="owner-information" element={<OwnerInformationForm />} />
-            <Route path="deed-information" element={<DeedInformationForm />} />
-            <Route path="contract" element={<ContractForm />} />
+              {/* Ownership & Legal */}
+              <Route path="owner-information" element={<OwnerInformationForm />} />
+              <Route path="deed-information" element={<DeedInformationForm />} />
+              <Route path="contract" element={<ContractForm />} />
 
-            {/* Departments */}
-            <Route path="investment" element={<InvestmentForm />} />
-            <Route path="projects" element={<ProjectsForm />} />
-            <Route path="operations-management" element={<OperationsManagementForm />} />
-            <Route path="franchise-management" element={<FranchiseManagementForm />} />
-            <Route path="property-management" element={<PropertyManagementForm />} />
-            <Route path="quality-management" element={<QualityManagementForm />} />
-            <Route path="procurement-department" element={<ProcurementDepartmentForm />} />
-            <Route path="maintenance-department" element={<MaintenanceDepartmentForm />} />
-            <Route path="legal-department" element={<LegalDepartmentForm />} />
-            <Route path="marketing-department" element={<MarketingDepartmentForm />} />
-            <Route path="government-relations-department" element={<GovernmentRelationsDepartmentForm />} />
-            <Route path="it-management" element={<ITManagementForm />} />
-            <Route path="human-resource" element={<HumanResourceForm />} />
-            <Route path="finance" element={<FinanceForm />} />
-            <Route path="safety" element={<SafetyForm />} />
-            <Route path="certificates" element={<CertificatesForm />} />
+              {/* Departments */}
+              <Route path="investment" element={<InvestmentForm />} />
+              <Route path="projects" element={<ProjectsForm />} />
+              <Route path="operations-management" element={<OperationsManagementForm />} />
+              <Route path="franchise-management" element={<FranchiseManagementForm />} />
+              <Route path="property-management" element={<PropertyManagementForm />} />
+              <Route path="quality-management" element={<QualityManagementForm />} />
+              <Route path="procurement-department" element={<ProcurementDepartmentForm />} />
+              <Route path="maintenance-department" element={<MaintenanceDepartmentForm />} />
+              <Route path="legal-department" element={<LegalDepartmentForm />} />
+              <Route path="marketing-department" element={<MarketingDepartmentForm />} />
+              <Route path="government-relations-department" element={<GovernmentRelationsDepartmentForm />} />
+              <Route path="it-management" element={<ITManagementForm />} />
+              <Route path="human-resource" element={<HumanResourceForm />} />
+              <Route path="finance" element={<FinanceForm />} />
+              <Route path="safety" element={<SafetyForm />} />
+              <Route path="certificates" element={<CertificatesForm />} />
 
-            {/* Government Licenses */}
-            <Route path="commercial-license" element={<CommercialLicenseForm />} />
-            <Route path="salamah-license" element={<SalamahLicenseForm />} />
-            <Route path="taqyees-license" element={<TaqyeesLicenseForm />} />
-            <Route path="environmental-license" element={<EnvironmentalLicenseForm />} />
-            <Route path="energy-license" element={<EnergyLicenseForm />} />
+              {/* Government Licenses */}
+              <Route path="commercial-license" element={<CommercialLicenseForm />} />
+              <Route path="salamah-license" element={<SalamahLicenseForm />} />
+              <Route path="taqyees-license" element={<TaqyeesLicenseForm />} />
+              <Route path="environmental-license" element={<EnvironmentalLicenseForm />} />
+              <Route path="energy-license" element={<EnergyLicenseForm />} />
 
-            {/* Assets */}
-            <Route path="fixed-assets" element={<FixedAssetsForm />} />
+              {/* Assets */}
+              <Route path="fixed-assets" element={<FixedAssetsForm />} />
 
-            {/* Contact CEO */}
-            <Route path="contact-ceo" element={<ComplaintContactForm />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </StationProvider>
+              {/* Contact CEO */}
+              <Route path="contact-ceo" element={<ComplaintContactForm />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </StationProvider>
+    </AuthProvider>
   );
 }
 

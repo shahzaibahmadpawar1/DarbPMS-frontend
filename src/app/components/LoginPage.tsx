@@ -1,24 +1,52 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { User, Lock, ArrowRight } from "lucide-react";
+import { User, Lock, ArrowRight, AlertCircle } from "lucide-react";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { BrandName } from "./BrandName";
+import { useAuth } from "@/context/AuthContext";
 import logo from "../../assets/logo.png";
 
 export function LoginPage() {
     const [username, setUsername] = useState("");
     const [password, setPassword] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
     const navigate = useNavigate();
+    const { login } = useAuth();
 
-    const handleLogin = (e: React.FormEvent) => {
+    const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setIsLoading(true);
+        setError(null);
 
-        // Simulate a brief loading state for better UX
-        setTimeout(() => {
-            navigate("/mode-selection");
-        }, 800);
+        try {
+            await login(username, password);
+
+            // Get user from localStorage (just set by login)
+            const userStr = localStorage.getItem('auth_user');
+            if (userStr) {
+                const user = JSON.parse(userStr);
+
+                // Role-based routing
+                if (user.role === 'admin') {
+                    // Admin goes to all stations dashboard
+                    navigate("/all-stations-dashboard");
+                } else {
+                    // Regular user goes to their assigned station dashboard
+                    if (user.station_id) {
+                        // Set the station in context/localStorage if needed
+                        localStorage.setItem('selected_station', user.station_id);
+                        navigate("/dashboard");
+                    } else {
+                        setError("No station assigned to this user. Please contact admin.");
+                    }
+                }
+            }
+        } catch (err: any) {
+            setError(err.message || "Invalid username or password");
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -80,6 +108,14 @@ export function LoginPage() {
                                 />
                             </div>
                         </div>
+
+                        {/* Error Message */}
+                        {error && (
+                            <div className="bg-destructive/10 border border-destructive/20 rounded-xl p-4 flex items-start gap-3 animate-in fade-in slide-in-from-top-2 duration-300">
+                                <AlertCircle className="h-5 w-5 text-destructive flex-shrink-0 mt-0.5" />
+                                <p className="text-sm text-destructive font-medium">{error}</p>
+                            </div>
+                        )}
 
                         <div className="flex items-center justify-between px-1">
                             <div className="flex items-center">

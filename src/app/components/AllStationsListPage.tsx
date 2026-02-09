@@ -150,21 +150,21 @@ export function AllStationsListPage() {
 
     return (
         <div className="max-w-7xl mx-auto">
-            <div className="mb-8">
-                <h1 className="text-4xl font-black text-foreground mb-2 tracking-tight">All Stations</h1>
-                <p className="text-muted-foreground font-medium">Manage all stations and their associated forms</p>
+            <div className="mb-4 sm:mb-6 md:mb-8">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground mb-2 tracking-tight">All Stations</h1>
+                <p className="text-sm sm:text-base text-muted-foreground font-medium">Manage all stations and their associated forms</p>
             </div>
 
             {/* Search Bar */}
-            <div className="mb-6">
+            <div className="mb-4 sm:mb-6">
                 <div className="relative">
-                    <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                    <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
                     <input
                         type="text"
                         placeholder="Search stations by name..."
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3 border border-border rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background shadow-sm"
+                        className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 text-sm sm:text-base border border-border rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background shadow-sm"
                     />
                 </div>
             </div>
@@ -176,30 +176,30 @@ export function AllStationsListPage() {
                     return (
                         <div
                             key={station.id}
-                            className="bg-card/80 backdrop-blur-xl rounded-2xl shadow-lg border border-border card-glow overflow-hidden"
+                            className="bg-card/80 backdrop-blur-xl rounded-lg sm:rounded-xl md:rounded-2xl shadow-lg border border-border card-glow overflow-hidden"
                         >
                             {/* Station Header */}
                             <div
-                                className="p-6 cursor-pointer hover:bg-primary/5 transition-colors"
+                                className="p-3 sm:p-4 md:p-6 cursor-pointer hover:bg-primary/5 transition-colors"
                                 onClick={() => toggleStation(station.id)}
                             >
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-4 flex-1">
-                                        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-lg p-1.5">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
+                                    <div className="flex items-center gap-3 sm:gap-4 flex-1 w-full sm:w-auto">
+                                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg p-1.5 flex-shrink-0">
                                             <img src={logo} alt="Darb Logo" className="w-full h-full object-contain" />
                                         </div>
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-3 mb-2">
-                                                <h3 className="text-xl font-bold text-foreground">{station.name}</h3>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2 flex-wrap">
+                                                <h3 className="text-base sm:text-lg md:text-xl font-bold text-foreground">{station.name}</h3>
                                                 <span
-                                                    className={`px-3 py-1 rounded-full text-xs font-bold border ${getStatusColor(
+                                                    className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-bold border whitespace-nowrap ${getStatusColor(
                                                         station.status
                                                     )}`}
                                                 >
                                                     {station.status}
                                                 </span>
                                             </div>
-                                            <p className="text-sm text-muted-foreground mb-3">
+                                            <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">
                                                 {station.region} • {station.city} • {station.project}
                                             </p>
 
@@ -220,16 +220,16 @@ export function AllStationsListPage() {
                                             </div>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-3">
+                                    <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
                                         <Link
                                             to={`/station/${station.id}/analytics`}
                                             onClick={(e) => e.stopPropagation()}
-                                            className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors font-semibold text-sm"
+                                            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors font-semibold text-xs sm:text-sm flex-1 sm:flex-none justify-center"
                                         >
-                                            <Activity className="w-4 h-4" />
-                                            Analytics
+                                            <Activity className="w-4 h-4 flex-shrink-0" />
+                                            <span className="hidden xs:inline">Analytics</span>
                                         </Link>
-                                        <button className="p-2 hover:bg-muted rounded-lg transition-colors">
+                                        <button className="p-1.5 sm:p-2 hover:bg-muted rounded-lg transition-colors flex-shrink-0">
                                             {expandedStations.includes(station.id) ? (
                                                 <ChevronDown className="w-5 h-5 text-muted-foreground" />
                                             ) : (
@@ -242,8 +242,8 @@ export function AllStationsListPage() {
 
                             {/* Expanded Forms Section */}
                             {expandedStations.includes(station.id) && (
-                                <div className="border-t border-gray-100 bg-gray-50/50 p-6">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div className="border-t border-gray-100 bg-gray-50/50 p-3 sm:p-4 md:p-6">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                                         {stationSections.map((section) => (
                                             <div key={section.group} className="space-y-2">
                                                 <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
