@@ -31,6 +31,7 @@ import { TaqyeesLicenseForm } from "@/app/components/forms/TaqyeesLicenseForm";
 import { EnvironmentalLicenseForm } from "@/app/components/forms/EnvironmentalLicenseForm";
 import { EnergyLicenseForm } from "@/app/components/forms/EnergyLicenseForm";
 import { FixedAssetsForm } from "@/app/components/forms/FixedAssetsForm";
+import { SurveyReportForm } from "@/app/components/forms/SurveyReportForm";
 import { StationsList } from "@/app/components/StationsList";
 import { StatItemsList } from "@/app/components/StatItemsList";
 import { LoginPage } from "@/app/components/LoginPage";
@@ -99,6 +100,7 @@ function App() {
               <Route path="/station/:stationId/form/taqyees-license" element={<TaqyeesLicenseForm />} />
               <Route path="/station/:stationId/form/environmental-license" element={<EnvironmentalLicenseForm />} />
               <Route path="/station/:stationId/form/energy-license" element={<EnergyLicenseForm />} />
+              <Route path="/station/:stationId/form/survey-report" element={<SurveyReportForm />} />
               <Route path="/station/:stationId/form/fixed-assets" element={<FixedAssetsForm />} />
             </Route>
 
@@ -150,6 +152,9 @@ function App() {
               <Route path="taqyees-license" element={<TaqyeesLicenseForm />} />
               <Route path="environmental-license" element={<EnvironmentalLicenseForm />} />
               <Route path="energy-license" element={<EnergyLicenseForm />} />
+
+              {/* Project Survey Report */}
+              <Route path="survey-report" element={<SurveyReportForm />} />
 
               {/* Assets */}
               <Route path="fixed-assets" element={<FixedAssetsForm />} />

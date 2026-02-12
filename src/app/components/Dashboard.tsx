@@ -1,10 +1,13 @@
-import { Clock, AlertCircle, CheckCircle, Calendar } from "lucide-react";
+import { useState } from "react";
+import { Clock, AlertCircle, CheckCircle, Calendar, ChevronDown, PlusCircle } from "lucide-react";
 import { BrandName } from "./BrandName";
 import { Link } from "react-router-dom";
 import { ExecutiveDashboard } from "./ExecutiveDashboard";
 import logo from "../../assets/logo.png";
 
 export function Dashboard() {
+  const [stationType, setStationType] = useState<string>("All");
+
   const stats = [
     {
       title: "Total Stations",
@@ -15,7 +18,7 @@ export function Dashboard() {
       path: "/total-stations",
     },
     {
-      title: "Under Process",
+      title: "Under Execution",
       value: "42",
       icon: <Clock className="w-8 h-8" />,
       change: "+5%",
@@ -23,7 +26,7 @@ export function Dashboard() {
       path: "/active-licenses",
     },
     {
-      title: "Delay",
+      title: "Not Started",
       value: "8",
       icon: <AlertCircle className="w-8 h-8" />,
       change: "-3%",
@@ -31,7 +34,7 @@ export function Dashboard() {
       path: "/pending-permits",
     },
     {
-      title: "Completed",
+      title: "Operational Stations",
       value: "98",
       icon: <CheckCircle className="w-8 h-8" />,
       change: "+18%",
@@ -45,6 +48,14 @@ export function Dashboard() {
       change: "+2%",
       color: "bg-gradient-to-br from-primary to-secondary",
       path: "/active-projects",
+    },
+    {
+      title: "New stations during the month",
+      value: "12",
+      icon: <PlusCircle className="w-8 h-8" />,
+      change: "+15%",
+      color: "bg-primary",
+      path: "/total-stations",
     },
   ];
 
@@ -64,13 +75,33 @@ export function Dashboard() {
 
   return (
     <div className="p-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-black text-gray-900 mb-2 tracking-tight">Dashboard</h1>
-        <p className="text-gray-600"><BrandName /> Project Management & Tracking System</p>
+      <div className="mb-8 flex items-center justify-between">
+        <div>
+          <h1 className="text-4xl font-black text-gray-900 mb-2 tracking-tight">Dashboard</h1>
+          <p className="text-gray-600"><BrandName /> Project Management & Tracking System</p>
+        </div>
+
+        {/* Station Type Filter */}
+        <div className="relative">
+          <label className="block text-sm font-medium text-muted-foreground mb-2">Station Type</label>
+          <div className="relative">
+            <select
+              value={stationType}
+              onChange={(e) => setStationType(e.target.value)}
+              className="appearance-none bg-card border border-border rounded-lg px-4 py-2.5 pr-10 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent cursor-pointer hover:border-primary/50 transition-colors min-w-[160px]"
+            >
+              <option value="All">All</option>
+              <option value="Operation">Operation</option>
+              <option value="Rent">Rent</option>
+              <option value="Franchise">Franchise</option>
+            </select>
+            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+          </div>
+        </div>
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
         {stats.map((stat, index) => (
           <Link
             key={index}

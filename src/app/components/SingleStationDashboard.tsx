@@ -70,6 +70,12 @@ export function SingleStationDashboard() {
             ],
         },
         {
+            group: "PROJECT SURVEY REPORT",
+            items: [
+                { title: "Survey Report", icon: <FileText className="w-4 h-4" />, path: `survey-report`, completed: false },
+            ],
+        },
+        {
             group: "DEPARTMENTS",
             items: [
                 { title: "Investment", icon: <FileText className="w-4 h-4" />, path: `investment`, completed: true },

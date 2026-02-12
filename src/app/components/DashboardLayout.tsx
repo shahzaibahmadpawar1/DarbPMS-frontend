@@ -35,7 +35,8 @@ export function DashboardLayout() {
   });
   const [chatOpen, setChatOpen] = useState(false);
   const location = useLocation();
-  const { t } = useTranslation();
+  const { t, lang } = useTranslation();
+  const isRTL = lang === 'ar';
 
   const { selectedStation } = useStation();
   const stationName = selectedStation?.name || "Location N101";
@@ -76,10 +77,12 @@ export function DashboardLayout() {
         {/* Sidebar */}
         <aside
           className={`
-            ${sidebarOpen ? "translate-x-0" : "ltr:-translate-x-full rtl:translate-x-full"}
-            lg:translate-x-0
-            ${sidebarOpen ? "lg:w-72" : "lg:w-16"}
-            w-72 transition-all duration-300 sidebar-gradient text-white flex flex-col fixed inset-y-0 lg:inset-y-4 ltr:left-0 rtl:right-0 ltr:lg:left-4 rtl:lg:right-4 z-50 lg:z-10 shadow-2xl backdrop-blur-xl lg:rounded-[2.5rem] overflow-hidden hover:shadow-[0_0_80px_hsl(var(--primary)/0.3)]
+            ${sidebarOpen ? "w-72 lg:w-72" : "w-72 lg:w-16"}
+            ${sidebarOpen ? "translate-x-0" : `${isRTL ? 'translate-x-full' : '-translate-x-full'} lg:translate-x-0`}
+            transition-all duration-300 sidebar-gradient text-white flex flex-col 
+            fixed inset-y-0
+            ${isRTL ? 'right-0' : 'left-0'}
+            z-50 lg:z-10 shadow-2xl backdrop-blur-xl ${isRTL ? 'lg:rounded-l-[2.5rem]' : 'lg:rounded-r-[2.5rem]'} overflow-hidden hover:shadow-[0_0_80px_hsl(var(--primary)/0.3)]
           `}
           style={{
             boxShadow: '0 0 60px hsl(var(--primary) / 0.2), 0 0 120px hsl(var(--secondary) / 0.1)'
@@ -159,17 +162,19 @@ export function DashboardLayout() {
           </div>
         </aside>
 
-        {/* Mobile overlay - only covers content, not sidebar */}
+        {/* Mobile overlay */}
         {sidebarOpen && (
           <div
-            className="fixed inset-y-0 ltr:left-72 ltr:right-0 rtl:right-72 rtl:left-0 bg-black/50 z-40 lg:hidden"
+            className={`fixed inset-y-0 ${isRTL ? 'right-72 left-0' : 'left-72 right-0'} bg-black/50 z-40 lg:hidden`}
             onClick={() => setSidebarOpen(false)}
           ></div>
         )}
 
         {/* Main Content */}
         <main
-          className={`flex-1 ${sidebarOpen ? "ltr:lg:ml-80 rtl:lg:mr-80" : "ltr:lg:ml-24 rtl:lg:mr-24"
+          className={`flex-1 ${isRTL
+              ? (sidebarOpen ? "lg:mr-72" : "lg:mr-16")
+              : (sidebarOpen ? "lg:ml-72" : "lg:ml-16")
             } transition-all duration-300`}
         >
           {/* Mobile Header with Hamburger */}
