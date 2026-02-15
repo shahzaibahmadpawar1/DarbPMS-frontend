@@ -70,17 +70,35 @@ export function AllStationsDashboardLayout() {
                 const worksheet = workbook.Sheets[firstSheetName];
                 const jsonData = XLSX.utils.sheet_to_json(worksheet);
 
+                if (jsonData.length === 0) {
+                    alert("The file seems to be empty or has no data rows.");
+                    return;
+                }
+
+                // Helper to find value by case-insensitive name
+                const getValue = (row: any, ...keys: string[]) => {
+                    const rowKeys = Object.keys(row);
+                    for (const key of keys) {
+                        const targetKey = rowKeys.find(rk =>
+                            rk.toLowerCase().replace(/[^a-z0-9]/g, '') ===
+                            key.toLowerCase().replace(/[^a-z0-9]/g, '')
+                        );
+                        if (targetKey !== undefined) return row[targetKey];
+                    }
+                    return undefined;
+                };
+
                 // Map Excel columns to backend fields
                 const mappedData = jsonData.map((row: any) => ({
-                    stationCode: row.stationCode || row['Station Code'] || row.station_code,
-                    stationName: row.stationName || row['Station Name'] || row.station_name,
-                    areaRegion: row.areaRegion || row['Area/Region'] || row.area_region,
-                    city: row.city || row['City'],
-                    district: row.district || row['District'],
-                    street: row.street || row['Street'],
-                    geographicLocation: row.geographicLocation || row['Geographic Location'] || row.geographic_location,
-                    stationTypeCode: row.stationTypeCode || row['Station Type Code'] || row.station_type_code,
-                    stationStatusCode: row.stationStatusCode || row['Station Status Code'] || row.station_status_code
+                    stationCode: getValue(row, 'stationCode', 'station_code', 'Station Code', 'Code'),
+                    stationName: getValue(row, 'stationName', 'station_name', 'Station Name', 'Name'),
+                    areaRegion: getValue(row, 'areaRegion', 'area_region', 'Area/Region', 'Region'),
+                    city: getValue(row, 'city', 'City'),
+                    district: getValue(row, 'district', 'District'),
+                    street: getValue(row, 'street', 'Street'),
+                    geographicLocation: getValue(row, 'geographicLocation', 'geographic_location', 'Geographic Location', 'Location'),
+                    stationTypeCode: getValue(row, 'stationTypeCode', 'station_type_code', 'Station Type Code', 'Type'),
+                    stationStatusCode: getValue(row, 'stationStatusCode', 'station_status_code', 'Station Status Code', 'Status')
                 }));
 
                 const token = localStorage.getItem('auth_token');
@@ -88,8 +106,16 @@ export function AllStationsDashboardLayout() {
                     headers: { Authorization: `Bearer ${token}` }
                 });
 
-                alert(`Import Successful!\nProcessed: ${response.data.message}\nErrors: ${response.data.errorCount}`);
-                window.location.reload();
+                const { successCount, errorCount, errors } = response.data;
+                let message = `Import Processed ${jsonData.length} rows.\n\nSuccessfully Imported: ${successCount}\nErrors: ${errorCount}`;
+
+                if (errorCount > 0) {
+                    message += "\n\nError details (first 3):\n" +
+                        errors.slice(0, 3).map((err: any) => `- ${err.stationCode}: ${err.error}`).join('\n');
+                }
+
+                alert(message);
+                if (successCount > 0) window.location.reload();
             } catch (error: any) {
                 console.error("Import failed:", error);
                 alert(`Import Failed: ${error.response?.data?.error || error.message}`);
