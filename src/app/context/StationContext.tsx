@@ -3,6 +3,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 interface StationContextType {
     selectedStation: {
         id: string;
+        station_code: string;
         name: string;
         region: string;
         city: string;
@@ -22,7 +23,9 @@ export function StationProvider({ children }: { children: ReactNode }) {
     });
 
     const [accessMode, setAccessMode] = useState<'admin' | 'view-only' | null>(() => {
-        return localStorage.getItem("accessMode") as 'admin' | 'view-only' | null;
+        const saved = localStorage.getItem("accessMode") as 'admin' | 'view-only' | null;
+        // Default to 'admin' mode for production (editable forms)
+        return saved || 'admin';
     });
 
     useEffect(() => {

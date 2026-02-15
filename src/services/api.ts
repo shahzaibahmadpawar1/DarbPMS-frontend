@@ -1,5 +1,5 @@
 // API Base URL from environment variables
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
 // User roles
 export type UserRole = 'admin' | 'user';
@@ -24,7 +24,7 @@ export interface ApiResponse<T = any> {
 export const authAPI = {
     // Login user
     async login(username: string, password: string): Promise<ApiResponse> {
-        const response = await fetch(`${API_URL}/api/auth/login`, {
+        const response = await fetch(`${API_URL}/auth/login`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -42,7 +42,7 @@ export const authAPI = {
 
     // Register user
     async register(username: string, password: string): Promise<ApiResponse> {
-        const response = await fetch(`${API_URL}/api/auth/register`, {
+        const response = await fetch(`${API_URL}/auth/register`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -60,7 +60,7 @@ export const authAPI = {
 
     // Get user profile
     async getProfile(token: string): Promise<ApiResponse> {
-        const response = await fetch(`${API_URL}/api/auth/profile`, {
+        const response = await fetch(`${API_URL}/auth/profile`, {
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`,

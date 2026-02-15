@@ -1,36 +1,110 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Save, List, PlusCircle, Eye } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
+import axios from "axios";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
+import { useParams } from "react-router-dom";
 
 export function OwnerInformationForm() {
-  const { accessMode } = useStation();
+  const { stationId } = useParams();
+  const { accessMode, selectedStation } = useStation();
   const isReadOnly = accessMode === 'view-only';
 
   const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
+  const [loading, setLoading] = useState(false);
+  const [records, setRecords] = useState<any[]>([]);
+  const [currentStation, setCurrentStation] = useState<any>(selectedStation);
 
-  // Pre-filled demo data for single station mode
   const [formData, setFormData] = useState({
-    ownerId: isReadOnly ? "1023948572" : "",
-    ownerName: isReadOnly ? "Ahmed bin Abdullah Al-Mansour" : "",
-    idIssueDate: isReadOnly ? "2018-03-15" : "",
-    idIssuePlace: isReadOnly ? "Riyadh" : "",
-    ownerMobile: isReadOnly ? "+966 50 123 4567" : "",
-    ownerAddress: isReadOnly ? "King Fahd Road, Al-Malqa District, Riyadh" : "",
-    ownerEmail: isReadOnly ? "ahmed.almansour@darbstation.sa" : "",
-    stationTypeCode: isReadOnly ? "1" : "",
-    stationCode: isReadOnly ? "N101" : "",
+    ownerId: "",
+    ownerName: "",
+    issueDate: "",
+    issuePlace: "",
+    ownerMobile: "",
+    ownerAddress: "",
+    ownerEmail: "",
+    stationTypeCode: "",
+    stationCode: "",
   });
 
-  const mockRecords = [
-    { id: "1023948572", name: "Ahmed Mansour", mobile: "+966 50 123 4567", email: "ahmed@example.com", station: "ST-201" },
-    { id: "1092837465", name: "Sarah Al-Otaibi", mobile: "+966 55 987 6543", email: "sarah@example.com", station: "ST-202" },
-  ];
+  useEffect(() => {
+    const fetchStationAndRecords = async () => {
+      let targetStation = selectedStation;
 
-  const handleSubmit = (e: React.FormEvent) => {
+      if (!targetStation && stationId && stationId !== 'new-station') {
+        try {
+          const token = localStorage.getItem('auth_token');
+          const response = await axios.get(`${API_BASE_URL}/stations/${stationId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          targetStation = response.data.data;
+          setCurrentStation(targetStation);
+        } catch (error) {
+          console.error("Error fetching station details:", error);
+        }
+      }
+
+      if (targetStation) {
+        setFormData(prev => ({ ...prev, stationCode: targetStation.station_code }));
+        fetchRecords(targetStation.station_code);
+      } else {
+        fetchRecords();
+      }
+    };
+
+    fetchStationAndRecords();
+  }, [selectedStation, stationId]);
+
+  const fetchRecords = async (stationCode?: string) => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      const code = stationCode || currentStation?.station_code;
+      const url = code
+        ? `${API_BASE_URL}/owners/station/${code}`
+        : `${API_BASE_URL}/owners`;
+
+      const response = await axios.get(url, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setRecords(response.data.data);
+    } catch (error) {
+      console.error("Error fetching owners:", error);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Owner Information:", formData);
-    alert("Owner Information saved successfully!");
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('auth_token');
+      await axios.post(`${API_BASE_URL}/owners`, formData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      alert("Owner Information saved successfully!");
+      setFormData({
+        ownerId: "",
+        ownerName: "",
+        issueDate: "",
+        issuePlace: "",
+        ownerMobile: "",
+        ownerAddress: "",
+        ownerEmail: "",
+        stationTypeCode: "",
+        stationCode: selectedStation?.station_code || "",
+      });
+      fetchRecords();
+      setViewMode('records');
+    } catch (error: any) {
+      console.error("Error saving owner:", error);
+      const errorMsg = error.response?.data?.error || "Failed to save owner information";
+      const details = error.response?.data?.details ? `\nDetails: ${error.response.data.details}` : "";
+      alert(`${errorMsg}${details}`);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -81,7 +155,7 @@ export function OwnerInformationForm() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1">
-                Owner ID/National ID (PK) <span className="text-red-500">*</span>
+                Owner ID/National ID <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -106,21 +180,21 @@ export function OwnerInformationForm() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-1">ID Issue Date</label>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Issue Date</label>
               <input
                 type="date"
-                value={formData.idIssueDate}
-                onChange={(e) => setFormData({ ...formData, idIssueDate: e.target.value })}
+                value={formData.issueDate}
+                onChange={(e) => setFormData({ ...formData, issueDate: e.target.value })}
                 className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
                 disabled={isReadOnly}
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-1">ID Issue Place</label>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Issue Place</label>
               <input
                 type="text"
-                value={formData.idIssuePlace}
-                onChange={(e) => setFormData({ ...formData, idIssuePlace: e.target.value })}
+                value={formData.issuePlace}
+                onChange={(e) => setFormData({ ...formData, issuePlace: e.target.value })}
                 className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
                 disabled={isReadOnly}
               />
@@ -156,28 +230,24 @@ export function OwnerInformationForm() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-1">Station Type Code (FK)</label>
-              <select
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Station Type Code</label>
+              <input
+                type="text"
                 value={formData.stationTypeCode}
                 onChange={(e) => setFormData({ ...formData, stationTypeCode: e.target.value })}
                 className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
                 disabled={isReadOnly}
-              >
-                <option value="">Select Type</option>
-                <option value="1">Owned Station</option>
-                <option value="2">Rented Station</option>
-                <option value="3">Operation</option>
-                <option value="4">Franchise</option>
-              </select>
+              />
             </div>
             <div>
-              <label className="block text-sm font-medium text-muted-foreground mb-1">Station Code (FK)</label>
+              <label className="block text-sm font-medium text-muted-foreground mb-1">Station Code <span className="text-red-500">*</span></label>
               <input
                 type="text"
                 value={formData.stationCode}
                 onChange={(e) => setFormData({ ...formData, stationCode: e.target.value })}
                 className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
-                disabled={isReadOnly}
+                required
+                disabled={isReadOnly || !!selectedStation}
               />
             </div>
           </div>
@@ -186,10 +256,11 @@ export function OwnerInformationForm() {
             <div className="flex justify-end mt-6">
               <button
                 type="submit"
-                className="btn-primary px-6 py-3 rounded-lg flex items-center gap-2 transition-all shadow-lg hover:shadow-primary/20"
+                disabled={loading}
+                className="btn-primary px-6 py-3 rounded-lg flex items-center gap-2 transition-all shadow-lg hover:shadow-primary/20 disabled:opacity-50"
               >
                 <Save className="w-5 h-5" />
-                Save Owner Information
+                {loading ? "Saving..." : "Save Owner Information"}
               </button>
             </div>
           )}
@@ -197,8 +268,14 @@ export function OwnerInformationForm() {
       ) : (
         <FormRecordsList
           title="Owner Information"
-          columns={["ID/National ID", "Name", "Mobile", "Email", "Station Code"]}
-          records={mockRecords}
+          columns={["Owner ID", "Name", "Mobile", "Email", "Station Code"]}
+          records={records.map(r => ({
+            "Owner ID": r.owner_id,
+            "Name": r.owner_name,
+            "Mobile": r.owner_mobile || "N/A",
+            "Email": r.owner_email || "N/A",
+            "Station Code": r.station_code
+          }))}
         />
       )}
     </div>

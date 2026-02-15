@@ -1,50 +1,104 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Save, List, PlusCircle, Eye } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 export function StationInformationForm() {
   const { accessMode } = useStation();
   const isReadOnly = accessMode === 'view-only';
 
   const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
+  const [records, setRecords] = useState<any[]>([]);
 
-  // Pre-filled demo data for single station mode
+  // Empty form data ready for user input
   const [formData, setFormData] = useState({
-    stationCode: isReadOnly ? "N101" : "",
-    stationName: isReadOnly ? "Location N101" : "",
-    areaRegion: isReadOnly ? "Central Region" : "",
-    city: isReadOnly ? "Riyadh" : "",
-    sector: isReadOnly ? "North Darb Expansion" : "",
-    district: isReadOnly ? "Al-Malqa" : "",
-    street: isReadOnly ? "King Fahd Road" : "",
-    geographicLocation: isReadOnly ? "https://maps.google.com/?q=24.7136,46.6753" : "",
-    stationSpace: isReadOnly ? "2500" : "",
-    canopySpace: isReadOnly ? "800" : "",
-    frontYardsSpace: isReadOnly ? "400" : "",
-    throwbackYardsSpace: isReadOnly ? "300" : "",
-    mosqueSpace: isReadOnly ? "150" : "",
-    restRoomSpace: isReadOnly ? "80" : "",
-    residentLaborSpace: isReadOnly ? "120" : "",
-    officeSpace: isReadOnly ? "100" : "",
-    rentalUnitsSpace: isReadOnly ? "250" : "",
-    numberOfRentalUnits: isReadOnly ? "3" : "",
-    numberOfUndergroundTanks: isReadOnly ? "4" : "",
-    stationTypeCode: isReadOnly ? "1" : "",
-    stationStatusCode: isReadOnly ? "1" : "",
+    stationCode: "",
+    stationName: "",
+    areaRegion: "",
+    city: "",
+    district: "",
+    street: "",
+    geographicLocation: "",
+    stationTypeCode: "",
+    stationStatusCode: "",
   });
 
-  const mockRecords = [
-    { code: "ST-201", name: "Darb Al Sultan", city: "Riyadh", type: "Owned", status: "Active" },
-    { code: "ST-202", name: "Jeddah Central", city: "Jeddah", type: "Rented", status: "Active" },
-    { code: "ST-203", name: "Dammam East", city: "Dammam", type: "Operation", status: "Construction" },
-    { code: "ST-204", name: "Medina Oasis", city: "Medina", type: "Franchise", status: "Planning" },
-  ];
+  // Fetch existing records
+  useEffect(() => {
+    fetchRecords();
+  }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const fetchRecords = async () => {
+    try {
+      const token = localStorage.getItem('auth_token');
+      if (!token) {
+        console.warn("No auth token found, please log in.");
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/stations`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setRecords(data.data || []);
+      } else if (response.status === 401 || response.status === 403) {
+        console.error("Authentication failed. Please log out and log in again to sync with the Vercel backend.");
+      }
+    } catch (error) {
+      console.error("Error fetching stations:", error);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Station Information:", formData);
-    alert("Station Information saved successfully!");
+
+    try {
+      const token = localStorage.getItem('auth_token');
+      const response = await fetch(`${API_BASE_URL}/stations`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert("Station Information saved successfully!");
+        // Reset form
+        setFormData({
+          stationCode: "",
+          stationName: "",
+          areaRegion: "",
+          city: "",
+          district: "",
+          street: "",
+          geographicLocation: "",
+          stationTypeCode: "",
+          stationStatusCode: "",
+        });
+        // Refresh records
+        fetchRecords();
+        // Optionally navigate to the stations list
+        // navigate('/all-stations-list');
+      } else if (response.status === 401 || response.status === 403) {
+        alert("Authentication failed. Please log out and then log in again to sync with the Vercel backend. Your token might be from a different session (localhost).");
+      } else {
+        alert(`Error: ${data.error || 'Failed to save station information'}`);
+      }
+    } catch (error) {
+      console.error("Error saving station:", error);
+      alert("Failed to save station information. Please make sure the backend server is running.");
+    }
   };
 
   return (
@@ -97,7 +151,7 @@ export function StationInformationForm() {
             <h2 className="text-xl font-semibold text-foreground mb-4 border-b border-border pb-2">
               Basic Information
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-muted-foreground mb-1">
                   Station Code (PK) <span className="text-error">*</span>
@@ -124,23 +178,6 @@ export function StationInformationForm() {
                   disabled={isReadOnly}
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1">
-                  Station Type Code (FK)
-                </label>
-                <select
-                  value={formData.stationTypeCode}
-                  onChange={(e) => setFormData({ ...formData, stationTypeCode: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
-                  disabled={isReadOnly}
-                >
-                  <option value="">Select Type</option>
-                  <option value="1">Owned Station</option>
-                  <option value="2">Rented Station</option>
-                  <option value="3">Operation</option>
-                  <option value="4">Franchise</option>
-                </select>
-              </div>
             </div>
           </div>
 
@@ -166,16 +203,6 @@ export function StationInformationForm() {
                   type="text"
                   value={formData.city}
                   onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
-                  disabled={isReadOnly}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1">Sector</label>
-                <input
-                  type="text"
-                  value={formData.sector}
-                  onChange={(e) => setFormData({ ...formData, sector: e.target.value })}
                   className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
                   disabled={isReadOnly}
                 />
@@ -214,130 +241,30 @@ export function StationInformationForm() {
             </div>
           </div>
 
-          {/* Space Specifications */}
-          <div className="mb-6">
-            <h2 className="text-xl font-semibold text-foreground mb-4 border-b border-border pb-2">
-              Space Specifications (sqm)
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1">Station Space (Total sqm)</label>
-                <input
-                  type="number"
-                  value={formData.stationSpace}
-                  onChange={(e) => setFormData({ ...formData, stationSpace: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
-                  disabled={isReadOnly}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1">Canopy Space</label>
-                <input
-                  type="number"
-                  value={formData.canopySpace}
-                  onChange={(e) => setFormData({ ...formData, canopySpace: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
-                  disabled={isReadOnly}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1">Front Yards Space</label>
-                <input
-                  type="number"
-                  value={formData.frontYardsSpace}
-                  onChange={(e) => setFormData({ ...formData, frontYardsSpace: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
-                  disabled={isReadOnly}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1">Throwback Yards Space</label>
-                <input
-                  type="number"
-                  value={formData.throwbackYardsSpace}
-                  onChange={(e) => setFormData({ ...formData, throwbackYardsSpace: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
-                  disabled={isReadOnly}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1">Mosque Space</label>
-                <input
-                  type="number"
-                  value={formData.mosqueSpace}
-                  onChange={(e) => setFormData({ ...formData, mosqueSpace: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
-                  disabled={isReadOnly}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1">Rest Room Space</label>
-                <input
-                  type="number"
-                  value={formData.restRoomSpace}
-                  onChange={(e) => setFormData({ ...formData, restRoomSpace: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
-                  disabled={isReadOnly}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1">Resident/Labor Space</label>
-                <input
-                  type="number"
-                  value={formData.residentLaborSpace}
-                  onChange={(e) => setFormData({ ...formData, residentLaborSpace: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
-                  disabled={isReadOnly}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1">Office Space</label>
-                <input
-                  type="number"
-                  value={formData.officeSpace}
-                  onChange={(e) => setFormData({ ...formData, officeSpace: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
-                  disabled={isReadOnly}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1">Rental Units Space</label>
-                <input
-                  type="number"
-                  value={formData.rentalUnitsSpace}
-                  onChange={(e) => setFormData({ ...formData, rentalUnitsSpace: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
-                  disabled={isReadOnly}
-                />
-              </div>
-            </div>
-          </div>
+
 
           {/* Additional Details */}
           <div className="mb-6">
             <h2 className="text-xl font-semibold text-foreground mb-4 border-b border-border pb-2">
               Additional Details
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1">Number of Rental Units</label>
-                <input
-                  type="number"
-                  value={formData.numberOfRentalUnits}
-                  onChange={(e) => setFormData({ ...formData, numberOfRentalUnits: e.target.value })}
+                <label className="block text-sm font-medium text-muted-foreground mb-1">
+                  Station Type Code (FK)
+                </label>
+                <select
+                  value={formData.stationTypeCode}
+                  onChange={(e) => setFormData({ ...formData, stationTypeCode: e.target.value })}
                   className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
                   disabled={isReadOnly}
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1">Number of Underground Tanks</label>
-                <input
-                  type="number"
-                  value={formData.numberOfUndergroundTanks}
-                  onChange={(e) => setFormData({ ...formData, numberOfUndergroundTanks: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
-                  disabled={isReadOnly}
-                />
+                >
+                  <option value="">Select Type</option>
+                  <option value="1">Owned Station</option>
+                  <option value="2">Rented Station</option>
+                  <option value="3">Operation</option>
+                  <option value="4">Franchise</option>
+                </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-muted-foreground mb-1">Station Status Code (FK)</label>
@@ -373,8 +300,17 @@ export function StationInformationForm() {
       ) : (
         <FormRecordsList
           title="Station Information"
-          columns={["Code", "Name", "City", "Type", "Status"]}
-          records={mockRecords}
+          columns={["Code", "Name", "Region", "City", "District", "Street", "Type", "Status"]}
+          records={records.map(r => ({
+            "Code": r.station_code,
+            "Name": r.station_name,
+            "Region": r.area_region || "N/A",
+            "City": r.city || "N/A",
+            "District": r.district || "N/A",
+            "Street": r.street || "N/A",
+            "Type": r.station_type_code || "N/A",
+            "Status": r.station_status_code || "N/A"
+          }))}
         />
       )
       }

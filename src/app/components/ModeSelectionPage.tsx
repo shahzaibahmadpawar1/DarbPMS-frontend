@@ -66,7 +66,7 @@ export function ModeSelectionPage() {
 
                         {/* Single Station Option */}
                         <button
-                            onClick={() => handleModeSelect('view-only', "/select-station")}
+                            onClick={() => handleModeSelect('admin', "/select-station")}
                             className="group relative bg-background border-2 border-border p-10 rounded-3xl hover:border-secondary hover:shadow-2xl hover:shadow-secondary/10 hover:-translate-y-2 transition-all text-center overflow-hidden"
                         >
                             <div className="absolute top-0 left-0 right-0 h-1 gradient-primary-to-secondary opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -79,7 +79,7 @@ export function ModeSelectionPage() {
 
                             <h2 className="text-2xl font-black text-foreground mb-3 tracking-tight">Station</h2>
                             <p className="text-muted-foreground mb-6 leading-relaxed">
-                                Select a specific station to view detailed analytics and manage all forms for that particular location
+                                Select a specific station to manage and edit all forms, data, and information for that particular location
                             </p>
 
                             <div className="flex items-center justify-center gap-2 text-secondary font-bold group-hover:gap-4 transition-all">

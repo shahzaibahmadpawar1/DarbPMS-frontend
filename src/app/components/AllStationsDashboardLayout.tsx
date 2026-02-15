@@ -10,6 +10,7 @@ import {
     FileText,
     PlusCircle,
     ClipboardList,
+    Upload,
 } from "lucide-react";
 import { BackToDashboardButton } from "./BackToDashboardButton";
 import { LanguageSwitcher } from "./LanguageSwitcher";
@@ -17,6 +18,10 @@ import { BrandName } from "./BrandName";
 import { ChatWidget } from "./ChatWidget";
 import { useTranslation } from "../../utils/translations";
 import logo from "../../assets/logo.png";
+import * as XLSX from 'xlsx';
+import axios from "axios";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 interface NavItem {
     titleKey: "dashboard" | "analytics" | "stations" | "tasks" | "reports" | "contactCEO";
@@ -33,6 +38,7 @@ export function AllStationsDashboardLayout() {
         return false;
     });
     const [chatOpen, setChatOpen] = useState(false);
+    const [importLoading, setImportLoading] = useState(false);
     const location = useLocation();
     const { t, lang } = useTranslation();
     const isRTL = lang === 'ar';
@@ -50,6 +56,51 @@ export function AllStationsDashboardLayout() {
         return () => window.removeEventListener('resize', handleResize);
     }, []);
 
+    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        setImportLoading(true);
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const data = new Uint8Array(e.target?.result as ArrayBuffer);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                // Map Excel columns to backend fields
+                const mappedData = jsonData.map((row: any) => ({
+                    stationCode: row.stationCode || row['Station Code'] || row.station_code,
+                    stationName: row.stationName || row['Station Name'] || row.station_name,
+                    areaRegion: row.areaRegion || row['Area/Region'] || row.area_region,
+                    city: row.city || row['City'],
+                    district: row.district || row['District'],
+                    street: row.street || row['Street'],
+                    geographicLocation: row.geographicLocation || row['Geographic Location'] || row.geographic_location,
+                    stationTypeCode: row.stationTypeCode || row['Station Type Code'] || row.station_type_code,
+                    stationStatusCode: row.stationStatusCode || row['Station Status Code'] || row.station_status_code
+                }));
+
+                const token = localStorage.getItem('auth_token');
+                const response = await axios.post(`${API_BASE_URL}/stations/bulk`, mappedData, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+
+                alert(`Import Successful!\nProcessed: ${response.data.message}\nErrors: ${response.data.errorCount}`);
+                window.location.reload();
+            } catch (error: any) {
+                console.error("Import failed:", error);
+                alert(`Import Failed: ${error.response?.data?.error || error.message}`);
+            } finally {
+                setImportLoading(false);
+                if (event.target) event.target.value = '';
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    };
+
     const navigation: NavItem[] = [
         { titleKey: "dashboard", path: "/all-stations-dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
         { titleKey: "analytics", path: "/all-stations-analytics", icon: <Activity className="w-5 h-5" /> },
@@ -65,14 +116,11 @@ export function AllStationsDashboardLayout() {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-muted via-background to-muted flex relative">
-            {/* Animated mesh gradient overlay */}
             <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-secondary/5 pointer-events-none"></div>
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.05),transparent_50%)] pointer-events-none"></div>
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,hsl(var(--secondary)/0.05),transparent_50%)] pointer-events-none"></div>
 
-            {/* Content wrapper */}
             <div className="relative z-0 flex w-full">
-                {/* Sidebar */}
                 <aside
                     className={`
                         ${sidebarOpen ? "w-72 lg:w-72" : "w-72 lg:w-16"}
@@ -86,7 +134,6 @@ export function AllStationsDashboardLayout() {
                         boxShadow: '0 0 60px hsl(var(--primary) / 0.2), 0 0 120px hsl(var(--secondary) / 0.1)'
                     }}
                 >
-                    {/* Logo & Toggle */}
                     <div className="p-4 flex items-center justify-between border-b border-white/20 backdrop-blur-sm">
                         {sidebarOpen ? (
                             <div className="flex items-center gap-2">
@@ -115,7 +162,6 @@ export function AllStationsDashboardLayout() {
                         </button>
                     </div>
 
-                    {/* Navigation */}
                     <nav className={`flex-1 overflow-y-auto ${sidebarOpen ? 'p-4' : 'p-2'} space-y-2`}>
                         {navigation.map((item) => (
                             <Link
@@ -147,7 +193,6 @@ export function AllStationsDashboardLayout() {
                         </button>
                     </nav>
 
-                    {/* Logout Section */}
                     <div className={`${sidebarOpen ? 'p-4' : 'p-2'} border-t border-white/20`}>
                         <Link
                             to="/login"
@@ -160,7 +205,6 @@ export function AllStationsDashboardLayout() {
                     </div>
                 </aside>
 
-                {/* Mobile overlay - only covers content, not sidebar */}
                 {sidebarOpen && (
                     <div
                         className={`fixed inset-y-0 ${isRTL ? 'right-72 left-0' : 'left-72 right-0'} bg-black/50 z-40 lg:hidden`}
@@ -168,14 +212,13 @@ export function AllStationsDashboardLayout() {
                     ></div>
                 )}
 
-                {/* Main Content */}
                 <main
                     className={`flex-1 ${isRTL
                         ? (sidebarOpen ? "lg:mr-72" : "lg:mr-16")
                         : (sidebarOpen ? "lg:ml-72" : "lg:ml-16")
                         } transition-all duration-300 relative z-0 overflow-auto`}
                 >
-                    {/* Mobile Header with Hamburger */}
+                    {/* Mobile Header */}
                     <div className="lg:hidden bg-card/80 backdrop-blur-xl mx-2 my-2 rounded-lg border border-border px-2 sm:px-4 py-2 sm:py-3 sticky top-2 z-10 shadow-lg flex items-center justify-between gap-2">
                         <button
                             onClick={() => setSidebarOpen(true)}
@@ -191,8 +234,22 @@ export function AllStationsDashboardLayout() {
                     <header className="hidden lg:flex bg-card/80 backdrop-blur-xl m-4 rounded-2xl border border-border px-4 md:px-6 lg:px-8 py-4 sticky top-4 z-10 shadow-lg shadow-primary/10 items-center justify-between flex-wrap gap-4">
                         <BackToDashboardButton />
                         <div className="flex items-center gap-2 md:gap-4">
+                            <label
+                                className={`flex items-center gap-2 px-3 md:px-4 py-2 border-2 border-primary/20 text-primary rounded-lg hover:bg-primary/5 transition-all duration-200 font-semibold text-xs md:text-sm cursor-pointer ${importLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            >
+                                <Upload className="w-4 h-4" />
+                                <span className="hidden sm:inline">{importLoading ? 'Importing...' : t("importStations")}</span>
+                                <input
+                                    type="file"
+                                    accept=".xlsx, .xls, .csv"
+                                    onChange={handleFileUpload}
+                                    className="hidden"
+                                    disabled={importLoading}
+                                />
+                            </label>
+
                             <Link
-                                to="/add-new-project"
+                                to="/station/new-station/form/station-information"
                                 className="flex items-center gap-2 px-3 md:px-4 py-2 bg-gradient-to-r from-primary to-secondary text-primary-foreground rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-xs md:text-sm"
                             >
                                 <PlusCircle className="w-4 h-4" />
@@ -203,14 +260,12 @@ export function AllStationsDashboardLayout() {
                         </div>
                     </header>
 
-                    {/* Page Content */}
                     <div className="p-2 sm:p-4 md:p-6 lg:p-8">
                         <Outlet />
                     </div>
                 </main>
             </div>
 
-            {/* Chat Widget */}
             <ChatWidget isOpen={chatOpen} onClose={() => setChatOpen(false)} />
         </div>
     );

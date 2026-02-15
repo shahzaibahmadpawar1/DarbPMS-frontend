@@ -15,6 +15,11 @@ import {
     Info,
     CheckCircle,
     XCircle,
+    Camera,
+    Fuel,
+    Droplet,
+    Database,
+    Maximize,
 } from "lucide-react";
 import logo from "../../assets/logo.png";
 
@@ -24,6 +29,7 @@ export function SingleStationDashboard() {
     // Use selected station or a default for demo purposes
     const station = selectedStation || {
         id: "location-n101",
+        station_code: "N101",
         name: "Location N101",
         region: "Central Region",
         city: "Riyadh",
@@ -37,18 +43,21 @@ export function SingleStationDashboard() {
         region: station.region,
         city: station.city,
         expansion: station.project,
-        completion: 73,
+        completion: 68, // Calculation based on 11/16
         formsCompleted: 11,
-        totalForms: 15,
+        totalForms: 16,
     };
 
     const formSections = [
         {
             group: "STATION ESSENTIALS",
             items: [
-                { title: "Station Information", icon: <Info className="w-4 h-4" />, path: `station-information`, completed: true },
-                { title: "Station Type", icon: <FileText className="w-4 h-4" />, path: `station-type`, completed: true },
-                { title: "Station Status", icon: <FileText className="w-4 h-4" />, path: `station-status`, completed: false },
+                { title: "Station Information", icon: <Info className="w-4 h-4" />, path: `station-information`, completed: false },
+                { title: "Cameras", icon: <Camera className="w-4 h-4" />, path: `cameras`, completed: false },
+                { title: "Dispensers", icon: <Fuel className="w-4 h-4" />, path: `dispensers`, completed: false },
+                { title: "Nozzles", icon: <Droplet className="w-4 h-4" />, path: `nozzles`, completed: false },
+                { title: "Tanks", icon: <Database className="w-4 h-4" />, path: `tanks`, completed: false },
+                { title: "Areas", icon: <Maximize className="w-4 h-4" />, path: `areas`, completed: false },
             ],
         },
         {
@@ -56,13 +65,14 @@ export function SingleStationDashboard() {
             items: [
                 { title: "Owner Information", icon: <Users className="w-4 h-4" />, path: `owner-information`, completed: true },
                 { title: "Deed Information", icon: <Scroll className="w-4 h-4" />, path: `deed-information`, completed: true },
+                { title: "Building Permit", icon: <FileText className="w-4 h-4" />, path: `building-permit`, completed: false },
                 { title: "Contract", icon: <FileText className="w-4 h-4" />, path: `contract`, completed: false },
+                { title: "Commercial License", icon: <FileText className="w-4 h-4" />, path: `commercial-license`, completed: true },
             ],
         },
         {
             group: "GOVERNMENT LICENSES",
             items: [
-                { title: "Commercial License", icon: <FileText className="w-4 h-4" />, path: `commercial-license`, completed: true },
                 { title: "Salamah License", icon: <Shield className="w-4 h-4" />, path: `salamah-license`, completed: false },
                 { title: "Taqyees License", icon: <FileText className="w-4 h-4" />, path: `taqyees-license`, completed: true },
                 { title: "Environmental License", icon: <Leaf className="w-4 h-4" />, path: `environmental-license`, completed: true },

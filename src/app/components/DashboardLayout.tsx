@@ -173,8 +173,8 @@ export function DashboardLayout() {
         {/* Main Content */}
         <main
           className={`flex-1 ${isRTL
-              ? (sidebarOpen ? "lg:mr-72" : "lg:mr-16")
-              : (sidebarOpen ? "lg:ml-72" : "lg:ml-16")
+            ? (sidebarOpen ? "lg:mr-72" : "lg:mr-16")
+            : (sidebarOpen ? "lg:ml-72" : "lg:ml-16")
             } transition-all duration-300`}
         >
           {/* Mobile Header with Hamburger */}
@@ -194,7 +194,7 @@ export function DashboardLayout() {
             <BackToDashboardButton />
             <div className="flex items-center gap-2 md:gap-4">
               <Link
-                to="/add-new-project"
+                to="/dashboard/station-information"
                 className="flex items-center gap-2 px-3 md:px-4 py-2 bg-gradient-to-r from-primary to-secondary text-primary-foreground rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-xs md:text-sm"
               >
                 <PlusCircle className="w-4 h-4" />

@@ -13,6 +13,7 @@ export const translations = {
         chat: "Chat",
         logout: "Log out",
         addNewProject: "Add New Project",
+        importStations: "Import Stations",
         allStations: "All Stations",
     },
     ar: {
@@ -26,6 +27,7 @@ export const translations = {
         chat: "محادثة",
         logout: "تسجيل الخروج",
         addNewProject: "إضافة مشروع جديد",
+        importStations: "استيراد المحطات",
         allStations: "جميع المحطات",
     },
 };
