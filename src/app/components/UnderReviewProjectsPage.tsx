@@ -2,7 +2,8 @@ import { useState, useEffect } from "react";
 import {
     Clock, CheckCircle, XCircle, MessageSquare,
     ChevronDown, ChevronUp, ExternalLink, MapPin,
-    Calendar, User, FileText
+    Calendar, User, FileText, Phone, Mail, Hash,
+    Layers, Tag, Building2, AlertCircle, Download,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 
@@ -28,6 +29,24 @@ interface InvestmentProject {
     pm_comment?: string;
     ceo_comment?: string;
     owner_name: string;
+    owner_contact_no: string;
+    owner_type: string;
+    id_no: string;
+    email: string;
+    national_address: string;
+    super_market: number;
+    fuel_station: number;
+    kiosks: number;
+    retail_shop: number;
+    drive_through: number;
+    super_market_area: number;
+    fuel_station_area: number;
+    kiosks_area: number;
+    retail_shop_area: number;
+    drive_through_area: number;
+    design_file_url: string;
+    documents_url: string;
+    autocad_url: string;
     created_at: string;
 }
 
@@ -111,7 +130,7 @@ export function UnderReviewProjectsPage() {
 
     const isCEO = user?.role === 'ceo';
     const isAdmin = user?.role === 'admin';
-    const isPM = user?.role === 'user' || isAdmin;
+    const isPM = user?.role === 'user' || user?.role === 'admin';
 
     // Filter projects based on the current user's role and status
     // User/PM sees everything but can only validate 'Pending Review'
@@ -176,41 +195,126 @@ export function UnderReviewProjectsPage() {
                             {/* Details Panel */}
                             {expandedId === project.id && (
                                 <div className="px-6 pb-6 animate-in slide-in-from-top-2 duration-300">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 py-6 border-t border-border">
-                                        <div className="space-y-1">
-                                            <p className="text-xs font-bold text-muted-foreground uppercase">City / District</p>
-                                            <div className="flex items-center gap-2 text-sm">
-                                                <MapPin className="w-3.5 h-3.5 text-primary" />
-                                                <span>{project.city}, {project.district}</span>
+                                    {/* ── Project Info ── */}
+                                    <div className="border-t border-border pt-6 mb-6">
+                                        <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                                            <FileText className="w-3.5 h-3.5" /> Project Information
+                                        </h4>
+                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                            <div className="space-y-1">
+                                                <p className="text-xs font-bold text-muted-foreground uppercase">Request Type</p>
+                                                <div className="flex items-center gap-2 text-sm"><Tag className="w-3.5 h-3.5 text-primary flex-shrink-0" /><span>{project.request_type || 'N/A'}</span></div>
                                             </div>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="text-xs font-bold text-muted-foreground uppercase">Owner</p>
-                                            <div className="flex items-center gap-2 text-sm">
-                                                <User className="w-3.5 h-3.5 text-primary" />
-                                                <span>{project.owner_name || 'N/A'}</span>
+                                            <div className="space-y-1">
+                                                <p className="text-xs font-bold text-muted-foreground uppercase">City / District</p>
+                                                <div className="flex items-center gap-2 text-sm"><MapPin className="w-3.5 h-3.5 text-primary flex-shrink-0" /><span>{project.city || 'N/A'}{project.district ? `, ${project.district}` : ''}</span></div>
                                             </div>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="text-xs font-bold text-muted-foreground uppercase">Request Date</p>
-                                            <div className="flex items-center gap-2 text-sm">
-                                                <Calendar className="w-3.5 h-3.5 text-primary" />
-                                                <span>{project.order_date ? new Date(project.order_date).toLocaleDateString() : 'N/A'}</span>
+                                            <div className="space-y-1">
+                                                <p className="text-xs font-bold text-muted-foreground uppercase">Area (m²)</p>
+                                                <div className="flex items-center gap-2 text-sm"><Layers className="w-3.5 h-3.5 text-primary flex-shrink-0" /><span>{project.area || 'N/A'}</span></div>
                                             </div>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="text-xs font-bold text-muted-foreground uppercase">GPS Location</p>
-                                            <a
-                                                href={project.google_location}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex items-center gap-2 text-sm text-primary hover:underline"
-                                            >
-                                                <ExternalLink className="w-3.5 h-3.5" />
-                                                <span>View on Maps</span>
-                                            </a>
+                                            <div className="space-y-1">
+                                                <p className="text-xs font-bold text-muted-foreground uppercase">Project Status</p>
+                                                <div className="flex items-center gap-2 text-sm"><AlertCircle className="w-3.5 h-3.5 text-primary flex-shrink-0" /><span>{project.project_status || 'N/A'}</span></div>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-xs font-bold text-muted-foreground uppercase">Contract Type</p>
+                                                <div className="flex items-center gap-2 text-sm"><FileText className="w-3.5 h-3.5 text-primary flex-shrink-0" /><span>{project.contract_type || 'N/A'}</span></div>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-xs font-bold text-muted-foreground uppercase">Priority Level</p>
+                                                <div className="flex items-center gap-2 text-sm">
+                                                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${project.priority_level === 'High' ? 'bg-red-100 text-red-700' : project.priority_level === 'Medium' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>{project.priority_level || 'N/A'}</span>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-xs font-bold text-muted-foreground uppercase">Request Date</p>
+                                                <div className="flex items-center gap-2 text-sm"><Calendar className="w-3.5 h-3.5 text-primary flex-shrink-0" /><span>{project.order_date ? new Date(project.order_date).toLocaleDateString() : 'N/A'}</span></div>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-xs font-bold text-muted-foreground uppercase">Request Sender</p>
+                                                <div className="flex items-center gap-2 text-sm"><User className="w-3.5 h-3.5 text-primary flex-shrink-0" /><span>{project.request_sender || 'N/A'}</span></div>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-xs font-bold text-muted-foreground uppercase">Submitted On</p>
+                                                <div className="flex items-center gap-2 text-sm"><Calendar className="w-3.5 h-3.5 text-primary flex-shrink-0" /><span>{project.created_at ? new Date(project.created_at).toLocaleDateString() : 'N/A'}</span></div>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-xs font-bold text-muted-foreground uppercase">GPS Location</p>
+                                                <a href={project.google_location} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-primary hover:underline">
+                                                    <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" /><span>View on Maps</span>
+                                                </a>
+                                            </div>
                                         </div>
                                     </div>
+
+                                    {/* ── Owner Info ── */}
+                                    <div className="border-t border-border pt-6 mb-6">
+                                        <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                                            <User className="w-3.5 h-3.5" /> Owner Information
+                                            {project.owner_type && <span className="ml-2 px-2 py-0.5 rounded-full text-xs bg-muted capitalize">{project.owner_type}</span>}
+                                        </h4>
+                                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                                            <div className="space-y-1">
+                                                <p className="text-xs font-bold text-muted-foreground uppercase">{project.owner_type === 'company' ? 'Company Name' : 'Owner Name'}</p>
+                                                <div className="flex items-center gap-2 text-sm"><User className="w-3.5 h-3.5 text-primary flex-shrink-0" /><span>{project.owner_name || 'N/A'}</span></div>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-xs font-bold text-muted-foreground uppercase">Contact No</p>
+                                                <div className="flex items-center gap-2 text-sm"><Phone className="w-3.5 h-3.5 text-primary flex-shrink-0" /><span>{project.owner_contact_no || 'N/A'}</span></div>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-xs font-bold text-muted-foreground uppercase">ID / CR No</p>
+                                                <div className="flex items-center gap-2 text-sm"><Hash className="w-3.5 h-3.5 text-primary flex-shrink-0" /><span>{project.id_no || 'N/A'}</span></div>
+                                            </div>
+                                            <div className="space-y-1">
+                                                <p className="text-xs font-bold text-muted-foreground uppercase">Email</p>
+                                                <div className="flex items-center gap-2 text-sm"><Mail className="w-3.5 h-3.5 text-primary flex-shrink-0" /><span>{project.email || 'N/A'}</span></div>
+                                            </div>
+                                            <div className="space-y-1 col-span-2">
+                                                <p className="text-xs font-bold text-muted-foreground uppercase">National Address</p>
+                                                <div className="flex items-center gap-2 text-sm"><MapPin className="w-3.5 h-3.5 text-primary flex-shrink-0" /><span>{project.national_address || 'N/A'}</span></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* ── Station Elements ── */}
+                                    {(project.super_market > 0 || project.fuel_station > 0 || project.kiosks > 0 || project.retail_shop > 0 || project.drive_through > 0) && (
+                                        <div className="border-t border-border pt-6 mb-6">
+                                            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                                                <Building2 className="w-3.5 h-3.5" /> Station Elements
+                                            </h4>
+                                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+                                                {[
+                                                    { label: 'Supermarket', count: project.super_market, area: project.super_market_area },
+                                                    { label: 'Fuel Station', count: project.fuel_station, area: project.fuel_station_area },
+                                                    { label: 'Kiosks', count: project.kiosks, area: project.kiosks_area },
+                                                    { label: 'Retail Shop', count: project.retail_shop, area: project.retail_shop_area },
+                                                    { label: 'Drive Through', count: project.drive_through, area: project.drive_through_area },
+                                                ].filter(el => el.count > 0).map(el => (
+                                                    <div key={el.label} className="bg-muted/50 rounded-xl p-3 border border-border text-center">
+                                                        <p className="text-xs font-bold text-muted-foreground mb-1">{el.label}</p>
+                                                        <p className="text-lg font-black text-foreground">{el.count}</p>
+                                                        {el.area > 0 && <p className="text-xs text-muted-foreground mt-1">{el.area} m²</p>}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* ── Documents ── */}
+                                    {(project.design_file_url || project.documents_url || project.autocad_url) && (
+                                        <div className="border-t border-border pt-6 mb-6">
+                                            <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
+                                                <Download className="w-3.5 h-3.5" /> Project Documents
+                                            </h4>
+                                            <div className="flex flex-wrap gap-3">
+                                                {project.design_file_url && <a href={project.design_file_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"><Download className="w-4 h-4" />Design File</a>}
+                                                {project.documents_url && <a href={project.documents_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-purple-50 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-100 transition-colors"><Download className="w-4 h-4" />Documents</a>}
+                                                {project.autocad_url && <a href={project.autocad_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 rounded-lg text-sm font-medium hover:bg-amber-100 transition-colors"><Download className="w-4 h-4" />AutoCAD (.dwg)</a>}
+                                            </div>
+                                        </div>
+                                    )}
 
                                     {/* History / Comments */}
                                     <div className="bg-muted/30 rounded-xl p-4 space-y-4 mb-6">
@@ -244,7 +348,7 @@ export function UnderReviewProjectsPage() {
                                     {/* Action Bar */}
                                     <div className="border-t border-border pt-6">
                                         <div className="mb-4">
-                                            <label className="block text-sm font-bold text-muted-foreground mb-2 flex items-center gap-2">
+                                            <label className="flex items-center gap-2 text-sm font-bold text-muted-foreground mb-2">
                                                 <MessageSquare className="w-4 h-4" />
                                                 Add Comment / Decision Notes
                                             </label>

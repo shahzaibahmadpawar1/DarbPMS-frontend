@@ -19,6 +19,14 @@ interface ElementCount {
     driveThrough: string;
 }
 
+interface ElementAreas {
+    superMarket: string;
+    fuelStation: string;
+    kiosks: string;
+    retailShop: string;
+    driveThrough: string;
+}
+
 interface NewProjectForm {
     requestType: string;
     city: string;
@@ -30,7 +38,7 @@ interface NewProjectForm {
     contractType: string;
     googleLocation: string;
     elements: ElementCount;
-    elementArea: string;
+    elementAreas: ElementAreas;
     priorityLevel: string;
     ownerName: string;
     ownerContactNo: string;
@@ -52,7 +60,7 @@ const REQUEST_TYPES = [
 ];
 
 const PROJECT_STATUSES = ["Vacant Land", "Operational", "Under Structural Construction"];
-const CONTRACT_TYPES = ["Operation Station", "Lease Stations", "Investment"];
+const CONTRACT_TYPES = ["Operation Station", "Lease Stations", "Investment", "Franchise Station"];
 const PRIORITY_LEVELS = ["Low", "Medium", "High", "Critical"];
 
 // ─── Field Helper ─────────────────────────────────────────────────────────────
@@ -135,7 +143,8 @@ function NewProjectTab() {
         district: "", area: "", projectStatus: "", contractType: "",
         googleLocation: "",
         elements: { superMarket: "0", fuelStation: "0", kiosks: "0", retailShop: "0", driveThrough: "0" },
-        elementArea: "", priorityLevel: "", ownerName: "", ownerContactNo: "",
+        elementAreas: { superMarket: "", fuelStation: "", kiosks: "", retailShop: "", driveThrough: "" },
+        priorityLevel: "", ownerName: "", ownerContactNo: "",
         idNo: "", nationalAddress: "", email: "", ownerType: "individual",
         requestSender: "", orderDate: "",
     });
@@ -147,6 +156,8 @@ function NewProjectTab() {
     const set = (key: keyof NewProjectForm, val: string) => setForm(p => ({ ...p, [key]: val }));
     const setEl = (key: keyof ElementCount, val: string) =>
         setForm(p => ({ ...p, elements: { ...p.elements, [key]: val } }));
+    const setElArea = (key: keyof ElementAreas, val: string) =>
+        setForm(p => ({ ...p, elementAreas: { ...p.elementAreas, [key]: val } }));
 
     const { token } = useAuth();
     const handleSubmit = async (e: React.FormEvent) => {
@@ -160,7 +171,11 @@ function NewProjectTab() {
                 kiosks: parseInt(form.elements.kiosks),
                 retailShop: parseInt(form.elements.retailShop),
                 driveThrough: parseInt(form.elements.driveThrough),
-                elementArea: parseFloat(form.elementArea),
+                superMarketArea: parseFloat(form.elementAreas.superMarket) || 0,
+                fuelStationArea: parseFloat(form.elementAreas.fuelStation) || 0,
+                kiosksArea: parseFloat(form.elementAreas.kiosks) || 0,
+                retailShopArea: parseFloat(form.elementAreas.retailShop) || 0,
+                driveThroughArea: parseFloat(form.elementAreas.driveThrough) || 0,
                 area: parseFloat(form.area),
                 // Files would typically be uploaded first and URLs sent here
                 // For now, we simulation-submit without files
@@ -182,7 +197,8 @@ function NewProjectTab() {
                     district: "", area: "", projectStatus: "", contractType: "",
                     googleLocation: "",
                     elements: { superMarket: "0", fuelStation: "0", kiosks: "0", retailShop: "0", driveThrough: "0" },
-                    elementArea: "", priorityLevel: "", ownerName: "", ownerContactNo: "",
+                    elementAreas: { superMarket: "", fuelStation: "", kiosks: "", retailShop: "", driveThrough: "" },
+                    priorityLevel: "", ownerName: "", ownerContactNo: "",
                     idNo: "", nationalAddress: "", email: "", ownerType: "individual",
                     requestSender: "", orderDate: "",
                 });
@@ -267,25 +283,35 @@ function NewProjectTab() {
 
             {/* ── Elements ──────────────────────────────────────────────────── */}
             <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
-                <SectionHeader icon={<Layers className="w-5 h-5" />} title="Station Elements" subtitle="Specify the commercial elements present at the site" />
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-4">
+                <SectionHeader icon={<Layers className="w-5 h-5" />} title="Station Elements" subtitle="Specify the count and area for each commercial element at the site" />
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
                     {ELEMENTS.map(el => (
-                        <div key={el.key} className="bg-muted/50 rounded-xl p-4 text-center border border-border hover:border-primary/30 transition-colors">
-                            <p className="text-xs font-semibold text-muted-foreground mb-2">{el.label}</p>
-                            <input
-                                type="number"
-                                min="0"
-                                value={form.elements[el.key]}
-                                onChange={e => setEl(el.key, e.target.value)}
-                                className="w-full text-center text-lg font-bold border border-border rounded-lg px-2 py-1.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                            />
+                        <div key={el.key} className="bg-muted/50 rounded-xl p-4 border border-border hover:border-primary/30 transition-colors space-y-3">
+                            <p className="text-xs font-semibold text-muted-foreground text-center">{el.label}</p>
+                            <div>
+                                <p className="text-[10px] text-muted-foreground mb-1 text-center">Count</p>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    value={form.elements[el.key]}
+                                    onChange={e => setEl(el.key, e.target.value)}
+                                    className="w-full text-center text-lg font-bold border border-border rounded-lg px-2 py-1.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                                />
+                            </div>
+                            <div>
+                                <p className="text-[10px] text-muted-foreground mb-1 text-center">Area (m²)</p>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={form.elementAreas[el.key]}
+                                    onChange={e => setElArea(el.key, e.target.value)}
+                                    placeholder="0.00"
+                                    className="w-full text-center text-sm font-medium border border-border rounded-lg px-2 py-1.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                                />
+                            </div>
                         </div>
                     ))}
-                </div>
-                <div className="max-w-xs">
-                    <Field label="Total Elements Area (m²)">
-                        <input type="number" value={form.elementArea} onChange={e => set("elementArea", e.target.value)} className={inputCls} placeholder="Combined area in m²" />
-                    </Field>
                 </div>
             </div>
 
@@ -324,14 +350,14 @@ function NewProjectTab() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <Field label="Owner Name" required>
+                    <Field label={form.ownerType === "company" ? "Company Name" : "Owner Name"} required>
                         <div className="relative">
                             <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <input type="text" value={form.ownerName} onChange={e => set("ownerName", e.target.value)}
-                                className={`${inputCls} pl-9`} placeholder="Full name or company name" />
+                                className={`${inputCls} pl-9`} placeholder={form.ownerType === "company" ? "Company name" : "Full name"} />
                         </div>
                     </Field>
-                    <Field label="Owner Contact No" required>
+                    <Field label={form.ownerType === "company" ? "Company Contact No" : "Owner Contact No"} required>
                         <div className="relative">
                             <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                             <input type="tel" value={form.ownerContactNo} onChange={e => set("ownerContactNo", e.target.value)}

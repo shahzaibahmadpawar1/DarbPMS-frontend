@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
 import {
     CheckCircle,
     Clock,
@@ -31,117 +32,83 @@ interface Task {
 }
 
 export function TasksPage() {
+    const { token } = useAuth();
     const [selectedFilter, setSelectedFilter] = useState<string>("all");
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedStatus, setSelectedStatus] = useState<string>("all");
+    const [tasks, setTasks] = useState<Task[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
-    // Sample tasks data - replace with actual data from your backend
-    const tasks: Task[] = [
-        {
-            id: "TASK-001",
-            title: "Procurement Request - Fuel Pumps",
-            description: "Request for 5 new fuel pumps for Location N101",
-            type: "procurement",
-            status: "pending",
-            priority: "high",
-            station: "Location N101",
-            assignedTo: "Ahmed Hassan",
-            createdBy: "Station Manager",
-            createdDate: "2024-02-01",
-            dueDate: "2024-02-15",
-        },
-        {
-            id: "TASK-002",
-            title: "CEO Complaint - Customer Service Issue",
-            description: "Customer complaint regarding fuel quality at Jeddah Central Hub",
-            type: "ceo_complaint",
-            status: "in_progress",
-            priority: "urgent",
-            station: "Jeddah Central Hub",
-            assignedTo: "Sara Ahmed",
-            createdBy: "CEO Office",
-            createdDate: "2024-02-02",
-            dueDate: "2024-02-05",
-        },
-        {
-            id: "TASK-003",
-            title: "Maintenance Request - HVAC System",
-            description: "HVAC system needs repair at Dammam East Point",
-            type: "maintenance",
-            status: "completed",
-            priority: "medium",
-            station: "Dammam East Point",
-            assignedTo: "Maintenance Team",
-            createdBy: "Operations Manager",
-            createdDate: "2024-01-28",
-            dueDate: "2024-02-03",
-        },
-        {
-            id: "TASK-004",
-            title: "Legal Review - Contract Amendment",
-            description: "Review and approve contract amendment for RML-01",
-            type: "legal",
-            status: "in_progress",
-            priority: "high",
-            station: "RML-01",
-            assignedTo: "Legal Department",
-            createdBy: "Property Manager",
-            createdDate: "2024-02-03",
-            dueDate: "2024-02-10",
-        },
-        {
-            id: "TASK-005",
-            title: "Investment Approval - Expansion Project",
-            description: "Approval needed for expansion project budget at Location N102",
-            type: "investment",
-            status: "pending",
-            priority: "urgent",
-            station: "Location N102",
-            assignedTo: "Investment Team",
-            createdBy: "Project Manager",
-            createdDate: "2024-02-04",
-            dueDate: "2024-02-08",
-        },
-        {
-            id: "TASK-006",
-            title: "Procurement Request - Safety Equipment",
-            description: "Order fire extinguishers and safety gear for all stations",
-            type: "procurement",
-            status: "in_progress",
-            priority: "high",
-            station: "All Stations",
-            assignedTo: "Procurement Team",
-            createdBy: "Safety Officer",
-            createdDate: "2024-02-01",
-            dueDate: "2024-02-12",
-        },
-        {
-            id: "TASK-007",
-            title: "CEO Complaint - Delayed Opening",
-            description: "Investigation required for delayed station opening",
-            type: "ceo_complaint",
-            status: "rejected",
-            priority: "medium",
-            station: "Medina Oasis Station",
-            assignedTo: "Operations Director",
-            createdBy: "CEO Office",
-            createdDate: "2024-01-25",
-            dueDate: "2024-01-30",
-        },
-        {
-            id: "TASK-008",
-            title: "Maintenance Request - Lighting System",
-            description: "Replace outdoor lighting at Riyadh North Station",
-            type: "maintenance",
-            status: "pending",
-            priority: "low",
-            station: "Riyadh North Station",
-            assignedTo: "Maintenance Team",
-            createdBy: "Station Supervisor",
-            createdDate: "2024-02-03",
-            dueDate: "2024-02-20",
-        },
-    ];
+    const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+
+    const statusFromReview = (reviewStatus: string): Task['status'] => {
+        switch (reviewStatus) {
+            case 'Pending Review': return 'pending';
+            case 'Validated': return 'in_progress';
+            case 'Approved': return 'completed';
+            case 'Rejected': return 'rejected';
+            default: return 'pending';
+        }
+    };
+
+    const titleFromProject = (project: any): string => {
+        switch (project.review_status) {
+            case 'Pending Review': return `New Project Submitted - ${project.project_name}`;
+            case 'Validated': return `Project Validated - Awaiting CEO Approval (${project.project_name})`;
+            case 'Approved': return `Project Approved - Station Created (${project.project_name})`;
+            case 'Rejected': return `Project Rejected - ${project.project_name}`;
+            default: return project.project_name;
+        }
+    };
+
+    const descriptionFromProject = (project: any): string => {
+        const dept = project.department_type === 'franchise' ? 'Franchise' : 'Investment';
+        switch (project.review_status) {
+            case 'Pending Review': return `${dept} project "${project.project_name}" (${project.project_code}) submitted and pending PM validation. City: ${project.city || 'N/A'}.`;
+            case 'Validated': return `${dept} project "${project.project_name}" has been validated by the Project Manager and is waiting for CEO approval.`;
+            case 'Approved': return `${dept} project "${project.project_name}" has been approved by the CEO. Station has been automatically created.`;
+            case 'Rejected': return `${dept} project "${project.project_name}" was rejected. Check comments for details.`;
+            default: return project.project_name;
+        }
+    };
+
+    useEffect(() => {
+        if (!token) return;
+        const fetchTasks = async () => {
+            setIsLoading(true);
+            try {
+                const response = await fetch(`${API_URL}/tasks`, {
+                    headers: { 'Authorization': `Bearer ${token}` },
+                });
+                if (response.ok) {
+                    const result = await response.json();
+                    const mappedTasks: Task[] = (result.data || []).map((project: any) => ({
+                        id: project.id,
+                        title: titleFromProject(project),
+                        description: descriptionFromProject(project),
+                        type: project.department_type === 'franchise' ? 'investment' : 'investment',
+                        status: statusFromReview(project.review_status),
+                        priority: project.priority_level?.toLowerCase() === 'high' ? 'high'
+                            : project.priority_level?.toLowerCase() === 'medium' ? 'medium'
+                                : project.priority_level?.toLowerCase() === 'urgent' ? 'urgent' : 'low',
+                        station: project.city || 'N/A',
+                        assignedTo: project.owner_name || 'Unassigned',
+                        createdBy: project.request_sender || 'System',
+                        createdDate: project.created_at ? new Date(project.created_at).toLocaleDateString() : 'N/A',
+                        dueDate: project.order_date ? new Date(project.order_date).toLocaleDateString() : 'N/A',
+                    }));
+                    setTasks(mappedTasks);
+                } else {
+                    console.error('Failed to fetch tasks:', response.statusText);
+                }
+            } catch (err) {
+                console.error('Error fetching tasks:', err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+        fetchTasks();
+    }, [token]);
 
     const taskTypes = [
         { value: "all", label: "All Types", icon: FileText, color: "text-muted-foreground" },
@@ -243,6 +210,11 @@ export function TasksPage() {
                 </p>
             </div>
 
+            {isLoading ? (
+                <div className="flex items-center justify-center p-20">
+                    <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                </div>
+            ) : (<>
             {/* Statistics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                 <div className="bg-card/80 backdrop-blur-xl rounded-xl shadow-md border border-border p-6">
@@ -404,6 +376,7 @@ export function TasksPage() {
                     ))
                 )}
             </div>
+            </>)}
         </div>
     );
 }

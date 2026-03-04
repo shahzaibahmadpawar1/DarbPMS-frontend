@@ -28,8 +28,11 @@ export function LoginPage() {
                 const user = JSON.parse(userStr);
 
                 // Role-based routing
-                if (user.role === 'admin' || user.role === 'ceo') {
-                    // Admin and CEO go to all stations dashboard
+                if (user.role === 'admin' || user.role === 'ceo' || user.role === 'investment_user' || user.role === 'franchise_user') {
+                    // Admin, CEO, investment and franchise users go to all stations dashboard
+                    navigate("/all-stations-dashboard");
+                } else if (user.role === 'user') {
+                    // Project Manager
                     navigate("/all-stations-dashboard");
                 } else {
                     // Regular user goes to their assigned station dashboard

@@ -2,7 +2,19 @@
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
 // User roles
-export type UserRole = 'admin' | 'user' | 'ceo';
+export type UserRole = 'admin' | 'user' | 'ceo' | 'investment_user' | 'franchise_user';
+
+// Helper: human-readable label for each role
+export function getRoleLabel(role: UserRole): string {
+    switch (role) {
+        case 'admin': return 'Admin';
+        case 'ceo': return 'CEO';
+        case 'user': return 'Project Manager';
+        case 'investment_user': return 'Investment User';
+        case 'franchise_user': return 'Franchise User';
+        default: return role;
+    }
+}
 
 // API Response types
 export interface ApiResponse<T = any> {
@@ -81,4 +93,59 @@ export const authAPI = {
 export const healthCheck = async (): Promise<any> => {
     const response = await fetch(`${API_URL}/health`);
     return response.json();
+};
+
+// User interface for admin management
+export interface UserRecord {
+    id: string;
+    username: string;
+    password: string;
+    role: UserRole;
+    station_id: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+// Users API (admin only)
+export const usersAPI = {
+    async getAll(): Promise<UserRecord[]> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_URL}/auth/users`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to fetch users');
+        }
+        const data = await response.json();
+        return data.data;
+    },
+
+    async create(username: string, password: string, role: UserRole): Promise<void> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_URL}/auth/users`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username, password, role }),
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to create user');
+        }
+    },
+
+    async delete(id: string): Promise<void> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_URL}/auth/users/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to delete user');
+        }
+    },
 };

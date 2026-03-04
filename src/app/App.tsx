@@ -56,6 +56,7 @@ import { FranchiseDepartmentPage } from "@/app/components/forms/FranchiseDepartm
 import { GovernmentLicenseAttachmentsPage } from "@/app/components/forms/GovernmentLicenseAttachmentsPage";
 import { RequestPage } from "@/app/components/RequestPage";
 import { UnderReviewProjectsPage } from "@/app/components/UnderReviewProjectsPage";
+import { UsersPage } from "@/app/components/UsersPage";
 
 function App() {
   return (
@@ -82,6 +83,7 @@ function App() {
               <Route path="/all-stations-requests" element={<RequestPage />} />
               <Route path="/all-stations-under-review" element={<UnderReviewProjectsPage />} />
               <Route path="/all-stations-contact-ceo" element={<ComplaintContactForm />} />
+              <Route path="/all-stations-users" element={<UsersPage />} />
 
               {/* Station-specific forms nested under the same layout */}
               <Route path="/station/:stationId/form">

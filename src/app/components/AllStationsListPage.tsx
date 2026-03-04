@@ -33,8 +33,10 @@ import {
     AlertTriangle,
     Briefcase,
     Paperclip,
+    Trash2,
 } from "lucide-react";
 import logo from "../../assets/logo.png";
+import { useAuth } from "@/context/AuthContext";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
@@ -104,6 +106,7 @@ const stationSections = [
 ];
 
 export function AllStationsListPage() {
+    const { user, token } = useAuth();
     const [stations, setStations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [expandedStations, setExpandedStations] = useState<string[]>([]);
@@ -111,6 +114,10 @@ export function AllStationsListPage() {
     const [selectedRegion, setSelectedRegion] = useState("");
     const [selectedCity, setSelectedCity] = useState("");
     const [selectedCustomer, setSelectedCustomer] = useState("");
+    const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
+    const [deleting, setDeleting] = useState(false);
+
+    const isAdmin = user?.role === 'admin';
 
     useEffect(() => {
         fetchStations();
@@ -172,6 +179,32 @@ export function AllStationsListPage() {
                 ? prev.filter((id) => id !== stationId)
                 : [...prev, stationId]
         );
+    };
+
+    const handleDelete = async (stationId: string) => {
+        if (!token) return;
+        setDeleting(true);
+        try {
+            const response = await fetch(`${API_BASE_URL}/stations/${stationId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+            if (response.ok) {
+                setStations(prev => prev.filter(s => s.id !== stationId));
+                setDeleteConfirm(null);
+            } else {
+                const err = await response.json();
+                alert(`Failed to delete station: ${err.error || response.statusText}`);
+            }
+        } catch (error) {
+            console.error('Error deleting station:', error);
+            alert('Failed to delete station');
+        } finally {
+            setDeleting(false);
+        }
     };
 
     const getStatusColor = (status: string) => {
@@ -335,6 +368,15 @@ export function AllStationsListPage() {
                                             <Activity className="w-4 h-4 flex-shrink-0" />
                                             <span className="hidden xs:inline">Analytics</span>
                                         </Link>
+                                        {isAdmin && (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ id: station.id, name: station.name }); }}
+                                                className="p-1.5 sm:p-2 hover:bg-red-50 text-red-500 hover:text-red-600 rounded-lg transition-colors flex-shrink-0"
+                                                title="Delete station"
+                                            >
+                                                <Trash2 className="w-4 h-4" />
+                                            </button>
+                                        )}
                                         <button className="p-1.5 sm:p-2 hover:bg-muted rounded-lg transition-colors flex-shrink-0">
                                             {expandedStations.includes(station.id) ? (
                                                 <ChevronDown className="w-5 h-5 text-muted-foreground" />
@@ -384,6 +426,43 @@ export function AllStationsListPage() {
                     );
                 })}
             </div>
+
+            {/* Delete Confirmation Modal */}
+            {deleteConfirm && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                    <div className="bg-card rounded-2xl shadow-2xl border border-border p-6 max-w-sm w-full mx-4">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-red-100 rounded-lg">
+                                <Trash2 className="w-5 h-5 text-red-600" />
+                            </div>
+                            <h3 className="text-lg font-bold text-foreground">Delete Station</h3>
+                        </div>
+                        <p className="text-sm text-muted-foreground mb-6">
+                            Are you sure you want to delete <strong className="text-foreground">{deleteConfirm.name}</strong>? This action cannot be undone and will remove all associated data.
+                        </p>
+                        <div className="flex gap-3 justify-end">
+                            <button
+                                onClick={() => setDeleteConfirm(null)}
+                                disabled={deleting}
+                                className="px-4 py-2 text-sm font-semibold border border-border rounded-lg hover:bg-muted transition-colors disabled:opacity-50"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => handleDelete(deleteConfirm.id)}
+                                disabled={deleting}
+                                className="px-4 py-2 text-sm font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                            >
+                                {deleting ? (
+                                    <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Deleting...</>
+                                ) : (
+                                    <><Trash2 className="w-4 h-4" /> Delete</>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

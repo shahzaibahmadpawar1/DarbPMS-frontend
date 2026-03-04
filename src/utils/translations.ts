@@ -17,6 +17,9 @@ export const translations = {
         allStations: "All Stations",
         requests: "Requests",
         underReview: "Under Review",
+        users: "Users",
+        investmentDept: "Investment",
+        franchiseDept: "Franchise",
     },
     ar: {
         // Navigation
@@ -33,6 +36,9 @@ export const translations = {
         allStations: "جميع المحطات",
         requests: "الطلبات",
         underReview: "تحت المراجعة",
+        users: "المستخدمون",
+        investmentDept: "الاستثمار",
+        franchiseDept: "الامتياز",
     },
 };
 

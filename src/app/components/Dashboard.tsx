@@ -1,66 +1,96 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Clock, AlertCircle, CheckCircle, Calendar, ChevronDown, PlusCircle } from "lucide-react";
 import { BrandName } from "./BrandName";
 import { Link } from "react-router-dom";
-//import { ExecutiveDashboard } from "./ExecutiveDashboard";
 import logo from "../../assets/logo.png";
+import { useAuth } from "@/context/AuthContext";
+
+const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
 export function Dashboard() {
+  const { token } = useAuth();
   const [stationType, setStationType] = useState<string>("All");
+  const [dashStats, setDashStats] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    if (!token) return;
+    const fetchStats = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(`${API_URL}/dashboard/stats`, {
+          headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setDashStats(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch dashboard stats:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchStats();
+  }, [token]);
+
+  const s = dashStats?.stations || {};
+  const projects = dashStats?.projects || {};
+  const recentActivities: any[] = dashStats?.recentActivities || [];
+  const stationsList: any[] = dashStats?.stationsList || [];
 
   const stats = [
     {
       title: "Total Stations",
-      value: "0",
+      value: isLoading ? "..." : (s.total || "0"),
       icon: <img src={logo} alt="" className="w-8 h-8 object-contain brightness-0 invert" />,
-      change: "0%",
+      change: `${projects.approved || 0} approved`,
       color: "bg-gradient-to-br from-primary to-secondary",
       path: "/total-stations",
     },
     {
       title: "Under Execution",
-      value: "0",
+      value: isLoading ? "..." : (s.under_execution || "0"),
       icon: <Clock className="w-8 h-8" />,
-      change: "0%",
+      change: `${projects.pending_review || 0} pending`,
       color: "bg-info",
-      path: "/under-review",
+      path: "/all-stations-under-review",
     },
     {
       title: "Not Started",
-      value: "0",
+      value: isLoading ? "..." : (s.not_started || "0"),
       icon: <AlertCircle className="w-8 h-8" />,
-      change: "0%",
+      change: `${projects.validated || 0} validated`,
       color: "bg-error",
-      path: "/under-review",
+      path: "/all-stations-under-review",
     },
     {
       title: "Operational Stations",
-      value: "0",
+      value: isLoading ? "..." : (s.operational || "0"),
       icon: <CheckCircle className="w-8 h-8" />,
-      change: "0%",
+      change: `${projects.total || 0} projects`,
       color: "bg-success",
       path: "/total-stations",
     },
     {
       title: "Opening Soon",
-      value: "0",
+      value: isLoading ? "..." : (s.opening_soon || "0"),
       icon: <Calendar className="w-8 h-8" />,
-      change: "0%",
+      change: "",
       color: "bg-gradient-to-br from-primary to-secondary",
       path: "/total-stations",
     },
     {
       title: "New stations during the month",
-      value: "0",
+      value: isLoading ? "..." : (s.new_this_month || "0"),
       icon: <PlusCircle className="w-8 h-8" />,
-      change: "0%",
+      change: "",
       color: "bg-primary",
       path: "/total-stations",
     },
   ];
 
-  const stations: any[] = [];
-  const recentActivities: any[] = [];
+  const stations: any[] = stationsList;
 
   return (
     <div className="p-8">
@@ -102,12 +132,30 @@ export function Dashboard() {
               <div className={`${stat.color} text-white p-3 rounded-xl shadow-lg shadow-primary/20`}>
                 {stat.icon}
               </div>
-              <span className={`text-sm font-semibold ${stat.change.startsWith('+') ? 'text-success' : 'text-error'}`}>
-                {stat.change}
-              </span>
+              {stat.change && (
+                <span className="text-xs font-semibold text-muted-foreground bg-muted px-2 py-1 rounded-full">
+                  {stat.change}
+                </span>
+              )}
             </div>
             <h3 className="text-muted-foreground text-sm font-medium mb-1">{stat.title}</h3>
             <p className="text-3xl font-bold text-foreground">{stat.value}</p>
+          </Link>
+        ))}
+      </div>
+
+      {/* Projects Overview */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+        {[
+          { label: 'Total Projects', value: projects.total || 0, color: 'bg-blue-50 text-blue-700 border-blue-100' },
+          { label: 'Pending Review', value: projects.pending_review || 0, color: 'bg-amber-50 text-amber-700 border-amber-100' },
+          { label: 'Validated', value: projects.validated || 0, color: 'bg-purple-50 text-purple-700 border-purple-100' },
+          { label: 'Approved', value: projects.approved || 0, color: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
+        ].map(item => (
+          <Link key={item.label} to="/all-stations-under-review"
+            className={`bg-card rounded-xl border p-4 flex flex-col gap-1 hover:shadow-md transition-all ${item.color}`}>
+            <p className="text-xs font-bold uppercase tracking-wide opacity-70">{item.label}</p>
+            <p className="text-3xl font-black">{isLoading ? '...' : item.value}</p>
           </Link>
         ))}
       </div>
@@ -121,23 +169,22 @@ export function Dashboard() {
         <div className="space-y-6">
           {stations.length === 0 ? (
             <div className="p-10 text-center text-muted-foreground border border-dashed border-border rounded-lg bg-muted/30">
-              No station progress data found.
+              {isLoading ? "Loading station data..." : "No station progress data found."}
             </div>
           ) : (
             stations.map((station, index) => (
               <div key={index} className="space-y-2">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-bold text-foreground">{station.name}</p>
-                    <span className="text-xs text-muted-foreground">{station.status}</span>
+                    <p className="font-bold text-foreground">{station.station_name || station.name}</p>
+                    <span className="text-xs text-muted-foreground capitalize">{station.station_status_code || station.status || 'Active'}</span>
                   </div>
-                  <span className="text-sm font-bold text-primary">{station.completion}%</span>
+                  <span className="text-xs font-semibold text-muted-foreground">
+                    {station.created_at ? new Date(station.created_at).toLocaleDateString() : ''}
+                  </span>
                 </div>
-                <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full progress-bar transition-all duration-500"
-                    style={{ width: `${station.completion}%` }}
-                  />
+                <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div className="h-full bg-primary rounded-full w-full opacity-30" />
                 </div>
               </div>
             ))
@@ -160,10 +207,12 @@ export function Dashboard() {
                 className="flex items-center justify-between p-4 border border-border rounded-xl hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10 transition-all bg-card/50 backdrop-blur-sm"
               >
                 <div>
-                  <p className="font-medium text-foreground">{activity.action}</p>
-                  <p className="text-sm text-muted-foreground">{activity.station}</p>
+                  <p className="font-medium text-foreground">{activity.project_name || activity.action}</p>
+                  <p className="text-sm text-muted-foreground capitalize">{activity.review_status || activity.station} • {activity.department_type}</p>
                 </div>
-                <span className="text-sm text-muted-foreground">{activity.time}</span>
+                <span className="text-sm text-muted-foreground">
+                  {activity.created_at ? new Date(activity.created_at).toLocaleDateString() : activity.time}
+                </span>
               </div>
             ))
           )}

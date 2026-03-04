@@ -13,12 +13,15 @@ import {
     Upload,
     Inbox,
     Clock,
+    Users,
 } from "lucide-react";
 import { BackToDashboardButton } from "./BackToDashboardButton";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { BrandName } from "./BrandName";
 import { ChatWidget } from "./ChatWidget";
 import { useTranslation } from "../../utils/translations";
+import { useAuth } from "@/context/AuthContext";
+import { getRoleLabel } from "@/services/api";
 import logo from "../../assets/logo.png";
 import * as XLSX from 'xlsx';
 import axios from "axios";
@@ -26,7 +29,7 @@ import axios from "axios";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 interface NavItem {
-    titleKey: "dashboard" | "analytics" | "stations" | "tasks" | "reports" | "contactCEO" | "requests" | "underReview";
+    titleKey: "dashboard" | "analytics" | "stations" | "tasks" | "reports" | "contactCEO" | "requests" | "underReview" | "users" | "investmentDept" | "franchiseDept";
     path: string;
     icon: React.ReactNode;
 }
@@ -43,6 +46,7 @@ export function AllStationsDashboardLayout() {
     const [importLoading, setImportLoading] = useState(false);
     const location = useLocation();
     const { t, lang } = useTranslation();
+    const { user } = useAuth();
     const isRTL = lang === 'ar';
 
 
@@ -129,16 +133,28 @@ export function AllStationsDashboardLayout() {
         reader.readAsArrayBuffer(file);
     };
 
-    const navigation: NavItem[] = [
-        { titleKey: "dashboard", path: "/all-stations-dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
-        { titleKey: "analytics", path: "/all-stations-analytics", icon: <Activity className="w-5 h-5" /> },
-        { titleKey: "stations", path: "/all-stations-list", icon: <img src={logo} alt="" className="w-5 h-5 object-contain brightness-0 invert" /> },
-        { titleKey: "requests", path: "/all-stations-requests", icon: <Inbox className="w-5 h-5" /> },
-        { titleKey: "underReview", path: "/all-stations-under-review", icon: <Clock className="w-5 h-5" /> },
-        { titleKey: "tasks", path: "/all-stations-tasks", icon: <ClipboardList className="w-5 h-5" /> },
-        { titleKey: "reports", path: "/all-stations-reports", icon: <FileText className="w-5 h-5" /> },
-        { titleKey: "contactCEO", path: "/all-stations-contact-ceo", icon: <MessageCircle className="w-5 h-5" /> },
-    ];
+    const isInvestmentUser = user?.role === 'investment_user';
+    const isFranchiseUser = user?.role === 'franchise_user';
+    const isDeptUser = isInvestmentUser || isFranchiseUser;
+
+    const navigation: NavItem[] = isDeptUser
+        ? [
+            { titleKey: "dashboard", path: "/all-stations-dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
+            ...(isInvestmentUser ? [{ titleKey: "investmentDept" as const, path: "/station/new-station/form/investment-department", icon: <FileText className="w-5 h-5" /> }] : []),
+            ...(isFranchiseUser ? [{ titleKey: "franchiseDept" as const, path: "/station/new-station/form/franchise-department", icon: <FileText className="w-5 h-5" /> }] : []),
+            { titleKey: "underReview", path: "/all-stations-under-review", icon: <Clock className="w-5 h-5" /> },
+          ]
+        : [
+            { titleKey: "dashboard", path: "/all-stations-dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
+            { titleKey: "analytics", path: "/all-stations-analytics", icon: <Activity className="w-5 h-5" /> },
+            { titleKey: "stations", path: "/all-stations-list", icon: <img src={logo} alt="" className="w-5 h-5 object-contain brightness-0 invert" /> },
+            { titleKey: "requests", path: "/all-stations-requests", icon: <Inbox className="w-5 h-5" /> },
+            { titleKey: "underReview", path: "/all-stations-under-review", icon: <Clock className="w-5 h-5" /> },
+            { titleKey: "tasks", path: "/all-stations-tasks", icon: <ClipboardList className="w-5 h-5" /> },
+            { titleKey: "reports", path: "/all-stations-reports", icon: <FileText className="w-5 h-5" /> },
+            { titleKey: "contactCEO", path: "/all-stations-contact-ceo", icon: <MessageCircle className="w-5 h-5" /> },
+            ...(user?.role === 'admin' ? [{ titleKey: "users" as const, path: "/all-stations-users", icon: <Users className="w-5 h-5" /> }] : []),
+          ];
 
     const handleChatClick = () => {
         setChatOpen(!chatOpen);
@@ -256,7 +272,14 @@ export function AllStationsDashboardLayout() {
                         >
                             <Menu className="w-5 h-5" />
                         </button>
-                        <h2 className="text-xs sm:text-sm font-bold truncate flex-1 min-w-0">{t("allStations")}</h2>
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <h2 className="text-xs sm:text-sm font-bold truncate">{t("allStations")}</h2>
+                            {user && (
+                                <span className="hidden sm:inline text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold flex-shrink-0">
+                                    {getRoleLabel(user.role)}
+                                </span>
+                            )}
+                        </div>
                         <LanguageSwitcher />
                     </div>
 
@@ -264,28 +287,43 @@ export function AllStationsDashboardLayout() {
                     <header className="hidden lg:flex bg-card/80 backdrop-blur-xl m-4 rounded-2xl border border-border px-4 md:px-6 lg:px-8 py-4 sticky top-4 z-10 shadow-lg shadow-primary/10 items-center justify-between flex-wrap gap-4">
                         <BackToDashboardButton />
                         <div className="flex items-center gap-2 md:gap-4">
-                            <label
-                                className={`flex items-center gap-2 px-3 md:px-4 py-2 border-2 border-primary/20 text-primary rounded-lg hover:bg-primary/5 transition-all duration-200 font-semibold text-xs md:text-sm cursor-pointer ${importLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            >
-                                <Upload className="w-4 h-4" />
-                                <span className="hidden sm:inline">{importLoading ? 'Importing...' : t("importStations")}</span>
-                                <input
-                                    type="file"
-                                    accept=".xlsx, .xls, .csv"
-                                    onChange={handleFileUpload}
-                                    className="hidden"
-                                    disabled={importLoading}
-                                />
-                            </label>
-
-                            <Link
-                                to="/station/new-station/form/station-information"
-                                className="flex items-center gap-2 px-3 md:px-4 py-2 bg-gradient-to-r from-primary to-secondary text-primary-foreground rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-xs md:text-sm"
-                            >
-                                <PlusCircle className="w-4 h-4" />
-                                <span className="hidden sm:inline">{t("addNewProject")}</span>
-                                <span className="sm:hidden">{t("addNewProject").split(" ")[0]}</span>
-                            </Link>
+                            {/* User info badge */}
+                            {user && (
+                                <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/8 border border-primary/20 rounded-lg">
+                                    <div className="w-7 h-7 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center flex-shrink-0">
+                                        <span className="text-xs font-bold text-white uppercase">{user.username[0]}</span>
+                                    </div>
+                                    <div className="leading-none">
+                                        <p className="text-xs font-semibold text-foreground">{user.username}</p>
+                                        <p className="text-[10px] text-muted-foreground">Role: {getRoleLabel(user.role)}</p>
+                                    </div>
+                                </div>
+                            )}
+                            {!isDeptUser && (
+                                <label
+                                    className={`flex items-center gap-2 px-3 md:px-4 py-2 border-2 border-primary/20 text-primary rounded-lg hover:bg-primary/5 transition-all duration-200 font-semibold text-xs md:text-sm cursor-pointer ${importLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                >
+                                    <Upload className="w-4 h-4" />
+                                    <span className="hidden sm:inline">{importLoading ? 'Importing...' : t("importStations")}</span>
+                                    <input
+                                        type="file"
+                                        accept=".xlsx, .xls, .csv"
+                                        onChange={handleFileUpload}
+                                        className="hidden"
+                                        disabled={importLoading}
+                                    />
+                                </label>
+                            )}
+                            {!isDeptUser && (
+                                <Link
+                                    to="/station/new-station/form/station-information"
+                                    className="flex items-center gap-2 px-3 md:px-4 py-2 bg-gradient-to-r from-primary to-secondary text-primary-foreground rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-xs md:text-sm"
+                                >
+                                    <PlusCircle className="w-4 h-4" />
+                                    <span className="hidden sm:inline">{t("addNewProject")}</span>
+                                    <span className="sm:hidden">{t("addNewProject").split(" ")[0]}</span>
+                                </Link>
+                            )}
                             <LanguageSwitcher />
                         </div>
                     </header>
