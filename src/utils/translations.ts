@@ -15,6 +15,8 @@ export const translations = {
         addNewProject: "Add New Project",
         importStations: "Import Stations",
         allStations: "All Stations",
+        requests: "Requests",
+        underReview: "Under Review",
     },
     ar: {
         // Navigation
@@ -29,6 +31,8 @@ export const translations = {
         addNewProject: "إضافة مشروع جديد",
         importStations: "استيراد المحطات",
         allStations: "جميع المحطات",
+        requests: "الطلبات",
+        underReview: "تحت المراجعة",
     },
 };
 

@@ -2,7 +2,7 @@
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
 // User roles
-export type UserRole = 'admin' | 'user';
+export type UserRole = 'admin' | 'user' | 'ceo';
 
 // API Response types
 export interface ApiResponse<T = any> {

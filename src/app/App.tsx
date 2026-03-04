@@ -13,21 +13,13 @@ import { DeedInformationForm } from "@/app/components/forms/DeedInformationForm"
 import { ContractForm } from "@/app/components/forms/ContractForm";
 import { InvestmentForm } from "@/app/components/forms/InvestmentForm";
 import { ProjectsForm } from "@/app/components/forms/ProjectsForm";
-import { OperationsManagementForm } from "@/app/components/forms/OperationsManagementForm";
-import { FranchiseManagementForm } from "@/app/components/forms/FranchiseManagementForm";
-import { PropertyManagementForm } from "@/app/components/forms/PropertyManagementForm";
-import { QualityManagementForm } from "@/app/components/forms/QualityManagementForm";
-import { ProcurementDepartmentForm } from "@/app/components/forms/ProcurementDepartmentForm";
-import { MaintenanceDepartmentForm } from "@/app/components/forms/MaintenanceDepartmentForm";
-import { LegalDepartmentForm } from "@/app/components/forms/LegalDepartmentForm";
-import { MarketingDepartmentForm } from "@/app/components/forms/MarketingDepartmentForm";
-import { GovernmentRelationsDepartmentForm } from "@/app/components/forms/GovernmentRelationsDepartmentForm";
-import { ITManagementForm } from "@/app/components/forms/ITManagementForm";
-import { HumanResourceForm } from "@/app/components/forms/HumanResourceForm";
-import { FinanceForm } from "@/app/components/forms/FinanceForm";
-import { SafetyForm } from "@/app/components/forms/SafetyForm";
 import { CertificatesForm } from "@/app/components/forms/CertificatesForm";
 import { ComplaintContactForm } from "@/app/components/forms/ComplaintContactForm";
+import { OperationsManagementPage } from "@/app/components/forms/OperationsManagementPage";
+import { HumanResourcePage } from "@/app/components/forms/HumanResourcePage";
+import { MarketingDepartmentPage } from "@/app/components/forms/MarketingDepartmentPage";
+import { GovernmentRelationsDepartmentPage } from "@/app/components/forms/GovernmentRelationsDepartmentPage";
+import { SafetyDepartmentPage } from "@/app/components/forms/SafetyDepartmentPage";
 import { CommercialLicenseForm } from "@/app/components/forms/CommercialLicenseForm";
 import { SalamahLicenseForm } from "@/app/components/forms/SalamahLicenseForm";
 import { TaqyeesLicenseForm } from "@/app/components/forms/TaqyeesLicenseForm";
@@ -52,6 +44,18 @@ import { TasksPage } from "@/app/components/TasksPage";
 import { StationProvider } from "@/app/context/StationContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { InvestmentDepartmentPage } from "@/app/components/forms/InvestmentDepartmentPage";
+import { ProjectDepartmentPage } from "@/app/components/forms/ProjectDepartmentPage";
+import { PurchaseDepartmentPage } from "@/app/components/forms/PurchaseDepartmentPage";
+import { FinanceDepartmentPage } from "@/app/components/forms/FinanceDepartmentPage";
+import { ITDepartmentPage } from "@/app/components/forms/ITDepartmentPage";
+import { MaintenanceQualityDepartmentPage } from "@/app/components/forms/MaintenanceQualityDepartmentPage";
+import { LegalDepartmentPage } from "@/app/components/forms/LegalDepartmentPage";
+import { PropertyDepartmentPage } from "@/app/components/forms/PropertyDepartmentPage";
+import { FranchiseDepartmentPage } from "@/app/components/forms/FranchiseDepartmentPage";
+import { GovernmentLicenseAttachmentsPage } from "@/app/components/forms/GovernmentLicenseAttachmentsPage";
+import { RequestPage } from "@/app/components/RequestPage";
+import { UnderReviewProjectsPage } from "@/app/components/UnderReviewProjectsPage";
 
 function App() {
   return (
@@ -75,6 +79,8 @@ function App() {
               <Route path="/all-stations-tasks" element={<TasksPage />} />
               <Route path="/all-stations-reports" element={<ReportsPage />} />
               <Route path="/station/:stationId/analytics" element={<StationAnalyticsPage />} />
+              <Route path="/all-stations-requests" element={<RequestPage />} />
+              <Route path="/all-stations-under-review" element={<UnderReviewProjectsPage />} />
               <Route path="/all-stations-contact-ceo" element={<ComplaintContactForm />} />
 
               {/* Station-specific forms nested under the same layout */}
@@ -90,26 +96,28 @@ function App() {
                 <Route path="building-permit" element={<BuildingPermitForm />} />
                 <Route path="contract" element={<ContractForm />} />
                 <Route path="investment" element={<InvestmentForm />} />
+                <Route path="investment-department" element={<InvestmentDepartmentPage />} />
+                <Route path="franchise-department" element={<FranchiseDepartmentPage />} />
                 <Route path="projects" element={<ProjectsForm />} />
-                <Route path="operations-management" element={<OperationsManagementForm />} />
-                <Route path="franchise-management" element={<FranchiseManagementForm />} />
-                <Route path="property-management" element={<PropertyManagementForm />} />
-                <Route path="quality-management" element={<QualityManagementForm />} />
-                <Route path="procurement-department" element={<ProcurementDepartmentForm />} />
-                <Route path="maintenance-department" element={<MaintenanceDepartmentForm />} />
-                <Route path="legal-department" element={<LegalDepartmentForm />} />
-                <Route path="marketing-department" element={<MarketingDepartmentForm />} />
-                <Route path="government-relations-department" element={<GovernmentRelationsDepartmentForm />} />
-                <Route path="it-management" element={<ITManagementForm />} />
-                <Route path="human-resource" element={<HumanResourceForm />} />
-                <Route path="finance" element={<FinanceForm />} />
-                <Route path="safety" element={<SafetyForm />} />
+                <Route path="project-department" element={<ProjectDepartmentPage />} />
+                <Route path="operations-management" element={<OperationsManagementPage />} />
+                <Route path="property-department" element={<PropertyDepartmentPage />} />
+                <Route path="quality-department" element={<MaintenanceQualityDepartmentPage />} />
+                <Route path="purchase-department" element={<PurchaseDepartmentPage />} />
+                <Route path="maintenance-department" element={<MaintenanceQualityDepartmentPage />} />
+                <Route path="legal-department" element={<LegalDepartmentPage />} />
+                <Route path="marketing-department" element={<MarketingDepartmentPage />} />
+                <Route path="government-relations-department" element={<GovernmentRelationsDepartmentPage />} />
+                <Route path="it-department" element={<ITDepartmentPage />} />
+                <Route path="human-resource" element={<HumanResourcePage />} />
+                <Route path="finance-department" element={<FinanceDepartmentPage />} />
+                <Route path="safety" element={<SafetyDepartmentPage />} />
                 <Route path="certificates" element={<CertificatesForm />} />
                 <Route path="commercial-license" element={<CommercialLicenseForm />} />
                 <Route path="salamah-license" element={<SalamahLicenseForm />} />
                 <Route path="taqyees-license" element={<TaqyeesLicenseForm />} />
                 <Route path="environmental-license" element={<EnvironmentalLicenseForm />} />
-                <Route path="energy-license" element={<EnergyLicenseForm />} />
+                <Route path="government-license-attachments" element={<GovernmentLicenseAttachmentsPage />} />
                 <Route path="survey-report" element={<SurveyReportForm />} />
                 <Route path="fixed-assets" element={<FixedAssetsForm />} />
               </Route>
@@ -122,6 +130,8 @@ function App() {
               <Route path="executive-analytics" element={<SingleStationAnalytics />} />
               <Route path="tasks" element={<TasksPage />} />
               <Route path="reports" element={<ReportsPage />} />
+              <Route path="requests" element={<RequestPage />} />
+              <Route path="under-review" element={<UnderReviewProjectsPage />} />
 
               {/* Stats Lists */}
               <Route path="total-stations" element={<StationsList />} />
@@ -152,21 +162,24 @@ function App() {
 
               {/* Departments */}
               <Route path="investment" element={<InvestmentForm />} />
+              <Route path="investment-department" element={<InvestmentDepartmentPage />} />
+              <Route path="franchise-department" element={<FranchiseDepartmentPage />} />
               <Route path="projects" element={<ProjectsForm />} />
-              <Route path="operations-management" element={<OperationsManagementForm />} />
-              <Route path="franchise-management" element={<FranchiseManagementForm />} />
-              <Route path="property-management" element={<PropertyManagementForm />} />
-              <Route path="quality-management" element={<QualityManagementForm />} />
-              <Route path="procurement-department" element={<ProcurementDepartmentForm />} />
-              <Route path="maintenance-department" element={<MaintenanceDepartmentForm />} />
-              <Route path="legal-department" element={<LegalDepartmentForm />} />
-              <Route path="marketing-department" element={<MarketingDepartmentForm />} />
-              <Route path="government-relations-department" element={<GovernmentRelationsDepartmentForm />} />
-              <Route path="it-management" element={<ITManagementForm />} />
-              <Route path="human-resource" element={<HumanResourceForm />} />
-              <Route path="finance" element={<FinanceForm />} />
-              <Route path="safety" element={<SafetyForm />} />
+              <Route path="project-department" element={<ProjectDepartmentPage />} />
+              <Route path="operations-management" element={<OperationsManagementPage />} />
+              <Route path="property-department" element={<PropertyDepartmentPage />} />
+              <Route path="quality-department" element={<MaintenanceQualityDepartmentPage />} />
+              <Route path="purchase-department" element={<PurchaseDepartmentPage />} />
+              <Route path="maintenance-department" element={<MaintenanceQualityDepartmentPage />} />
+              <Route path="legal-department" element={<LegalDepartmentPage />} />
+              <Route path="marketing-department" element={<MarketingDepartmentPage />} />
+              <Route path="government-relations-department" element={<GovernmentRelationsDepartmentPage />} />
+              <Route path="it-department" element={<ITDepartmentPage />} />
+              <Route path="human-resource" element={<HumanResourcePage />} />
+              <Route path="finance-department" element={<FinanceDepartmentPage />} />
+              <Route path="safety" element={<SafetyDepartmentPage />} />
               <Route path="certificates" element={<CertificatesForm />} />
+              <Route path="requests" element={<RequestPage />} />
 
               {/* Government Licenses */}
               <Route path="commercial-license" element={<CommercialLicenseForm />} />

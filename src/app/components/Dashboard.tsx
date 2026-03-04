@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Clock, AlertCircle, CheckCircle, Calendar, ChevronDown, PlusCircle } from "lucide-react";
 import { BrandName } from "./BrandName";
 import { Link } from "react-router-dom";
-import { ExecutiveDashboard } from "./ExecutiveDashboard";
+//import { ExecutiveDashboard } from "./ExecutiveDashboard";
 import logo from "../../assets/logo.png";
 
 export function Dashboard() {
@@ -11,67 +11,56 @@ export function Dashboard() {
   const stats = [
     {
       title: "Total Stations",
-      value: "156",
+      value: "0",
       icon: <img src={logo} alt="" className="w-8 h-8 object-contain brightness-0 invert" />,
-      change: "+12%",
+      change: "0%",
       color: "bg-gradient-to-br from-primary to-secondary",
       path: "/total-stations",
     },
     {
       title: "Under Execution",
-      value: "42",
+      value: "0",
       icon: <Clock className="w-8 h-8" />,
-      change: "+5%",
+      change: "0%",
       color: "bg-info",
-      path: "/active-licenses",
+      path: "/under-review",
     },
     {
       title: "Not Started",
-      value: "8",
+      value: "0",
       icon: <AlertCircle className="w-8 h-8" />,
-      change: "-3%",
+      change: "0%",
       color: "bg-error",
-      path: "/pending-permits",
+      path: "/under-review",
     },
     {
       title: "Operational Stations",
-      value: "98",
+      value: "0",
       icon: <CheckCircle className="w-8 h-8" />,
-      change: "+18%",
+      change: "0%",
       color: "bg-success",
-      path: "/active-projects",
+      path: "/total-stations",
     },
     {
       title: "Opening Soon",
-      value: "8",
+      value: "0",
       icon: <Calendar className="w-8 h-8" />,
-      change: "+2%",
+      change: "0%",
       color: "bg-gradient-to-br from-primary to-secondary",
-      path: "/active-projects",
+      path: "/total-stations",
     },
     {
       title: "New stations during the month",
-      value: "12",
+      value: "0",
       icon: <PlusCircle className="w-8 h-8" />,
-      change: "+15%",
+      change: "0%",
       color: "bg-primary",
       path: "/total-stations",
     },
   ];
 
-  const stations = [
-    { name: "Darb Al Sultan Station", completion: 85, status: "In Progress" },
-    { name: "Jeddah Central Hub", completion: 45, status: "Early Stage" },
-    { name: "Dammam East Point", completion: 100, status: "Completed" },
-    { name: "Medina Oasis Station", completion: 15, status: "Planning" },
-  ];
-
-  const recentActivities = [
-    { action: "New station registered", station: "Station #157", time: "2 hours ago" },
-    { action: "Commercial License approved", station: "Station #142", time: "4 hours ago" },
-    { action: "Building Permit pending", station: "Station #151", time: "6 hours ago" },
-    { action: "Environmental License renewed", station: "Station #089", time: "1 day ago" },
-  ];
+  const stations: any[] = [];
+  const recentActivities: any[] = [];
 
   return (
     <div className="p-8">
@@ -130,23 +119,29 @@ export function Dashboard() {
           <Link to="/total-stations" className="text-primary text-sm font-semibold hover:underline">View All</Link>
         </div>
         <div className="space-y-6">
-          {stations.map((station, index) => (
-            <div key={index} className="space-y-2">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-bold text-foreground">{station.name}</p>
-                  <span className="text-xs text-muted-foreground">{station.status}</span>
-                </div>
-                <span className="text-sm font-bold text-primary">{station.completion}%</span>
-              </div>
-              <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                <div
-                  className="h-full progress-bar transition-all duration-500"
-                  style={{ width: `${station.completion}%` }}
-                />
-              </div>
+          {stations.length === 0 ? (
+            <div className="p-10 text-center text-muted-foreground border border-dashed border-border rounded-lg bg-muted/30">
+              No station progress data found.
             </div>
-          ))}
+          ) : (
+            stations.map((station, index) => (
+              <div key={index} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-bold text-foreground">{station.name}</p>
+                    <span className="text-xs text-muted-foreground">{station.status}</span>
+                  </div>
+                  <span className="text-sm font-bold text-primary">{station.completion}%</span>
+                </div>
+                <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                  <div
+                    className="h-full progress-bar transition-all duration-500"
+                    style={{ width: `${station.completion}%` }}
+                  />
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
@@ -154,26 +149,32 @@ export function Dashboard() {
       <div className="bg-card rounded-xl shadow-xl p-8 mb-12 card-glow relative overflow-hidden">
         <h2 className="text-xl font-bold text-foreground mb-4">Recent Activities</h2>
         <div className="space-y-4">
-          {recentActivities.map((activity, index) => (
-            <div
-              key={index}
-              className="flex items-center justify-between p-4 border border-border rounded-xl hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10 transition-all bg-card/50 backdrop-blur-sm"
-            >
-              <div>
-                <p className="font-medium text-foreground">{activity.action}</p>
-                <p className="text-sm text-muted-foreground">{activity.station}</p>
-              </div>
-              <span className="text-sm text-muted-foreground">{activity.time}</span>
+          {recentActivities.length === 0 ? (
+            <div className="p-10 text-center text-muted-foreground border border-dashed border-border rounded-lg bg-muted/30">
+              No recent activities recorded.
             </div>
-          ))}
+          ) : (
+            recentActivities.map((activity, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between p-4 border border-border rounded-xl hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10 transition-all bg-card/50 backdrop-blur-sm"
+              >
+                <div>
+                  <p className="font-medium text-foreground">{activity.action}</p>
+                  <p className="text-sm text-muted-foreground">{activity.station}</p>
+                </div>
+                <span className="text-sm text-muted-foreground">{activity.time}</span>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
       {/* Executive Analytics Section */}
-      <div className="mt-8 border-t border-border pt-12">
+      {/*<div className="mt-8 border-t border-border pt-12">
         <h2 className="text-2xl font-bold text-foreground mb-6 px-4">Executive Analytics</h2>
         <ExecutiveDashboard />
-      </div>
+      </div>*/}
     </div>
   );
 }

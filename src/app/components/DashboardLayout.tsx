@@ -9,6 +9,8 @@ import {
   MessageCircle,
   PlusCircle,
   ClipboardList,
+  Inbox,
+  Clock,
 } from "lucide-react";
 import { BackToDashboardButton } from "./BackToDashboardButton";
 import { LanguageSwitcher } from "./LanguageSwitcher";
@@ -58,6 +60,8 @@ export function DashboardLayout() {
     { title: "", titleKey: "analytics", path: "/dashboard/executive-analytics", icon: <Activity className="w-5 h-5" /> },
     { title: "", titleKey: "tasks", path: "/dashboard/tasks", icon: <ClipboardList className="w-5 h-5" /> },
     { title: "", titleKey: "reports", path: "/dashboard/reports", icon: <FileText className="w-5 h-5" /> },
+    { title: "Requests", path: "/dashboard/requests", icon: <Inbox className="w-5 h-5" /> },
+    { title: "Under-Review", path: "/dashboard/under-review", icon: <Clock className="w-5 h-5" /> },
     { title: "", titleKey: "contactCEO", path: "/dashboard/contact-ceo", icon: <MessageCircle className="w-5 h-5" /> },
   ];
 

@@ -11,6 +11,8 @@ import {
     PlusCircle,
     ClipboardList,
     Upload,
+    Inbox,
+    Clock,
 } from "lucide-react";
 import { BackToDashboardButton } from "./BackToDashboardButton";
 import { LanguageSwitcher } from "./LanguageSwitcher";
@@ -24,7 +26,7 @@ import axios from "axios";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 interface NavItem {
-    titleKey: "dashboard" | "analytics" | "stations" | "tasks" | "reports" | "contactCEO";
+    titleKey: "dashboard" | "analytics" | "stations" | "tasks" | "reports" | "contactCEO" | "requests" | "underReview";
     path: string;
     icon: React.ReactNode;
 }
@@ -131,6 +133,8 @@ export function AllStationsDashboardLayout() {
         { titleKey: "dashboard", path: "/all-stations-dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
         { titleKey: "analytics", path: "/all-stations-analytics", icon: <Activity className="w-5 h-5" /> },
         { titleKey: "stations", path: "/all-stations-list", icon: <img src={logo} alt="" className="w-5 h-5 object-contain brightness-0 invert" /> },
+        { titleKey: "requests", path: "/all-stations-requests", icon: <Inbox className="w-5 h-5" /> },
+        { titleKey: "underReview", path: "/all-stations-under-review", icon: <Clock className="w-5 h-5" /> },
         { titleKey: "tasks", path: "/all-stations-tasks", icon: <ClipboardList className="w-5 h-5" /> },
         { titleKey: "reports", path: "/all-stations-reports", icon: <FileText className="w-5 h-5" /> },
         { titleKey: "contactCEO", path: "/all-stations-contact-ceo", icon: <MessageCircle className="w-5 h-5" /> },

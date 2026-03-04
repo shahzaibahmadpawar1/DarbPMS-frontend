@@ -28,8 +28,8 @@ export function LoginPage() {
                 const user = JSON.parse(userStr);
 
                 // Role-based routing
-                if (user.role === 'admin') {
-                    // Admin goes to all stations dashboard
+                if (user.role === 'admin' || user.role === 'ceo') {
+                    // Admin and CEO go to all stations dashboard
                     navigate("/all-stations-dashboard");
                 } else {
                     // Regular user goes to their assigned station dashboard
