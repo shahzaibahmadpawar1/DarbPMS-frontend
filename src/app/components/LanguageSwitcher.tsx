@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Languages, ChevronDown } from "lucide-react";
 
 export function LanguageSwitcher() {
-    // Initialize state directly from localStorage to prevent mismatch on load
     const [lang, setLang] = useState<"en" | "ar">(() => {
         return (localStorage.getItem("darb_lang") as "en" | "ar") || "en";
     });
@@ -10,36 +9,20 @@ export function LanguageSwitcher() {
     const [isOpen, setIsOpen] = useState(false);
 
     const applyLanguage = (newLang: "en" | "ar") => {
-        // Don't reload if already on the selected language
         if (lang === newLang) {
             setIsOpen(false);
             return;
         }
 
-        // 1. Save preference
         localStorage.setItem("darb_lang", newLang);
         setLang(newLang);
 
-        // 2. Set the Google Translate Cookies (both variations)
-        // Google Translate reads the cookie in the format /source/target
-        const cookieValue = newLang === "en" ? "/en/en" : "/en/ar";
+        // Update document direction
+        document.documentElement.lang = newLang;
+        document.documentElement.dir = newLang === "ar" ? "rtl" : "ltr";
 
-        // Clear any existing cookies first
-        document.cookie = "googtrans=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT";
-        document.cookie = `googtrans=; path=/; domain=${window.location.hostname}; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
-
-        // Set new cookies
-        document.cookie = `googtrans=${cookieValue}; path=/`;
-        document.cookie = `googtrans=${cookieValue}; path=/; domain=${window.location.hostname}`;
-
-        // 3. Try to trigger the Google Translate widget before reload
-        const googleCombo = document.querySelector(".goog-te-combo") as HTMLSelectElement;
-        if (googleCombo) {
-            googleCombo.value = newLang;
-            googleCombo.dispatchEvent(new Event("change", { bubbles: true }));
-        }
-
-        // 4. RELOAD THE PAGE after a short delay to let the cookie set
+        // Reload the page — on reload, main.tsx will activate the DeepL
+        // translation service automatically when darb_lang === 'ar'.
         setTimeout(() => {
             window.location.reload();
         }, 100);
