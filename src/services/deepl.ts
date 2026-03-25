@@ -3,7 +3,8 @@
 // Only activates when the user has selected Arabic as their language.
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
-const CACHE_KEY = 'deepl_ar_cache';
+// Bump this version whenever glossary terms change to force cache invalidation
+const CACHE_KEY = 'deepl_ar_cache_v2';
 
 function loadCache(): Record<string, string> {
     try {
