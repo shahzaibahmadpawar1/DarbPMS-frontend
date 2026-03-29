@@ -12,6 +12,7 @@ export function OwnerInformationForm() {
   const { stationId } = useParams();
   const { accessMode, selectedStation } = useStation();
   const isReadOnly = accessMode === 'view-only';
+  const stationTypes = ["operation", "rent", "franchise", "investment", "ownership"];
 
   const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
   const [loading, setLoading] = useState(false);
@@ -231,13 +232,19 @@ export function OwnerInformationForm() {
             </div>
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1">Station Type Code</label>
-              <input
-                type="text"
+              <select
                 value={formData.stationTypeCode}
                 onChange={(e) => setFormData({ ...formData, stationTypeCode: e.target.value })}
                 className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
                 disabled={isReadOnly}
-              />
+              >
+                <option value="">Select Type</option>
+                {stationTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                  </option>
+                ))}
+              </select>
             </div>
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1">Station Code <span className="text-red-500">*</span></label>

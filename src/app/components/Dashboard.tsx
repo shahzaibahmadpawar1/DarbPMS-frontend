@@ -10,6 +10,7 @@ const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
 export function Dashboard() {
   const { token } = useAuth();
   const [stationType, setStationType] = useState<string>("All");
+  const stationTypes = ["operation", "rent", "franchise", "investment", "ownership"];
   const [dashStats, setDashStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -110,9 +111,11 @@ export function Dashboard() {
               className="appearance-none bg-card border border-border rounded-lg px-4 py-2.5 pr-10 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent cursor-pointer hover:border-primary/50 transition-colors min-w-[160px]"
             >
               <option value="All">All</option>
-              <option value="Operation">Operation</option>
-              <option value="Rent">Rent</option>
-              <option value="Franchise">Franchise</option>
+              {stationTypes.map((type) => (
+                <option key={type} value={type}>
+                  {type.charAt(0).toUpperCase() + type.slice(1)}
+                </option>
+              ))}
             </select>
             <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
           </div>

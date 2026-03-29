@@ -8,10 +8,11 @@ export function StationTypeForm() {
   const navigate = useNavigate();
 
   const types = [
-    { code: "1", description: "Owned Station" },
-    { code: "2", description: "Rented Station" },
-    { code: "3", description: "Operation" },
-    { code: "4", description: "Franchise" },
+    { code: "operation", description: "Operation" },
+    { code: "rent", description: "Rent" },
+    { code: "franchise", description: "Franchise" },
+    { code: "investment", description: "Investment" },
+    { code: "ownership", description: "Ownership" },
   ];
 
   return (

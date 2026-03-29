@@ -8,6 +8,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000
 export function StationInformationForm() {
   const { accessMode } = useStation();
   const isReadOnly = accessMode === 'view-only';
+  const stationTypes = ["operation", "rent", "franchise", "investment", "ownership"];
 
   const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
   const [records, setRecords] = useState<any[]>([]);
@@ -260,10 +261,11 @@ export function StationInformationForm() {
                   disabled={isReadOnly}
                 >
                   <option value="">Select Type</option>
-                  <option value="1">Owned Station</option>
-                  <option value="2">Rented Station</option>
-                  <option value="3">Operation</option>
-                  <option value="4">Franchise</option>
+                  {stationTypes.map((type) => (
+                    <option key={type} value={type}>
+                      {type.charAt(0).toUpperCase() + type.slice(1)}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
