@@ -43,6 +43,7 @@ export function AllStationsDashboardLayout() {
         return false;
     });
     const [chatOpen, setChatOpen] = useState(false);
+    const [taskCount, setTaskCount] = useState(0);
     const [importLoading, setImportLoading] = useState(false);
     const location = useLocation();
     const { t, lang } = useTranslation();
@@ -61,6 +62,41 @@ export function AllStationsDashboardLayout() {
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
     }, []);
+
+    useEffect(() => {
+        if (isDeptUser) {
+            setTaskCount(0);
+            return;
+        }
+
+        const token = localStorage.getItem("auth_token");
+        if (!token) {
+            setTaskCount(0);
+            return;
+        }
+
+        let isMounted = true;
+        const fetchTaskCount = async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/tasks`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!response.ok) return;
+
+                const result = await response.json();
+                if (isMounted) {
+                    setTaskCount(Array.isArray(result?.data) ? result.data.length : 0);
+                }
+            } catch {
+                if (isMounted) setTaskCount(0);
+            }
+        };
+
+        fetchTaskCount();
+        return () => {
+            isMounted = false;
+        };
+    }, [isDeptUser, location.pathname]);
 
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -217,11 +253,16 @@ export function AllStationsDashboardLayout() {
                                 className={`flex items-center ${sidebarOpen ? 'gap-3 px-4' : 'justify-center px-2'} py-3 rounded-lg transition-all duration-200 ${location.pathname === item.path
                                     ? "bg-gradient-to-r from-primary to-secondary text-white shadow-lg"
                                     : "text-white/80 hover:bg-white/15 hover:text-white"
-                                    }`}
+                                    } relative`}
                                 title={!sidebarOpen ? t(item.titleKey) : undefined}
                             >
                                 {item.icon}
                                 {sidebarOpen && <span className="text-sm font-medium">{t(item.titleKey)}</span>}
+                                {sidebarOpen && item.titleKey === "tasks" && taskCount > 0 && (
+                                    <span className="absolute top-2 left-8 min-w-4 h-4 px-1 bg-red-500 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white leading-none">
+                                        {taskCount > 99 ? "99+" : taskCount}
+                                    </span>
+                                )}
                             </Link>
                         ))}
                         <button

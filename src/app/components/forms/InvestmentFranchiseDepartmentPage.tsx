@@ -288,27 +288,29 @@ function NewProjectTab() {
                     {ELEMENTS.map(el => (
                         <div key={el.key} className="bg-muted/50 rounded-xl p-4 border border-border hover:border-primary/30 transition-colors space-y-3">
                             <p className="text-xs font-semibold text-muted-foreground text-center">{el.label}</p>
-                            <div>
-                                <p className="text-[10px] text-muted-foreground mb-1 text-center">Count</p>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    value={form.elements[el.key]}
-                                    onChange={e => setEl(el.key, e.target.value)}
-                                    className="w-full text-center text-lg font-bold border border-border rounded-lg px-2 py-1.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                                />
-                            </div>
-                            <div>
-                                <p className="text-[10px] text-muted-foreground mb-1 text-center">Area (m²)</p>
-                                <input
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={form.elementAreas[el.key]}
-                                    onChange={e => setElArea(el.key, e.target.value)}
-                                    placeholder="0.00"
-                                    className="w-full text-center text-sm font-medium border border-border rounded-lg px-2 py-1.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
-                                />
+                            <div className="grid grid-cols-2 gap-2 items-end">
+                                <div>
+                                    <p className="text-[10px] text-muted-foreground mb-1 text-center">Count</p>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        value={form.elements[el.key]}
+                                        onChange={e => setEl(el.key, e.target.value)}
+                                        className="w-full text-center text-lg font-bold border border-border rounded-lg px-2 py-1.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                                    />
+                                </div>
+                                <div>
+                                    <p className="text-[10px] text-muted-foreground mb-1 text-center">Area (sqm)</p>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        value={form.elementAreas[el.key]}
+                                        onChange={e => setElArea(el.key, e.target.value)}
+                                        placeholder="0.00"
+                                        className="w-full text-center text-sm font-medium border border-border rounded-lg px-2 py-1.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                                    />
+                                </div>
                             </div>
                         </div>
                     ))}
