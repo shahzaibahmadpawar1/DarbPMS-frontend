@@ -9,6 +9,8 @@ export function BackToDashboardButton() {
 
     // Determine the correct dashboard path based on access mode
     const dashboardPath = accessMode === 'admin' ? '/all-stations-dashboard' : '/dashboard';
+    const stationMatch = location.pathname.match(/^\/station\/([^/]+)/);
+    const stationBasePath = stationMatch ? `/station/${stationMatch[1]}` : null;
 
     // Don't show the button if we're already on the dashboard
     if (location.pathname === dashboardPath) {
@@ -18,7 +20,13 @@ export function BackToDashboardButton() {
     return (
         <div className="flex gap-2">
             <button
-                onClick={() => navigate(-1)}
+                onClick={() => {
+                    if (stationBasePath && location.pathname !== stationBasePath) {
+                        navigate(stationBasePath);
+                        return;
+                    }
+                    navigate(-1);
+                }}
                 className="flex items-center gap-2 px-4 py-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-all duration-200 border border-border hover:border-primary"
                 title="Go back to previous page"
             >

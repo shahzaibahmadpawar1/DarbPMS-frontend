@@ -1,19 +1,42 @@
 // API Base URL from environment variables
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
+export type Department = 'investment' | 'franchise';
+
 // User roles
-export type UserRole = 'admin' | 'user' | 'ceo' | 'investment_user' | 'franchise_user';
+export type UserRole = 'super_admin' | 'department_manager' | 'supervisor' | 'employee';
+
+export function normalizeUserRole(role: unknown): UserRole {
+    const normalized = String(role ?? '').trim().toLowerCase();
+
+    if (normalized === 'admin') {
+        return 'super_admin';
+    }
+
+    if (normalized === 'super_admin' || normalized === 'department_manager' || normalized === 'supervisor' || normalized === 'employee') {
+        return normalized;
+    }
+
+    return 'employee';
+}
 
 // Helper: human-readable label for each role
-export function getRoleLabel(role: UserRole): string {
-    switch (role) {
-        case 'admin': return 'Admin';
-        case 'ceo': return 'CEO';
-        case 'user': return 'Project Manager';
-        case 'investment_user': return 'Investment User';
-        case 'franchise_user': return 'Franchise User';
+export function getRoleLabel(role: UserRole | 'admin' | string): string {
+    switch (normalizeUserRole(role)) {
+        case 'super_admin': return 'Super Admin';
+        case 'department_manager': return 'Department Manager';
+        case 'supervisor': return 'Supervisor';
+        case 'employee': return 'Employee';
         default: return role;
     }
+}
+
+export function getDepartmentLabel(department: Department | null): string {
+    if (!department) {
+        return 'All Departments';
+    }
+
+    return department === 'investment' ? 'Investment' : 'Franchise';
 }
 
 // API Response types
@@ -26,6 +49,7 @@ export interface ApiResponse<T = any> {
         id: string;
         username: string;
         role: UserRole;
+        department: Department | null;
         station_id: string | null;
         created_at: string;
         updated_at: string;
@@ -101,6 +125,7 @@ export interface UserRecord {
     username: string;
     password: string;
     role: UserRole;
+    department: Department | null;
     station_id: string | null;
     created_at: string;
     updated_at: string;
@@ -121,7 +146,7 @@ export const usersAPI = {
         return data.data;
     },
 
-    async create(username: string, password: string, role: UserRole): Promise<void> {
+    async create(username: string, password: string, role: UserRole, department: Department | null): Promise<void> {
         const token = localStorage.getItem('auth_token');
         const response = await fetch(`${API_URL}/auth/users`, {
             method: 'POST',
@@ -129,7 +154,7 @@ export const usersAPI = {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ username, password, role }),
+            body: JSON.stringify({ username, password, role, department }),
         });
         if (!response.ok) {
             const error = await response.json();

@@ -128,18 +128,11 @@ export function UnderReviewProjectsPage() {
         }
     };
 
-    const isCEO = user?.role === 'ceo';
-    const isAdmin = user?.role === 'admin';
-    const isPM = user?.role === 'user' || user?.role === 'admin';
+    const isSuperAdmin = user?.role === 'super_admin';
+    const isDepartmentManager = user?.role === 'department_manager';
+    const canValidate = isSuperAdmin || isDepartmentManager;
 
-    // Filter projects based on the current user's role and status
-    // User/PM sees everything but can only validate 'Pending Review'
-    // CEO sees 'Validated' (or potentially everything but primarily focuses on validated)
-
-    const filteredProjects = projects.filter(p => {
-        if (isCEO) return p.review_status === 'Validated' || p.review_status === 'Approved' || p.review_status === 'Rejected';
-        return true; // PM/Admin sees all
-    });
+    const filteredProjects = projects;
 
     return (
         <div className="p-8">
@@ -362,20 +355,20 @@ export function UnderReviewProjectsPage() {
                                         </div>
 
                                         <div className="flex justify-end gap-3 font-semibold">
-                                            {/* PM Actions */}
-                                            {isPM && project.review_status === 'Pending Review' && (
+                                            {/* Department manager and super admin can validate pending items */}
+                                            {canValidate && project.review_status === 'Pending Review' && (
                                                 <button
                                                     disabled={isSubmitting}
                                                     onClick={() => handleUpdateStatus(project.id, 'Validated')}
                                                     className="px-6 py-2.5 bg-primary text-white rounded-lg flex items-center gap-2 hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all disabled:opacity-50"
                                                 >
                                                     <CheckCircle className="w-4 h-4" />
-                                                    Validate for CEO Approval
+                                                    Validate for Final Approval
                                                 </button>
                                             )}
 
-                                            {/* CEO Actions */}
-                                            {isCEO && project.review_status === 'Validated' && (
+                                            {/* Super admin final approval actions */}
+                                            {isSuperAdmin && project.review_status === 'Validated' && (
                                                 <>
                                                     <button
                                                         disabled={isSubmitting}
@@ -396,8 +389,7 @@ export function UnderReviewProjectsPage() {
                                                 </>
                                             )}
 
-                                            {/* Admin can also reject at any time */}
-                                            {isAdmin && project.review_status !== 'Rejected' && project.review_status !== 'Approved' && (
+                                            {isSuperAdmin && project.review_status !== 'Rejected' && project.review_status !== 'Approved' && (
                                                 <button
                                                     disabled={isSubmitting}
                                                     onClick={() => handleUpdateStatus(project.id, 'Rejected')}

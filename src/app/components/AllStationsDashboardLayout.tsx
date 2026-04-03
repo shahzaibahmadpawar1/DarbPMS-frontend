@@ -14,6 +14,8 @@ import {
     Inbox,
     Clock,
     Users,
+    Building2,
+    RotateCcw,
 } from "lucide-react";
 import { BackToDashboardButton } from "./BackToDashboardButton";
 import { LanguageSwitcher } from "./LanguageSwitcher";
@@ -22,6 +24,8 @@ import { ChatWidget } from "./ChatWidget";
 import { useTranslation } from "../../utils/translations";
 import { useAuth } from "@/context/AuthContext";
 import { getRoleLabel } from "@/services/api";
+import { useStation } from "../context/StationContext";
+import { clearStationAutofillData, useStationFormAutofill } from "../hooks/useStationFormAutofill";
 import logo from "../../assets/logo.png";
 import * as XLSX from 'xlsx';
 import axios from "axios";
@@ -29,7 +33,7 @@ import axios from "axios";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
 interface NavItem {
-    titleKey: "dashboard" | "analytics" | "stations" | "tasks" | "reports" | "contactCEO" | "requests" | "underReview" | "users" | "investmentDept" | "franchiseDept";
+    titleKey: "dashboard" | "analytics" | "stations" | "departments" | "tasks" | "reports" | "contactCEO" | "requests" | "underReview" | "users" | "investmentDept" | "franchiseDept";
     path: string;
     icon: React.ReactNode;
 }
@@ -48,7 +52,16 @@ export function AllStationsDashboardLayout() {
     const location = useLocation();
     const { t, lang } = useTranslation();
     const { user } = useAuth();
+    const { selectedStation } = useStation();
     const isRTL = lang === 'ar';
+    const isDepartmentScopedUser = !!user && user.role !== 'super_admin';
+    const isInvestmentUser = isDepartmentScopedUser && user?.department === 'investment';
+    const isFranchiseUser = isDepartmentScopedUser && user?.department === 'franchise';
+    const isDeptUser = isDepartmentScopedUser;
+    useStationFormAutofill({
+        pathname: location.pathname,
+        stationCode: selectedStation?.station_code,
+    });
 
 
     // Update sidebar state on window resize
@@ -169,10 +182,6 @@ export function AllStationsDashboardLayout() {
         reader.readAsArrayBuffer(file);
     };
 
-    const isInvestmentUser = user?.role === 'investment_user';
-    const isFranchiseUser = user?.role === 'franchise_user';
-    const isDeptUser = isInvestmentUser || isFranchiseUser;
-
     const navigation: NavItem[] = isDeptUser
         ? [
             { titleKey: "dashboard", path: "/all-stations-dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
@@ -184,16 +193,28 @@ export function AllStationsDashboardLayout() {
             { titleKey: "dashboard", path: "/all-stations-dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
             { titleKey: "analytics", path: "/all-stations-analytics", icon: <Activity className="w-5 h-5" /> },
             { titleKey: "stations", path: "/all-stations-list", icon: <img src={logo} alt="" className="w-5 h-5 object-contain brightness-0 invert" /> },
+            { titleKey: "departments", path: "/all-stations-departments", icon: <Building2 className="w-5 h-5" /> },
             { titleKey: "requests", path: "/all-stations-requests", icon: <Inbox className="w-5 h-5" /> },
             { titleKey: "underReview", path: "/all-stations-under-review", icon: <Clock className="w-5 h-5" /> },
             { titleKey: "tasks", path: "/all-stations-tasks", icon: <ClipboardList className="w-5 h-5" /> },
             { titleKey: "reports", path: "/all-stations-reports", icon: <FileText className="w-5 h-5" /> },
             { titleKey: "contactCEO", path: "/all-stations-contact-ceo", icon: <MessageCircle className="w-5 h-5" /> },
-            ...(user?.role === 'admin' ? [{ titleKey: "users" as const, path: "/all-stations-users", icon: <Users className="w-5 h-5" /> }] : []),
+                        ...(user?.role === 'super_admin' ? [{ titleKey: "users" as const, path: "/all-stations-users", icon: <Users className="w-5 h-5" /> }] : []),
           ];
 
     const handleChatClick = () => {
         setChatOpen(!chatOpen);
+    };
+
+    const handleClearAutofill = () => {
+        const confirmed = window.confirm("Clear saved autofill data for this station?");
+        if (!confirmed) return;
+
+        clearStationAutofillData({
+            pathname: location.pathname,
+            stationCode: selectedStation?.station_code,
+        });
+        alert("Autofill data cleared for this station.");
     };
 
     return (
@@ -321,6 +342,13 @@ export function AllStationsDashboardLayout() {
                                 </span>
                             )}
                         </div>
+                        <button
+                            onClick={handleClearAutofill}
+                            className="p-1.5 sm:p-2 hover:bg-muted rounded-lg transition-colors flex-shrink-0"
+                            title="Clear Autofill Data"
+                        >
+                            <RotateCcw className="w-4 h-4" />
+                        </button>
                         <LanguageSwitcher />
                     </div>
 
@@ -340,6 +368,14 @@ export function AllStationsDashboardLayout() {
                                     </div>
                                 </div>
                             )}
+                            <button
+                                onClick={handleClearAutofill}
+                                className="flex items-center gap-2 px-3 md:px-4 py-2 border border-border rounded-lg hover:bg-muted transition-all duration-200 font-semibold text-xs md:text-sm"
+                                title="Clear Autofill Data"
+                            >
+                                <RotateCcw className="w-4 h-4" />
+                                <span className="hidden sm:inline">Clear Autofill</span>
+                            </button>
                             {!isDeptUser && (
                                 <label
                                     className={`flex items-center gap-2 px-3 md:px-4 py-2 border-2 border-primary/20 text-primary rounded-lg hover:bg-primary/5 transition-all duration-200 font-semibold text-xs md:text-sm cursor-pointer ${importLoading ? 'opacity-50 cursor-not-allowed' : ''}`}

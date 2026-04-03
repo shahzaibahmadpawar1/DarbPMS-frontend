@@ -34,8 +34,10 @@ import { LoginPage } from "@/app/components/LoginPage";
 import { StationSelectionPage } from "@/app/components/StationSelectionPage";
 import { ModeSelectionPage } from "@/app/components/ModeSelectionPage";
 import { AllStationsDashboardLayout } from "@/app/components/AllStationsDashboardLayout";
+import { DepartmentsPage } from "@/app/components/DepartmentsPage";
 import { AllStationsListPage } from "@/app/components/AllStationsListPage";
 import { StationAnalyticsPage } from "@/app/components/StationAnalyticsPage";
+import { StationFormsPage } from "@/app/components/StationFormsPage";
 import { SingleStationAnalytics } from "@/app/components/SingleStationAnalytics";
 import { SingleStationDashboard } from "@/app/components/SingleStationDashboard";
 import { ReportsPage } from "@/app/components/ReportsPage";
@@ -77,6 +79,7 @@ function App() {
               <Route path="/all-stations-dashboard" element={<Dashboard />} />
               <Route path="/all-stations-analytics" element={<ExecutiveDashboard />} />
               <Route path="/all-stations-list" element={<AllStationsListPage />} />
+              <Route path="/all-stations-departments" element={<DepartmentsPage />} />
               <Route path="/all-stations-tasks" element={<TasksPage />} />
               <Route path="/all-stations-reports" element={<ReportsPage />} />
               <Route path="/station/:stationId/analytics" element={<StationAnalyticsPage />} />
@@ -84,6 +87,7 @@ function App() {
               <Route path="/all-stations-under-review" element={<UnderReviewProjectsPage />} />
               <Route path="/all-stations-contact-ceo" element={<ComplaintContactForm />} />
               <Route path="/all-stations-users" element={<UsersPage />} />
+              <Route path="/station/:stationId" element={<StationFormsPage />} />
 
               {/* Station-specific forms nested under the same layout */}
               <Route path="/station/:stationId/form">

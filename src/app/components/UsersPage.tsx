@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Users, UserPlus, Trash2, Eye, EyeOff, X, Loader2, Shield } from "lucide-react";
-import { usersAPI, UserRecord, UserRole } from "@/services/api";
+import { Department, getDepartmentLabel, getRoleLabel, usersAPI, UserRecord, UserRole } from "@/services/api";
 
 export function UsersPage() {
     const [users, setUsers] = useState<UserRecord[]>([]);
@@ -14,7 +14,8 @@ export function UsersPage() {
     // New user form state
     const [newUsername, setNewUsername] = useState("");
     const [newPassword, setNewPassword] = useState("");
-    const [newRole, setNewRole] = useState<UserRole>("user");
+    const [newRole, setNewRole] = useState<UserRole>("employee");
+    const [newDepartment, setNewDepartment] = useState<Department>("investment");
     const [formError, setFormError] = useState<string | null>(null);
     const [showNewPassword, setShowNewPassword] = useState(false);
 
@@ -44,11 +45,13 @@ export function UsersPage() {
         setFormError(null);
         setActionLoading(true);
         try {
-            await usersAPI.create(newUsername, newPassword, newRole);
+            const department = newRole === "super_admin" ? null : newDepartment;
+            await usersAPI.create(newUsername, newPassword, newRole, department);
             setShowAddModal(false);
             setNewUsername("");
             setNewPassword("");
-            setNewRole("user");
+            setNewRole("employee");
+            setNewDepartment("investment");
             await fetchUsers();
         } catch (err: any) {
             setFormError(err.message || "Failed to create user");
@@ -72,23 +75,21 @@ export function UsersPage() {
 
     const roleBadgeColor = (role: UserRole) => {
         switch (role) {
-            case "admin": return "bg-red-100 text-red-700 border border-red-200";
-            case "ceo": return "bg-purple-100 text-purple-700 border border-purple-200";
-            case "investment_user": return "bg-blue-100 text-blue-700 border border-blue-200";
-            case "franchise_user": return "bg-amber-100 text-amber-700 border border-amber-200";
-            default: return "bg-green-100 text-green-700 border border-green-200"; // user = project manager
+            case "super_admin": return "bg-red-100 text-red-700 border border-red-200";
+            case "department_manager": return "bg-green-100 text-green-700 border border-green-200";
+            case "supervisor": return "bg-blue-100 text-blue-700 border border-blue-200";
+            default: return "bg-amber-100 text-amber-700 border border-amber-200";
         }
     };
 
-    const getRoleLabel = (role: UserRole) => {
-        switch (role) {
-            case 'admin': return 'Admin';
-            case 'ceo': return 'CEO';
-            case 'user': return 'Project Manager';
-            case 'investment_user': return 'Investment User';
-            case 'franchise_user': return 'Franchise User';
-            default: return role;
+    const departmentBadgeColor = (department: Department | null) => {
+        if (!department) {
+            return "bg-zinc-100 text-zinc-700 border border-zinc-200";
         }
+
+        return department === "investment"
+            ? "bg-indigo-100 text-indigo-700 border border-indigo-200"
+            : "bg-orange-100 text-orange-700 border border-orange-200";
     };
 
     return (
@@ -141,6 +142,7 @@ export function UsersPage() {
                                     <th className="text-left px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Username</th>
                                     <th className="text-left px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Password</th>
                                     <th className="text-left px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Role</th>
+                                    <th className="text-left px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Department</th>
                                     <th className="text-left px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Created At</th>
                                     <th className="text-right px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Actions</th>
                                 </tr>
@@ -175,6 +177,11 @@ export function UsersPage() {
                                             <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${roleBadgeColor(user.role)}`}>
                                                 <Shield className="w-3 h-3" />
                                                 {getRoleLabel(user.role)}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${departmentBadgeColor(user.department)}`}>
+                                                {getDepartmentLabel(user.department)}
                                             </span>
                                         </td>
                                         <td className="px-6 py-4 text-sm text-muted-foreground">
@@ -278,13 +285,25 @@ export function UsersPage() {
                                     onChange={(e) => setNewRole(e.target.value as UserRole)}
                                     className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
                                 >
-                                    <option value="user">Project Manager</option>
-                                    <option value="admin">Admin</option>
-                                    <option value="ceo">CEO</option>
-                                    <option value="investment_user">Investment User</option>
-                                    <option value="franchise_user">Franchise User</option>
+                                    <option value="employee">Employee</option>
+                                    <option value="supervisor">Supervisor</option>
+                                    <option value="department_manager">Department Manager</option>
+                                    <option value="super_admin">Super Admin</option>
                                 </select>
                             </div>
+                            {newRole !== "super_admin" && (
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-foreground">Department</label>
+                                    <select
+                                        value={newDepartment}
+                                        onChange={(e) => setNewDepartment(e.target.value as Department)}
+                                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                                    >
+                                        <option value="investment">Investment</option>
+                                        <option value="franchise">Franchise</option>
+                                    </select>
+                                </div>
+                            )}
                             <div className="flex gap-3 pt-2">
                                 <button
                                     type="button"

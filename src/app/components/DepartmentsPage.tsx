@@ -1,0 +1,63 @@
+import { Link } from "react-router-dom";
+import { useAuth } from "@/context/AuthContext";
+import { getRoleLabel } from "@/services/api";
+import { useStation } from "../context/StationContext";
+import { departmentSections } from "../data/formSections";
+
+export function DepartmentsPage() {
+    const { user } = useAuth();
+    const { selectedStation } = useStation();
+
+    const basePath = selectedStation ? `/station/${selectedStation.id}/form` : "/station/new-station/form";
+
+    return (
+        <div className="max-w-7xl mx-auto space-y-6">
+            <div className="bg-card/80 backdrop-blur-xl rounded-2xl shadow-lg border border-border p-6 md:p-8">
+                <div className="flex flex-col gap-2">
+                    <h1 className="text-3xl md:text-4xl font-black text-foreground tracking-tight">Departments</h1>
+                    <p className="text-sm md:text-base text-muted-foreground">
+                        Browse all department modules from one place{user ? ` as ${getRoleLabel(user.role)}` : ""}.
+                    </p>
+                </div>
+            </div>
+
+            {departmentSections.map((section) => (
+                <div key={section.group} className="bg-card/80 backdrop-blur-xl rounded-2xl shadow-lg border border-border p-4 sm:p-6 md:p-8">
+                    <h2 className="text-xs sm:text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">
+                        {section.group}
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+                        {section.items.map((item) => (
+                            <Link
+                                key={item.title}
+                                to={`${basePath}/${item.path}`}
+                                className={`rounded-lg md:rounded-xl shadow-md border p-3 md:p-4 hover:shadow-xl hover:scale-105 transition-all duration-200 card-glow group flex items-center justify-between ${item.completed
+                                    ? "bg-success/5 border-success/20 hover:bg-success/10"
+                                    : "bg-error/5 border-error/20 hover:bg-error/10"
+                                }`}
+                            >
+                                <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
+                                    <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center transition-colors flex-shrink-0 ${item.completed
+                                        ? "bg-success/10 group-hover:bg-success/20"
+                                        : "bg-error/10 group-hover:bg-error/20"
+                                    }`}>
+                                        {item.icon}
+                                    </div>
+                                    <span className={`text-xs sm:text-sm font-semibold transition-colors truncate ${item.completed
+                                        ? "text-success group-hover:text-success"
+                                        : "text-error group-hover:text-error"
+                                    }`}>
+                                        {item.title}
+                                    </span>
+                                </div>
+                                <span className={`text-xs font-bold px-2 py-1 rounded-full ${item.completed ? "bg-success/10 text-success" : "bg-error/10 text-error"}`}>
+                                    {item.completed ? "Ready" : "Pending"}
+                                </span>
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}

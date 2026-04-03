@@ -1,13 +1,21 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authAPI, ApiResponse, UserRole } from '@/services/api';
+import { authAPI, ApiResponse, Department, UserRole, normalizeUserRole } from '@/services/api';
 
 interface User {
     id: string;
     username: string;
     role: UserRole;
+    department: Department | null;
     station_id: string | null;
     created_at: string;
     updated_at: string;
+}
+
+function normalizeUser(user: any): User {
+    return {
+        ...user,
+        role: normalizeUserRole(user?.role),
+    };
 }
 
 interface AuthContextType {
@@ -35,7 +43,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         if (storedToken && storedUser) {
             setToken(storedToken);
-            setUser(JSON.parse(storedUser));
+            setUser(normalizeUser(JSON.parse(storedUser)));
         }
         setIsLoading(false);
     }, []);
@@ -48,13 +56,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const response: ApiResponse = await authAPI.login(username, password);
 
             if (response.success && response.token && response.user) {
+                const normalizedUser = normalizeUser(response.user);
+
                 // Store token and user in localStorage
                 localStorage.setItem('auth_token', response.token);
-                localStorage.setItem('auth_user', JSON.stringify(response.user));
+                localStorage.setItem('auth_user', JSON.stringify(normalizedUser));
 
                 // Update state
                 setToken(response.token);
-                setUser(response.user);
+                setUser(normalizedUser);
             } else {
                 throw new Error(response.message || 'Login failed');
             }

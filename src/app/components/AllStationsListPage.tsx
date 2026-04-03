@@ -1,38 +1,10 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
+    Activity,
     ChevronDown,
     ChevronRight,
-    FileText,
-    Users,
-    Scroll,
-    Shield,
-    Leaf,
-    Package,
-    Activity,
     Search,
-    CheckCircle,
-    XCircle,
-    Info,
-    Camera,
-    Fuel,
-    Droplet,
-    Database,
-    Maximize,
-    TrendingUp,
-    Building2,
-    Settings,
-    Home,
-    ShieldCheck,
-    ShoppingBag,
-    Scale,
-    Target,
-    Landmark,
-    Monitor,
-    Wallet,
-    AlertTriangle,
-    Briefcase,
-    Paperclip,
     Trash2,
 } from "lucide-react";
 import logo from "../../assets/logo.png";
@@ -40,76 +12,11 @@ import { useAuth } from "@/context/AuthContext";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
-const stationSections = [
-    {
-        group: "STATION ESSENTIALS",
-        items: [
-            { title: "Station Information", icon: <Info className="w-4 h-4" />, path: "station-information", completed: false },
-            { title: "Cameras", icon: <Camera className="w-4 h-4" />, path: "cameras", completed: false },
-            { title: "Dispensers", icon: <Fuel className="w-4 h-4" />, path: "dispensers", completed: false },
-            { title: "Nozzles", icon: <Droplet className="w-4 h-4" />, path: "nozzles", completed: false },
-            { title: "Tanks", icon: <Database className="w-4 h-4" />, path: "tanks", completed: false },
-            { title: "Areas", icon: <Maximize className="w-4 h-4" />, path: "areas", completed: false },
-        ],
-    },
-    {
-        group: "OWNERSHIP & LEGAL",
-        items: [
-            { title: "Owner Information", icon: <Users className="w-4 h-4" />, path: "owner-information", completed: true },
-            { title: "Deed Information", icon: <Scroll className="w-4 h-4" />, path: "deed-information", completed: true },
-            { title: "Building Permit", icon: <FileText className="w-4 h-4" />, path: "building-permit", completed: false },
-            { title: "Contract", icon: <FileText className="w-4 h-4" />, path: "contract", completed: false },
-            { title: "Commercial License", icon: <FileText className="w-4 h-4" />, path: "commercial-license", completed: true },
-        ],
-    },
-    {
-        group: "Government Licenses",
-        items: [
-            { title: "Salamah License", icon: <Shield className="w-4 h-4" />, path: "salamah-license", completed: false },
-            { title: "Taqyees License", icon: <FileText className="w-4 h-4" />, path: "taqyees-license", completed: true },
-            { title: "Environmental License", icon: <Leaf className="w-4 h-4" />, path: "environmental-license", completed: true },
-            { title: "Attachments", icon: <Paperclip className="w-4 h-4" />, path: "government-license-attachments", completed: false },
-        ],
-    },
-    {
-        group: "Project Survey Report",
-        items: [
-            { title: "Survey Report", icon: <FileText className="w-4 h-4" />, path: "survey-report", completed: false },
-        ],
-    },
-    {
-        group: "DEPARTMENTS",
-        items: [
-            { title: "Investment Department", icon: <TrendingUp className="w-4 h-4" />, path: "investment-department", completed: true },
-            { title: "Franchise Department", icon: <Briefcase className="w-4 h-4" />, path: "franchise-department", completed: true },
-            { title: "Projects Department", icon: <Building2 className="w-4 h-4" />, path: "project-department", completed: true },
-            { title: "Operations Department", icon: <Settings className="w-4 h-4" />, path: "operations-management", completed: false },
-            { title: "Property Department", icon: <Home className="w-4 h-4" />, path: "property-department", completed: false },
-            { title: "Maintenance & Quality Department", icon: <ShieldCheck className="w-4 h-4" />, path: "quality-department", completed: true },
-            { title: "Purchase Department", icon: <ShoppingBag className="w-4 h-4" />, path: "purchase-department", completed: true },
-            { title: "Legal Department", icon: <Scale className="w-4 h-4" />, path: "legal-department", completed: true },
-            { title: "Marketing Department", icon: <Target className="w-4 h-4" />, path: "marketing-department", completed: false },
-            { title: "Government Relations Department", icon: <Landmark className="w-4 h-4" />, path: "government-relations-department", completed: true },
-            { title: "IT Department", icon: <Monitor className="w-4 h-4" />, path: "it-department", completed: true },
-            { title: "Human Resource Department", icon: <Users className="w-4 h-4" />, path: "human-resource", completed: false },
-            { title: "Finance Department", icon: <Wallet className="w-4 h-4" />, path: "finance-department", completed: true },
-            { title: "Safety & HSE Department", icon: <AlertTriangle className="w-4 h-4" />, path: "safety", completed: true },
-            { title: "Certificates", icon: <FileText className="w-4 h-4" />, path: "certificates", completed: false },
-        ],
-    },
-    {
-        group: "Assets",
-        items: [
-            { title: "Fixed Assets", icon: <Package className="w-4 h-4" />, path: "fixed-assets", completed: true },
-        ],
-    },
-];
-
 export function AllStationsListPage() {
+    const navigate = useNavigate();
     const { user, token } = useAuth();
     const [stations, setStations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [expandedStations, setExpandedStations] = useState<string[]>([]);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedRegion, setSelectedRegion] = useState("");
     const [selectedCity, setSelectedCity] = useState("");
@@ -117,7 +24,7 @@ export function AllStationsListPage() {
     const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
     const [deleting, setDeleting] = useState(false);
 
-    const isAdmin = user?.role === 'admin';
+    const canDeleteStation = user?.role === 'super_admin' || user?.role === 'department_manager';
 
     useEffect(() => {
         fetchStations();
@@ -172,14 +79,6 @@ export function AllStationsListPage() {
     const regions = Array.from(new Set(stations.map(s => s.region)));
     const cities = Array.from(new Set(stations.map(s => s.city)));
     const customers = Array.from(new Set(stations.map(s => s.customerName)));
-
-    const toggleStation = (stationId: string) => {
-        setExpandedStations((prev) =>
-            prev.includes(stationId)
-                ? prev.filter((id) => id !== stationId)
-                : [...prev, stationId]
-        );
-    };
 
     const handleDelete = async (stationId: string) => {
         if (!token) return;
@@ -320,7 +219,7 @@ export function AllStationsListPage() {
                             {/* Station Header */}
                             <div
                                 className="p-3 sm:p-4 md:p-6 cursor-pointer hover:bg-primary/5 transition-colors"
-                                onClick={() => toggleStation(station.id)}
+                                onClick={() => navigate(`/station/${station.id}`)}
                             >
                                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
                                     <div className="flex items-center gap-3 sm:gap-4 flex-1 w-full sm:w-auto">
@@ -368,7 +267,7 @@ export function AllStationsListPage() {
                                             <Activity className="w-4 h-4 flex-shrink-0" />
                                             <span className="hidden xs:inline">Analytics</span>
                                         </Link>
-                                        {isAdmin && (
+                                        {canDeleteStation && (
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ id: station.id, name: station.name }); }}
                                                 className="p-1.5 sm:p-2 hover:bg-red-50 text-red-500 hover:text-red-600 rounded-lg transition-colors flex-shrink-0"
@@ -377,51 +276,12 @@ export function AllStationsListPage() {
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
                                         )}
-                                        <button className="p-1.5 sm:p-2 hover:bg-muted rounded-lg transition-colors flex-shrink-0">
-                                            {expandedStations.includes(station.id) ? (
-                                                <ChevronDown className="w-5 h-5 text-muted-foreground" />
-                                            ) : (
-                                                <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                                            )}
+                                        <button className="p-1.5 sm:p-2 hover:bg-muted rounded-lg transition-colors flex-shrink-0" aria-label="Open station">
+                                            <ChevronRight className="w-5 h-5 text-muted-foreground" />
                                         </button>
                                     </div>
                                 </div>
                             </div>
-
-                            {/* Expanded Forms Section */}
-                            {expandedStations.includes(station.id) && (
-                                <div className="border-t border-gray-100 bg-gray-50/50 p-3 sm:p-4 md:p-6">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-                                        {stationSections.map((section) => (
-                                            <div key={section.group} className="space-y-2">
-                                                <h4 className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">
-                                                    {section.group}
-                                                </h4>
-                                                {section.items.map((item) => (
-                                                    <Link
-                                                        key={item.title}
-                                                        to={`/station/${station.id}/form/${item.path}`}
-                                                        className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg transition-colors text-sm font-medium border group ${item.completed
-                                                            ? 'bg-success/5 text-success border-success/20 hover:bg-success/10 hover:border-success/30'
-                                                            : 'bg-error/5 text-error border-error/20 hover:bg-error/10 hover:border-error/30'
-                                                            }`}
-                                                    >
-                                                        <div className="flex items-center gap-2">
-                                                            {item.icon}
-                                                            <span>{item.title}</span>
-                                                        </div>
-                                                        {item.completed ? (
-                                                            <CheckCircle className="w-4 h-4 text-success flex-shrink-0" />
-                                                        ) : (
-                                                            <XCircle className="w-4 h-4 text-error flex-shrink-0" />
-                                                        )}
-                                                    </Link>
-                                                ))}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
                         </div>
                     );
                 })}

@@ -11,22 +11,6 @@ import {
 // ─── Types ────────────────────────────────────────────────────────────────────
 type ActiveTab = "new-project" | "feasibility" | "reports" | "contracts";
 
-interface ElementCount {
-    superMarket: string;
-    fuelStation: string;
-    kiosks: string;
-    retailShop: string;
-    driveThrough: string;
-}
-
-interface ElementAreas {
-    superMarket: string;
-    fuelStation: string;
-    kiosks: string;
-    retailShop: string;
-    driveThrough: string;
-}
-
 interface NewProjectForm {
     requestType: string;
     city: string;
@@ -37,8 +21,6 @@ interface NewProjectForm {
     projectStatus: string;
     contractType: string;
     googleLocation: string;
-    elements: ElementCount;
-    elementAreas: ElementAreas;
     priorityLevel: string;
     ownerName: string;
     ownerContactNo: string;
@@ -48,6 +30,19 @@ interface NewProjectForm {
     ownerType: string;
     requestSender: string;
     orderDate: string;
+}
+
+interface CommercialElement {
+    id: string;
+    name: string;
+    count: string;
+    area: string;
+}
+
+interface ProjectDocumentSlot {
+    id: string;
+    label: string;
+    file: File | null;
 }
 
 const REQUEST_TYPES = [
@@ -62,6 +57,11 @@ const REQUEST_TYPES = [
 const PROJECT_STATUSES = ["Vacant Land", "Operational", "Under Structural Construction"];
 const CONTRACT_TYPES = ["Operation Station", "Lease Stations", "Investment", "Franchise Station"];
 const PRIORITY_LEVELS = ["Low", "Medium", "High", "Critical"];
+
+const DEFAULT_ELEMENT_NAMES = ["Super Market", "Fuel Station", "Kiosks", "Retail Shop", "Drive Through"];
+const DEFAULT_DOCUMENT_SLOTS = ["Design File", "Documents", "Auto CAD Drawing (.dwg)"];
+
+const createId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
 // ─── Field Helper ─────────────────────────────────────────────────────────────
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
@@ -79,20 +79,40 @@ const inputCls = "w-full px-3 py-2.5 border border-border rounded-lg focus:outli
 const selectCls = inputCls;
 
 // ─── File Upload Pill ─────────────────────────────────────────────────────────
-function FileUpload({ label, file, onChange, onRemove }: {
+function FileUpload({ label, file, onLabelChange, onChange, onRemoveFile, onRemoveSlot }: {
     label: string; file: File | null;
-    onChange: (f: File) => void; onRemove: () => void;
+    onLabelChange?: (v: string) => void;
+    onChange: (f: File) => void;
+    onRemoveFile: () => void;
+    onRemoveSlot?: () => void;
 }) {
     return (
         <div className="border-2 border-dashed border-border rounded-xl p-4 hover:border-primary/50 transition-colors">
-            <p className="text-xs font-semibold text-muted-foreground mb-2">{label}</p>
+            <div className="flex items-start gap-2 mb-2">
+                {onLabelChange ? (
+                    <input
+                        type="text"
+                        value={label}
+                        onChange={e => onLabelChange(e.target.value)}
+                        placeholder="Document label"
+                        className="w-full px-2 py-1 text-xs font-semibold text-foreground bg-background border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+                    />
+                ) : (
+                    <p className="text-xs font-semibold text-muted-foreground">{label}</p>
+                )}
+                {onRemoveSlot && (
+                    <button type="button" onClick={onRemoveSlot} className="p-1 hover:bg-destructive/10 rounded flex-shrink-0" title="Remove slot">
+                        <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                    </button>
+                )}
+            </div>
             {file ? (
                 <div className="flex items-center justify-between gap-2 bg-emerald-500/5 rounded-lg p-2">
                     <div className="flex items-center gap-2 min-w-0">
                         <FileCheck className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                         <span className="text-xs text-emerald-700 truncate">{file.name}</span>
                     </div>
-                    <button type="button" onClick={onRemove} className="ml-1 p-1 hover:bg-destructive/10 rounded flex-shrink-0">
+                    <button type="button" onClick={onRemoveFile} className="ml-1 p-1 hover:bg-destructive/10 rounded flex-shrink-0">
                         <Trash2 className="w-3.5 h-3.5 text-destructive" />
                     </button>
                 </div>
@@ -142,41 +162,117 @@ function NewProjectTab() {
         requestType: "", city: "", projectName: "", projectCode: "",
         district: "", area: "", projectStatus: "", contractType: "",
         googleLocation: "",
-        elements: { superMarket: "0", fuelStation: "0", kiosks: "0", retailShop: "0", driveThrough: "0" },
-        elementAreas: { superMarket: "", fuelStation: "", kiosks: "", retailShop: "", driveThrough: "" },
         priorityLevel: "", ownerName: "", ownerContactNo: "",
         idNo: "", nationalAddress: "", email: "", ownerType: "individual",
         requestSender: "", orderDate: "",
     });
 
-    const [designFile, setDesignFile] = useState<File | null>(null);
-    const [documentsFile, setDocumentsFile] = useState<File | null>(null);
-    const [autocadFile, setAutocadFile] = useState<File | null>(null);
+    const [elements, setElements] = useState<CommercialElement[]>(
+        DEFAULT_ELEMENT_NAMES.map(name => ({ id: createId(), name, count: "0", area: "" }))
+    );
+    const [projectDocuments, setProjectDocuments] = useState<ProjectDocumentSlot[]>(
+        DEFAULT_DOCUMENT_SLOTS.map(label => ({ id: createId(), label, file: null }))
+    );
 
     const set = (key: keyof NewProjectForm, val: string) => setForm(p => ({ ...p, [key]: val }));
-    const setEl = (key: keyof ElementCount, val: string) =>
-        setForm(p => ({ ...p, elements: { ...p.elements, [key]: val } }));
-    const setElArea = (key: keyof ElementAreas, val: string) =>
-        setForm(p => ({ ...p, elementAreas: { ...p.elementAreas, [key]: val } }));
+
+    const updateElement = (id: string, key: keyof Omit<CommercialElement, "id">, value: string) => {
+        setElements(prev => prev.map(el => el.id === id ? { ...el, [key]: value } : el));
+    };
+
+    const addElement = () => {
+        setElements(prev => [...prev, { id: createId(), name: "", count: "0", area: "" }]);
+    };
+
+    const removeElement = (id: string) => {
+        setElements(prev => prev.filter(el => el.id !== id));
+    };
+
+    const updateDocument = (id: string, patch: Partial<ProjectDocumentSlot>) => {
+        setProjectDocuments(prev => prev.map(doc => doc.id === id ? { ...doc, ...patch } : doc));
+    };
+
+    const addDocumentSlot = () => {
+        setProjectDocuments(prev => [...prev, { id: createId(), label: "", file: null }]);
+    };
+
+    const removeDocumentSlot = (id: string) => {
+        setProjectDocuments(prev => prev.filter(doc => doc.id !== id));
+    };
 
     const { token } = useAuth();
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            const normalizeElementName = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, "");
+            const mapped = {
+                superMarket: 0,
+                fuelStation: 0,
+                kiosks: 0,
+                retailShop: 0,
+                driveThrough: 0,
+                superMarketArea: 0,
+                fuelStationArea: 0,
+                kiosksArea: 0,
+                retailShopArea: 0,
+                driveThroughArea: 0,
+            };
+
+            const extraCommercialElements: { name: string; count: number; area: number }[] = [];
+
+            elements.forEach((el) => {
+                const key = normalizeElementName(el.name);
+                const count = parseInt(el.count || "0", 10) || 0;
+                const area = parseFloat(el.area || "0") || 0;
+
+                if (key === "supermarket") {
+                    mapped.superMarket += count;
+                    mapped.superMarketArea += area;
+                    return;
+                }
+                if (key === "fuelstation") {
+                    mapped.fuelStation += count;
+                    mapped.fuelStationArea += area;
+                    return;
+                }
+                if (key === "kiosks" || key === "kiosk") {
+                    mapped.kiosks += count;
+                    mapped.kiosksArea += area;
+                    return;
+                }
+                if (key === "retailshop") {
+                    mapped.retailShop += count;
+                    mapped.retailShopArea += area;
+                    return;
+                }
+                if (key === "drivethrough") {
+                    mapped.driveThrough += count;
+                    mapped.driveThroughArea += area;
+                    return;
+                }
+
+                if (el.name.trim() || count > 0 || area > 0) {
+                    extraCommercialElements.push({ name: el.name.trim(), count, area });
+                }
+            });
+
             const body = {
                 departmentType: (window.location.pathname.includes('investment') ? 'investment' : 'franchise'),
                 ...form,
-                superMarket: parseInt(form.elements.superMarket),
-                fuelStation: parseInt(form.elements.fuelStation),
-                kiosks: parseInt(form.elements.kiosks),
-                retailShop: parseInt(form.elements.retailShop),
-                driveThrough: parseInt(form.elements.driveThrough),
-                superMarketArea: parseFloat(form.elementAreas.superMarket) || 0,
-                fuelStationArea: parseFloat(form.elementAreas.fuelStation) || 0,
-                kiosksArea: parseFloat(form.elementAreas.kiosks) || 0,
-                retailShopArea: parseFloat(form.elementAreas.retailShop) || 0,
-                driveThroughArea: parseFloat(form.elementAreas.driveThrough) || 0,
-                area: parseFloat(form.area),
+                superMarket: mapped.superMarket,
+                fuelStation: mapped.fuelStation,
+                kiosks: mapped.kiosks,
+                retailShop: mapped.retailShop,
+                driveThrough: mapped.driveThrough,
+                superMarketArea: mapped.superMarketArea,
+                fuelStationArea: mapped.fuelStationArea,
+                kiosksArea: mapped.kiosksArea,
+                retailShopArea: mapped.retailShopArea,
+                driveThroughArea: mapped.driveThroughArea,
+                area: parseFloat(form.area) || 0,
+                commercialElements: elements,
+                extraCommercialElements,
+                projectDocuments: projectDocuments.map(doc => ({ label: doc.label, fileName: doc.file?.name || null })),
                 // Files would typically be uploaded first and URLs sent here
                 // For now, we simulation-submit without files
             };
@@ -196,12 +292,12 @@ function NewProjectTab() {
                     requestType: "", city: "", projectName: "", projectCode: "",
                     district: "", area: "", projectStatus: "", contractType: "",
                     googleLocation: "",
-                    elements: { superMarket: "0", fuelStation: "0", kiosks: "0", retailShop: "0", driveThrough: "0" },
-                    elementAreas: { superMarket: "", fuelStation: "", kiosks: "", retailShop: "", driveThrough: "" },
                     priorityLevel: "", ownerName: "", ownerContactNo: "",
                     idNo: "", nationalAddress: "", email: "", ownerType: "individual",
                     requestSender: "", orderDate: "",
                 });
+                setElements(DEFAULT_ELEMENT_NAMES.map(name => ({ id: createId(), name, count: "0", area: "" })));
+                setProjectDocuments(DEFAULT_DOCUMENT_SLOTS.map(label => ({ id: createId(), label, file: null })));
             } else {
                 const err = await response.json();
                 alert(`Error: ${err.error || 'Failed to submit'}`);
@@ -211,14 +307,6 @@ function NewProjectTab() {
             alert("Submission failed");
         }
     };
-
-    const ELEMENTS: { key: keyof ElementCount; label: string }[] = [
-        { key: "superMarket", label: "Super Market" },
-        { key: "fuelStation", label: "Fuel Station" },
-        { key: "kiosks", label: "Kiosks" },
-        { key: "retailShop", label: "Retail Shop" },
-        { key: "driveThrough", label: "Drive Through" },
-    ];
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -284,18 +372,43 @@ function NewProjectTab() {
             {/* ── Elements ──────────────────────────────────────────────────── */}
             <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
                 <SectionHeader icon={<Layers className="w-5 h-5" />} title="Station Elements" subtitle="Specify the count and area for each commercial element at the site" />
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                    {ELEMENTS.map(el => (
-                        <div key={el.key} className="bg-muted/50 rounded-xl p-4 border border-border hover:border-primary/30 transition-colors space-y-3">
-                            <p className="text-xs font-semibold text-muted-foreground text-center">{el.label}</p>
+                <div className="flex justify-end mb-4">
+                    <button
+                        type="button"
+                        onClick={addElement}
+                        className="px-4 py-2 rounded-lg text-xs font-semibold border border-primary/30 text-primary hover:bg-primary/10 transition-colors"
+                    >
+                        + Add Commercial Element
+                    </button>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {elements.map((el, idx) => (
+                        <div key={el.id} className="bg-muted/50 rounded-xl p-4 border border-border hover:border-primary/30 transition-colors space-y-3">
+                            <div className="flex items-center gap-2">
+                                <input
+                                    type="text"
+                                    value={el.name}
+                                    onChange={e => updateElement(el.id, "name", e.target.value)}
+                                    placeholder={`Element ${idx + 1} name`}
+                                    className="w-full text-sm font-semibold border border-border rounded-lg px-2.5 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => removeElement(el.id)}
+                                    className="p-2 rounded-lg hover:bg-destructive/10"
+                                    title="Remove element"
+                                >
+                                    <Trash2 className="w-4 h-4 text-destructive" />
+                                </button>
+                            </div>
                             <div className="grid grid-cols-2 gap-2 items-end">
                                 <div>
                                     <p className="text-[10px] text-muted-foreground mb-1 text-center">Count</p>
                                     <input
                                         type="number"
                                         min="0"
-                                        value={form.elements[el.key]}
-                                        onChange={e => setEl(el.key, e.target.value)}
+                                        value={el.count}
+                                        onChange={e => updateElement(el.id, "count", e.target.value)}
                                         className="w-full text-center text-lg font-bold border border-border rounded-lg px-2 py-1.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                                     />
                                 </div>
@@ -305,8 +418,8 @@ function NewProjectTab() {
                                         type="number"
                                         min="0"
                                         step="0.01"
-                                        value={form.elementAreas[el.key]}
-                                        onChange={e => setElArea(el.key, e.target.value)}
+                                        value={el.area}
+                                        onChange={e => updateElement(el.id, "area", e.target.value)}
                                         placeholder="0.00"
                                         className="w-full text-center text-sm font-medium border border-border rounded-lg px-2 py-1.5 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
                                     />
@@ -314,19 +427,43 @@ function NewProjectTab() {
                             </div>
                         </div>
                     ))}
+                    {elements.length === 0 && (
+                        <div className="col-span-full text-center text-sm text-muted-foreground py-6 border border-dashed border-border rounded-xl">
+                            No commercial elements yet. Use "Add Commercial Element" to create entries.
+                        </div>
+                    )}
                 </div>
             </div>
 
             {/* ── Attachments ───────────────────────────────────────────────── */}
             <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
                 <SectionHeader icon={<Upload className="w-5 h-5" />} title="Project Documents" subtitle="Upload design files, documents, and drawings" />
+                <div className="flex justify-end mb-4">
+                    <button
+                        type="button"
+                        onClick={addDocumentSlot}
+                        className="px-4 py-2 rounded-lg text-xs font-semibold border border-primary/30 text-primary hover:bg-primary/10 transition-colors"
+                    >
+                        + Add Document Slot
+                    </button>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <FileUpload label="Design File" file={designFile}
-                        onChange={setDesignFile} onRemove={() => setDesignFile(null)} />
-                    <FileUpload label="Documents" file={documentsFile}
-                        onChange={setDocumentsFile} onRemove={() => setDocumentsFile(null)} />
-                    <FileUpload label="Auto CAD Drawing (.dwg)" file={autocadFile}
-                        onChange={setAutocadFile} onRemove={() => setAutocadFile(null)} />
+                    {projectDocuments.map(doc => (
+                        <FileUpload
+                            key={doc.id}
+                            label={doc.label}
+                            file={doc.file}
+                            onLabelChange={(value) => updateDocument(doc.id, { label: value })}
+                            onChange={(file) => updateDocument(doc.id, { file })}
+                            onRemoveFile={() => updateDocument(doc.id, { file: null })}
+                            onRemoveSlot={() => removeDocumentSlot(doc.id)}
+                        />
+                    ))}
+                    {projectDocuments.length === 0 && (
+                        <div className="col-span-full text-center text-sm text-muted-foreground py-6 border border-dashed border-border rounded-xl">
+                            No document slots yet. Use "Add Document Slot" to create entries.
+                        </div>
+                    )}
                 </div>
             </div>
 

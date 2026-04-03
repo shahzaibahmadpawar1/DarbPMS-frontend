@@ -11,6 +11,7 @@ import {
   ClipboardList,
   Inbox,
   Clock,
+  RotateCcw,
 } from "lucide-react";
 import { BackToDashboardButton } from "./BackToDashboardButton";
 import { LanguageSwitcher } from "./LanguageSwitcher";
@@ -18,6 +19,7 @@ import { BrandName } from "./BrandName";
 import { ChatWidget } from "./ChatWidget";
 import { useStation } from "../context/StationContext";
 import { useTranslation } from "../../utils/translations";
+import { clearStationAutofillData, useStationFormAutofill } from "../hooks/useStationFormAutofill";
 import logo from "../../assets/logo.png";
 
 interface NavItem {
@@ -45,6 +47,10 @@ export function DashboardLayout() {
 
   const { selectedStation } = useStation();
   const stationName = selectedStation?.name || "Location N101";
+  useStationFormAutofill({
+    pathname: location.pathname,
+    stationCode: selectedStation?.station_code,
+  });
 
   // Update sidebar state on window resize
   useEffect(() => {
@@ -94,12 +100,23 @@ export function DashboardLayout() {
     { title: "", titleKey: "tasks", path: "/dashboard/tasks", icon: <ClipboardList className="w-5 h-5" /> },
     { title: "", titleKey: "reports", path: "/dashboard/reports", icon: <FileText className="w-5 h-5" /> },
     { title: "Requests", path: "/dashboard/requests", icon: <Inbox className="w-5 h-5" /> },
-    { title: "Under-Review", path: "/dashboard/under-review", icon: <Clock className="w-5 h-5" /> },
+    { title: "Under Review Projects", path: "/dashboard/under-review", icon: <Clock className="w-5 h-5" /> },
     { title: "", titleKey: "contactCEO", path: "/dashboard/contact-ceo", icon: <MessageCircle className="w-5 h-5" /> },
   ];
 
   const handleChatClick = () => {
     setChatOpen(!chatOpen);
+  };
+
+  const handleClearAutofill = () => {
+    const confirmed = window.confirm("Clear saved autofill data for this station?");
+    if (!confirmed) return;
+
+    clearStationAutofillData({
+      pathname: location.pathname,
+      stationCode: selectedStation?.station_code,
+    });
+    alert("Autofill data cleared for this station.");
   };
 
   return (
@@ -228,6 +245,13 @@ export function DashboardLayout() {
               <Menu className="w-5 h-5" />
             </button>
             <h2 className="text-xs sm:text-sm font-bold truncate flex-1 min-w-0">{stationName}</h2>
+            <button
+              onClick={handleClearAutofill}
+              className="p-1.5 sm:p-2 hover:bg-muted rounded-lg transition-colors flex-shrink-0"
+              title="Clear Autofill Data"
+            >
+              <RotateCcw className="w-4 h-4" />
+            </button>
             <LanguageSwitcher />
           </div>
 
@@ -235,6 +259,14 @@ export function DashboardLayout() {
           <header className="hidden lg:flex bg-card/80 backdrop-blur-xl m-4 rounded-2xl border border-border px-4 md:px-6 lg:px-8 py-4 sticky top-4 z-10 shadow-lg shadow-primary/10 items-center justify-between flex-wrap gap-4">
             <BackToDashboardButton />
             <div className="flex items-center gap-2 md:gap-4">
+              <button
+                onClick={handleClearAutofill}
+                className="flex items-center gap-2 px-3 md:px-4 py-2 border border-border rounded-lg hover:bg-muted transition-all duration-200 font-semibold text-xs md:text-sm"
+                title="Clear Autofill Data"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span className="hidden sm:inline">Clear Autofill</span>
+              </button>
               <Link
                 to="/dashboard/station-information"
                 className="flex items-center gap-2 px-3 md:px-4 py-2 bg-gradient-to-r from-primary to-secondary text-primary-foreground rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-xs md:text-sm"
