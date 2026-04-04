@@ -87,7 +87,7 @@ export function TasksPage() {
     const [employeeFiles, setEmployeeFiles] = useState<Record<string, File | null>>({});
     const [reviewComment, setReviewComment] = useState<Record<string, string>>({});
 
-    const canAssign = user?.role === "department_manager" || user?.role === "super_admin";
+    const canAssign = user?.role === "department_manager" || user?.role === "super_admin" || user?.role === "supervisor";
     const isSuperAdmin = user?.role === "super_admin";
 
     const [activeTab, setActiveTab] = useState<RoleViewTab>(() => {
@@ -144,7 +144,7 @@ export function TasksPage() {
 
     useEffect(() => {
         loadData();
-    }, [token]);
+    }, [token, canAssign]);
 
     const matchesSearch = (task: WorkflowTask, query: string): boolean => {
         const q = query.toLowerCase();
@@ -159,23 +159,20 @@ export function TasksPage() {
 
     const managerTasks = useMemo(() => {
         return tasks.filter((task) => {
-            const inManagerFlow = task.status === "manager_queue" || task.status === "assigned" || task.status === "employee_submitted";
-            return inManagerFlow && matchesSearch(task, search);
+            return matchesSearch(task, search);
         });
     }, [tasks, search]);
 
     const employeeTasks = useMemo(() => {
         return tasks.filter((task) => {
             const assignedToMe = task.assigned_to === user?.id;
-            const actionable = task.status === "assigned" || task.status === "employee_submitted";
-            return assignedToMe && actionable && matchesSearch(task, search);
+            return assignedToMe && matchesSearch(task, search);
         });
     }, [tasks, user?.id, search]);
 
     const superAdminTasks = useMemo(() => {
         return tasks.filter((task) => {
-            const reviewWindow = task.status === "under_super_admin_review" || task.status === "approved" || task.status === "rejected";
-            return reviewWindow && matchesSearch(task, search);
+            return matchesSearch(task, search);
         });
     }, [tasks, search]);
 
@@ -213,8 +210,15 @@ export function TasksPage() {
     };
 
     const handleAssign = async (taskId: string) => {
+        const task = tasks.find((item) => item.id === taskId);
+        const isAlreadyAssigned = !!task?.assigned_to || task?.status !== "manager_queue";
+        if (isAlreadyAssigned) {
+            alert("Task is already assigned and cannot be reassigned.");
+            return;
+        }
+
         const assignedToUserId = selectedAssignee[taskId];
-        const fallbackDepartment = tasks.find((task) => task.id === taskId)?.target_department;
+        const fallbackDepartment = task?.target_department;
         const targetDepartment = selectedDepartment[taskId] || fallbackDepartment;
 
         if (!assignedToUserId || !targetDepartment || !token) {
@@ -331,7 +335,12 @@ export function TasksPage() {
     };
 
     const renderTaskCard = (task: WorkflowTask, mode: RoleViewTab) => {
-        const canEmployeeSubmit = task.assigned_to === user?.id || isSuperAdmin;
+        const isPendingTask = task.status !== "approved" && task.status !== "rejected";
+        const canManagerAct = mode === "manager"
+            && (task.status === "manager_queue" || task.status === "assigned" || task.status === "employee_submitted");
+        const canEmployeeAct = mode === "employee"
+            && task.assigned_to === user?.id
+            && (task.status === "assigned" || task.status === "employee_submitted");
 
         return (
             <div key={task.id} className="bg-card/80 rounded-2xl border border-border p-5 space-y-4">
@@ -353,9 +362,9 @@ export function TasksPage() {
                     <p className="text-muted-foreground">Project Status: {task.review_status}</p>
                 </div>
 
-                {(mode === "manager" || mode === "employee") && (
+                {(canManagerAct || canEmployeeAct) && (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        {mode === "manager" && (
+                        {canManagerAct && (
                             <div className="space-y-2">
                                 <p className="text-xs font-bold text-muted-foreground uppercase">Manager Attachment</p>
                                 <input
@@ -390,7 +399,7 @@ export function TasksPage() {
                                     View uploaded employee attachment
                                 </a>
                             )}
-                            {canEmployeeSubmit && (
+                            {canEmployeeAct && (
                                 <button
                                     type="button"
                                     onClick={() => handleEmployeeSubmit(task.id)}
@@ -403,12 +412,22 @@ export function TasksPage() {
                     </div>
                 )}
 
-                {mode === "manager" && canAssign && (
+                {mode === "manager" && canAssign && isPendingTask && (() => {
+                    const chosenDepartment = selectedDepartment[task.id] || task.target_department;
+                    const departmentUsers = assignableUsers.filter((u) => u.department === chosenDepartment);
+                    const isAssignLocked = !!task.assigned_to || task.status !== "manager_queue";
+
+                    return (
                     <div className="border-t border-border pt-4 grid grid-cols-1 md:grid-cols-4 gap-3">
                         <select
                             value={selectedDepartment[task.id] || task.target_department}
-                            onChange={(e) => setSelectedDepartment((prev) => ({ ...prev, [task.id]: e.target.value as "investment" | "franchise" }))}
+                            onChange={(e) => {
+                                const nextDepartment = e.target.value as "investment" | "franchise";
+                                setSelectedDepartment((prev) => ({ ...prev, [task.id]: nextDepartment }));
+                                setSelectedAssignee((prev) => ({ ...prev, [task.id]: "" }));
+                            }}
                             className="px-3 py-2 border border-border rounded-lg bg-background"
+                            disabled={isAssignLocked}
                         >
                             <option value="investment">investment</option>
                             <option value="franchise">franchise</option>
@@ -417,9 +436,10 @@ export function TasksPage() {
                             value={selectedAssignee[task.id] || ""}
                             onChange={(e) => setSelectedAssignee((prev) => ({ ...prev, [task.id]: e.target.value }))}
                             className="px-3 py-2 border border-border rounded-lg bg-background md:col-span-2"
+                            disabled={isAssignLocked}
                         >
                             <option value="">Select assignee</option>
-                            {assignableUsers.map((u) => (
+                            {departmentUsers.map((u) => (
                                 <option key={u.id} value={u.id}>
                                     {u.username} ({u.department || "none"})
                                 </option>
@@ -428,12 +448,22 @@ export function TasksPage() {
                         <button
                             type="button"
                             onClick={() => handleAssign(task.id)}
-                            className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90"
+                            disabled={isAssignLocked || !selectedAssignee[task.id]}
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${isAssignLocked || !selectedAssignee[task.id]
+                                ? "bg-muted text-muted-foreground cursor-not-allowed opacity-60 blur-[0.3px]"
+                                : "bg-primary text-white hover:bg-primary/90"
+                                }`}
                         >
-                            Assign
+                            {isAssignLocked ? "Assigned" : "Assign"}
                         </button>
+                        {isAssignLocked && (
+                            <p className="text-xs text-muted-foreground md:col-span-4">
+                                This task is already assigned to {task.assigned_to_username || "a user"} and cannot be reassigned.
+                            </p>
+                        )}
                     </div>
-                )}
+                    );
+                })()}
 
                 {mode === "super-admin" && task.status === "under_super_admin_review" && (
                     <div className="border-t border-border pt-4 space-y-3">
@@ -497,6 +527,10 @@ export function TasksPage() {
         : activeTab === "employee"
             ? employeeTasks
             : superAdminTasks;
+
+    const completedStatuses: WorkflowTaskStatus[] = ["approved", "rejected"];
+    const pendingTasks = visibleTasks.filter((task) => !completedStatuses.includes(task.status));
+    const completedTasks = visibleTasks.filter((task) => completedStatuses.includes(task.status));
 
     return (
         <div className="max-w-7xl mx-auto">
@@ -583,14 +617,32 @@ export function TasksPage() {
                         </div>
                     </div>
 
-                    <div className="space-y-4">
-                        {visibleTasks.length === 0 ? (
-                            <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">
-                                No tasks in this view.
+                    <div className="space-y-6">
+                        <div>
+                            <h2 className="text-lg font-bold text-foreground mb-3">Pending</h2>
+                            <div className="space-y-4">
+                                {pendingTasks.length === 0 ? (
+                                    <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">
+                                        No pending tasks in this view.
+                                    </div>
+                                ) : (
+                                    pendingTasks.map((task) => renderTaskCard(task, activeTab))
+                                )}
                             </div>
-                        ) : (
-                            visibleTasks.map((task) => renderTaskCard(task, activeTab))
-                        )}
+                        </div>
+
+                        <div>
+                            <h2 className="text-lg font-bold text-foreground mb-3">Completed</h2>
+                            <div className="space-y-4">
+                                {completedTasks.length === 0 ? (
+                                    <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">
+                                        No completed tasks in this view.
+                                    </div>
+                                ) : (
+                                    completedTasks.map((task) => renderTaskCard(task, activeTab))
+                                )}
+                            </div>
+                        </div>
                     </div>
                 </>
             )}

@@ -55,8 +55,9 @@ export function AllStationsDashboardLayout() {
     const { selectedStation } = useStation();
     const isRTL = lang === 'ar';
     const isDepartmentScopedUser = !!user && user.role !== 'super_admin';
-    const isInvestmentUser = isDepartmentScopedUser && user?.department === 'investment';
-    const isFranchiseUser = isDepartmentScopedUser && user?.department === 'franchise';
+    const canCreateDepartmentProject = !!user && ['super_admin', 'department_manager', 'supervisor'].includes(user.role);
+    const isInvestmentUser = isDepartmentScopedUser && canCreateDepartmentProject && user?.department === 'investment';
+    const isFranchiseUser = isDepartmentScopedUser && canCreateDepartmentProject && user?.department === 'franchise';
     const isDeptUser = isDepartmentScopedUser;
     useStationFormAutofill({
         pathname: location.pathname,
@@ -223,6 +224,8 @@ export function AllStationsDashboardLayout() {
         : [
             { titleKey: "dashboard", path: "/all-stations-dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
             { titleKey: "analytics", path: "/all-stations-analytics", icon: <Activity className="w-5 h-5" /> },
+            ...(user?.role === 'super_admin' ? [{ titleKey: "investmentDept" as const, path: "/station/new-station/form/investment-department", icon: <FileText className="w-5 h-5" /> }] : []),
+            ...(user?.role === 'super_admin' ? [{ titleKey: "franchiseDept" as const, path: "/station/new-station/form/franchise-department", icon: <FileText className="w-5 h-5" /> }] : []),
             { titleKey: "stations", path: "/all-stations-list", icon: <img src={logo} alt="" className="w-5 h-5 object-contain brightness-0 invert" /> },
             { titleKey: "departments", path: "/all-stations-departments", icon: <Building2 className="w-5 h-5" /> },
             { titleKey: "requests", path: "/all-stations-requests", icon: <Inbox className="w-5 h-5" /> },

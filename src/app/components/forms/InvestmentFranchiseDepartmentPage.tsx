@@ -160,6 +160,10 @@ function StatCard({ label, value, icon, color, bg }: {
 // â”€â”€â”€ New Project Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function NewProjectTab() {
     const { user } = useAuth();
+    const canCreateRole = !!user && ['super_admin', 'department_manager', 'supervisor'].includes(user.role);
+    const canCreateDepartment = user?.role === 'super_admin' || user?.department === 'investment' || user?.department === 'franchise';
+    const canCreateProject = canCreateRole && canCreateDepartment;
+
     const [form, setForm] = useState<NewProjectForm>({
         requestType: "", city: "", projectName: "", projectCode: "",
         district: "", area: "", projectStatus: "", contractType: "",
@@ -378,6 +382,15 @@ function NewProjectTab() {
             alert("Submission failed");
         }
     };
+
+    if (!canCreateProject) {
+        return (
+            <div className="bg-card rounded-xl border border-border p-6">
+                <p className="text-sm font-semibold text-destructive">You are not allowed to create new projects.</p>
+                <p className="text-xs text-muted-foreground mt-2">Only super admin, department manager, and supervisor can add new projects.</p>
+            </div>
+        );
+    }
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
@@ -794,13 +807,23 @@ interface DeptPageProps {
 
 export function InvestmentFranchiseDepartmentPage({ title, description }: DeptPageProps) {
     const [activeTab, setActiveTab] = useState<ActiveTab>("new-project");
+    const { user } = useAuth();
+    const canCreateRole = !!user && ['super_admin', 'department_manager', 'supervisor'].includes(user.role);
+    const canCreateDepartment = user?.role === 'super_admin' || user?.department === 'investment' || user?.department === 'franchise';
+    const canCreateProject = canCreateRole && canCreateDepartment;
 
     const tabs = [
-        { id: "new-project" as ActiveTab, label: "New Project", icon: <PlusCircle className="w-4 h-4" /> },
+        ...(canCreateProject ? [{ id: "new-project" as ActiveTab, label: "New Project", icon: <PlusCircle className="w-4 h-4" /> }] : []),
         { id: "feasibility" as ActiveTab, label: "Feasibility Study & Opportunity Assessment", icon: <BookOpen className="w-4 h-4" /> },
         { id: "reports" as ActiveTab, label: "Reports & Analysis", icon: <BarChart2 className="w-4 h-4" /> },
         { id: "contracts" as ActiveTab, label: "Contracts", icon: <FileText className="w-4 h-4" /> },
     ];
+
+    useEffect(() => {
+        if (!canCreateProject && activeTab === 'new-project') {
+            setActiveTab('feasibility');
+        }
+    }, [canCreateProject, activeTab]);
 
     const renderContent = () => {
         switch (activeTab) {
