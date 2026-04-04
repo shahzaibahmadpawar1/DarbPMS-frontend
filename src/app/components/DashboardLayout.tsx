@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import {
   FileText,
@@ -11,7 +11,6 @@ import {
   ClipboardList,
   Inbox,
   Clock,
-  RotateCcw,
 } from "lucide-react";
 import { BackToDashboardButton } from "./BackToDashboardButton";
 import { LanguageSwitcher } from "./LanguageSwitcher";
@@ -19,7 +18,7 @@ import { BrandName } from "./BrandName";
 import { ChatWidget } from "./ChatWidget";
 import { useStation } from "../context/StationContext";
 import { useTranslation } from "../../utils/translations";
-import { clearStationAutofillData, useStationFormAutofill } from "../hooks/useStationFormAutofill";
+import { useStationFormAutofill } from "../hooks/useStationFormAutofill";
 import logo from "../../assets/logo.png";
 
 interface NavItem {
@@ -108,17 +107,6 @@ export function DashboardLayout() {
     setChatOpen(!chatOpen);
   };
 
-  const handleClearAutofill = () => {
-    const confirmed = window.confirm("Clear saved autofill data for this station?");
-    if (!confirmed) return;
-
-    clearStationAutofillData({
-      pathname: location.pathname,
-      stationCode: selectedStation?.station_code,
-    });
-    alert("Autofill data cleared for this station.");
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-muted via-background to-muted flex relative overflow-hidden">
       {/* Animated mesh gradient overlay */}
@@ -179,17 +167,21 @@ export function DashboardLayout() {
                 to={item.path}
                 onClick={() => window.innerWidth < 1024 && setSidebarOpen(false)}
                 className={`flex items-center ${sidebarOpen ? 'gap-3 px-4' : 'justify-center px-2'} py-3 rounded-lg transition-all duration-200 ${location.pathname === item.path
-                  ? "bg-gradient-to-r from-primary to-secondary text-white shadow-lg"
+                  ? "bg-primary text-white shadow-lg"
                   : "text-white/80 hover:bg-white/15 hover:text-white"
                   } relative`}
                 title={!sidebarOpen ? (item.titleKey ? t(item.titleKey) : item.title) : undefined}
               >
                 {item.icon}
-                {sidebarOpen && <span className="text-sm font-medium">{item.titleKey ? t(item.titleKey) : item.title}</span>}
-                {sidebarOpen && item.titleKey === "tasks" && taskCount > 0 && (
-                  <span className="absolute top-2 left-8 min-w-4 h-4 px-1 bg-red-500 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white leading-none">
-                    {taskCount > 99 ? "99+" : taskCount}
-                  </span>
+                {sidebarOpen && (
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm font-medium truncate">{item.titleKey ? t(item.titleKey) : item.title}</span>
+                    {item.titleKey === "tasks" && taskCount > 0 && (
+                      <span className="min-w-5 h-5 px-1.5 bg-info text-info-foreground rounded-full flex items-center justify-center text-[10px] font-bold leading-none shadow-sm">
+                        {taskCount > 99 ? "99+" : taskCount}
+                      </span>
+                    )}
+                  </div>
                 )}
               </Link>
             ))}
@@ -199,11 +191,13 @@ export function DashboardLayout() {
               title={!sidebarOpen ? t("chat") : undefined}
             >
               <MessageCircle className="w-5 h-5" />
-              {sidebarOpen && <span className="text-sm font-medium">{t("chat")}</span>}
               {sidebarOpen && (
-                <span className="absolute top-2 left-8 w-4 h-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-white">
-                  3
-                </span>
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-sm font-medium truncate">{t("chat")}</span>
+                  <span className="min-w-5 h-5 px-1.5 bg-info text-info-foreground rounded-full flex items-center justify-center text-[10px] font-bold leading-none shadow-sm">
+                    3
+                  </span>
+                </div>
               )}
             </button>
           </nav>
@@ -245,13 +239,6 @@ export function DashboardLayout() {
               <Menu className="w-5 h-5" />
             </button>
             <h2 className="text-xs sm:text-sm font-bold truncate flex-1 min-w-0">{stationName}</h2>
-            <button
-              onClick={handleClearAutofill}
-              className="p-1.5 sm:p-2 hover:bg-muted rounded-lg transition-colors flex-shrink-0"
-              title="Clear Autofill Data"
-            >
-              <RotateCcw className="w-4 h-4" />
-            </button>
             <LanguageSwitcher />
           </div>
 
@@ -259,17 +246,9 @@ export function DashboardLayout() {
           <header className="hidden lg:flex bg-card/80 backdrop-blur-xl m-4 rounded-2xl border border-border px-4 md:px-6 lg:px-8 py-4 sticky top-4 z-10 shadow-lg shadow-primary/10 items-center justify-between flex-wrap gap-4">
             <BackToDashboardButton />
             <div className="flex items-center gap-2 md:gap-4">
-              <button
-                onClick={handleClearAutofill}
-                className="flex items-center gap-2 px-3 md:px-4 py-2 border border-border rounded-lg hover:bg-muted transition-all duration-200 font-semibold text-xs md:text-sm"
-                title="Clear Autofill Data"
-              >
-                <RotateCcw className="w-4 h-4" />
-                <span className="hidden sm:inline">Clear Autofill</span>
-              </button>
               <Link
                 to="/dashboard/station-information"
-                className="flex items-center gap-2 px-3 md:px-4 py-2 bg-gradient-to-r from-primary to-secondary text-primary-foreground rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-xs md:text-sm"
+                className="flex items-center gap-2 px-3 md:px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-xs md:text-sm"
               >
                 <PlusCircle className="w-4 h-4" />
                 <span className="hidden sm:inline">Add New Project</span>
@@ -291,6 +270,7 @@ export function DashboardLayout() {
     </div>
   );
 }
+
 
 
 

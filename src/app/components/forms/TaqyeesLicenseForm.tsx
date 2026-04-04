@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Save, List, Eye, FileCheck } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
+import { useResolvedStationCode } from "../../hooks/useResolvedStationCode";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 function LicenseField({ label, name, value, type = "text", onChange, disabled }: {
   label: string; name: string; value: string; type?: string;
@@ -28,6 +31,7 @@ function LicenseField({ label, name, value, type = "text", onChange, disabled }:
 
 export function TaqyeesLicenseForm() {
   const { accessMode } = useStation();
+  const resolvedStationCode = useResolvedStationCode();
   const isReadOnly = accessMode === 'view-only';
   const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
 
@@ -43,6 +47,51 @@ export function TaqyeesLicenseForm() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  useEffect(() => {
+    if (!resolvedStationCode || isReadOnly) return;
+    setFormData((prev) => ({ ...prev, stationCode: prev.stationCode || resolvedStationCode }));
+  }, [resolvedStationCode, isReadOnly]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const token = localStorage.getItem("auth_token");
+    const stationCode = formData.stationCode || resolvedStationCode;
+
+    if (!token) {
+      alert("Authentication required. Please login again.");
+      return;
+    }
+
+    if (!formData.licenseNo || !stationCode) {
+      alert("License No and Station Code are required.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/government-licenses/taqyees`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...formData,
+          stationCode,
+        }),
+      });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result?.error || "Failed to save Taqyees license");
+      }
+
+      alert("Taqyees License saved successfully!");
+    } catch (error: any) {
+      alert(error?.message || "Failed to save Taqyees License");
+    }
   };
 
   const mockRecords = [
@@ -86,7 +135,7 @@ export function TaqyeesLicenseForm() {
       </div>
 
       {viewMode === 'form' ? (
-        <form onSubmit={(e) => { e.preventDefault(); alert("Taqyees License saved!"); }}
+        <form onSubmit={handleSubmit}
           className="bg-card rounded-xl shadow-xl p-8 card-glow border-t-4 border-primary animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {fields.map(f => (

@@ -7,8 +7,8 @@ function DashboardTab() {
     const stats = [
         { label: "Total Revenue", value: "SAR 8.4M", icon: <DollarSign className="w-5 h-5" />, color: "text-emerald-500", bg: "bg-emerald-500/10" },
         { label: "Monthly Sales", value: "SAR 720K", icon: <ShoppingBag className="w-5 h-5" />, color: "text-blue-500", bg: "bg-blue-500/10" },
-        { label: "Profit Margin", value: "21.7%", icon: <TrendingUp className="w-5 h-5" />, color: "text-violet-500", bg: "bg-violet-500/10" },
-        { label: "Expenses (MTD)", value: "SAR 190K", icon: <CreditCard className="w-5 h-5" />, color: "text-orange-500", bg: "bg-orange-500/10" },
+        { label: "Profit Margin", value: "21.7%", icon: <TrendingUp className="w-5 h-5" />, color: "text-primary", bg: "bg-primary/10" },
+        { label: "Expenses (MTD)", value: "SAR 190K", icon: <CreditCard className="w-5 h-5" />, color: "text-primary", bg: "bg-primary/10" },
     ];
 
     return (
@@ -159,3 +159,4 @@ export function FinanceDepartmentPage() {
         </div>
     );
 }
+

@@ -7,8 +7,8 @@ function DashboardTab() {
     const stats = [
         { label: "Total Requests", value: "156", icon: <ShoppingCart className="w-5 h-5" />, color: "text-blue-500", bg: "bg-blue-500/10" },
         { label: "Approved", value: "98", icon: <CheckCircle className="w-5 h-5" />, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-        { label: "Pending Orders", value: "34", icon: <Package className="w-5 h-5" />, color: "text-amber-500", bg: "bg-amber-500/10" },
-        { label: "Avg. Cost Saved", value: "12.3%", icon: <TrendingDown className="w-5 h-5" />, color: "text-violet-500", bg: "bg-violet-500/10" },
+        { label: "Pending Orders", value: "34", icon: <Package className="w-5 h-5" />, color: "text-info", bg: "bg-info/10" },
+        { label: "Avg. Cost Saved", value: "12.3%", icon: <TrendingDown className="w-5 h-5" />, color: "text-primary", bg: "bg-primary/10" },
     ];
 
     return (
@@ -29,15 +29,15 @@ function DashboardTab() {
                 <div className="space-y-3">
                     {[
                         { id: "PR-2024-112", type: "Product Supply", requester: "Ahmed Al-Harbi", status: "Approved", date: "2024-06-10" },
-                        { id: "PR-2024-113", type: "Price Quote – Pumps", requester: "Sara Hassan", status: "Pending", date: "2024-06-12" },
+                        { id: "PR-2024-113", type: "Price Quote  -  Pumps", requester: "Sara Hassan", status: "Pending", date: "2024-06-12" },
                         { id: "PR-2024-114", type: "Purchase Clothes", requester: "Mohammed Khalid", status: "In Review", date: "2024-06-14" },
                     ].map((r) => (
                         <div key={r.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                             <div>
                                 <p className="text-sm font-semibold text-foreground">{r.type}</p>
-                                <p className="text-xs text-muted-foreground">{r.id} · {r.requester} · {r.date}</p>
+                                <p className="text-xs text-muted-foreground">{r.id}  -  {r.requester}  -  {r.date}</p>
                             </div>
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${r.status === 'Approved' ? 'bg-emerald-500/10 text-emerald-600' : r.status === 'Pending' ? 'bg-amber-500/10 text-amber-600' : 'bg-blue-500/10 text-blue-600'}`}>
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${r.status === 'Approved' ? 'bg-emerald-500/10 text-emerald-600' : r.status === 'Pending' ? 'bg-info/10 text-info' : 'bg-blue-500/10 text-blue-600'}`}>
                                 {r.status}
                             </span>
                         </div>
@@ -105,3 +105,4 @@ export function PurchaseDepartmentPage() {
         </div>
     );
 }
+

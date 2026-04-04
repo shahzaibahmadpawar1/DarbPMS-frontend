@@ -7,8 +7,8 @@ function DashboardTab() {
     const stats = [
         { label: "Systems Online", value: "48", icon: <Monitor className="w-5 h-5" />, color: "text-emerald-500", bg: "bg-emerald-500/10" },
         { label: "Cash Terminals", value: "12", icon: <Wallet className="w-5 h-5" />, color: "text-blue-500", bg: "bg-blue-500/10" },
-        { label: "Cameras Active", value: "36", icon: <Camera className="w-5 h-5" />, color: "text-violet-500", bg: "bg-violet-500/10" },
-        { label: "Active Tickets", value: "5", icon: <AlertCircle className="w-5 h-5" />, color: "text-orange-500", bg: "bg-orange-500/10" },
+        { label: "Cameras Active", value: "36", icon: <Camera className="w-5 h-5" />, color: "text-primary", bg: "bg-primary/10" },
+        { label: "Active Tickets", value: "5", icon: <AlertCircle className="w-5 h-5" />, color: "text-primary", bg: "bg-primary/10" },
     ];
 
     return (
@@ -29,7 +29,7 @@ function DashboardTab() {
                 <div className="space-y-3">
                     {[
                         { event: "Server Backup Completed", type: "Success", date: "2024-06-14 02:00" },
-                        { event: "Camera Feed Disruption – Island 3", type: "Alert", date: "2024-06-13 14:22" },
+                        { event: "Camera Feed Disruption  -  Island 3", type: "Alert", date: "2024-06-13 14:22" },
                         { event: "POS System Update Deployed", type: "Info", date: "2024-06-12 10:05" },
                     ].map((e) => (
                         <div key={e.event} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
@@ -199,3 +199,4 @@ export function ITDepartmentPage() {
         </div>
     );
 }
+

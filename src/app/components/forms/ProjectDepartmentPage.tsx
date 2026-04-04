@@ -89,8 +89,8 @@ function DashboardTab() {
     const stats = [
         { label: "Total Projects", value: "0", icon: <Building2 className="w-5 h-5" />, color: "text-blue-500", bg: "bg-blue-500/10" },
         { label: "Active Projects", value: "0", icon: <CheckCircle2 className="w-5 h-5" />, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-        { label: "Pending", value: "0", icon: <AlertCircle className="w-5 h-5" />, color: "text-amber-500", bg: "bg-amber-500/10" },
-        { label: "Opening This Year", value: "0", icon: <Calendar className="w-5 h-5" />, color: "text-violet-500", bg: "bg-violet-500/10" },
+        { label: "Pending", value: "0", icon: <AlertCircle className="w-5 h-5" />, color: "text-info", bg: "bg-info/10" },
+        { label: "Opening This Year", value: "0", icon: <Calendar className="w-5 h-5" />, color: "text-primary", bg: "bg-primary/10" },
     ];
 
     return (
@@ -158,7 +158,7 @@ function FileUploadZone({
                             {files.length > 0 ? `${files.length} file${files.length > 1 ? "s" : ""} selected` : "Click to upload"}
                         </p>
                         <p className="text-xs text-muted-foreground">
-                            {multiple ? "Multiple files allowed" : "Single file"} · PDF, DOC, DOCX, JPG, PNG
+                            {multiple ? "Multiple files allowed" : "Single file"}  -  PDF, DOC, DOCX, JPG, PNG
                         </p>
                     </div>
                 </div>
@@ -202,7 +202,7 @@ function ProjectDetailsTab() {
 
     return (
         <div className="space-y-3">
-            <h3 className="text-lg font-bold text-foreground mb-2">Project Details — Document Attachments</h3>
+            <h3 className="text-lg font-bold text-foreground mb-2">Project Details  -  Document Attachments</h3>
             {projectDetailSections.map((section) => {
                 const isOpen = expandedId === section.id;
                 return (
@@ -234,7 +234,7 @@ function ProjectDetailsTab() {
                             />
                         </button>
 
-                        {/* Body — kept in DOM, toggled via CSS so file state persists */}
+                        {/* Body  -  kept in DOM, toggled via CSS so file state persists */}
                         <div className={isOpen ? "block" : "hidden"}>
                             <div className="px-4 pb-5 pt-3 border-t border-border bg-muted/20">
                                 {section.subItems ? (
@@ -338,3 +338,4 @@ export function ProjectDepartmentPage() {
         </div>
     );
 }
+

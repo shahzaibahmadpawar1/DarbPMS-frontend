@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Save, List, PlusCircle, Eye } from "lucide-react";
+import { Save, List, PlusCircle, Eye, Zap, X } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
+import { useAutoPopulate } from "../../hooks/useAutoPopulate";
 import axios from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
@@ -11,6 +12,7 @@ import { useParams } from "react-router-dom";
 export function OwnerInformationForm() {
   const { stationId } = useParams();
   const { accessMode, selectedStation } = useStation();
+  const { investmentProjectData, getPartialPopulationData, hasAutoPopulateData, clearInvestmentProjectData } = useAutoPopulate();
   const isReadOnly = accessMode === 'view-only';
   const stationTypes = ["operation", "rent", "franchise", "investment", "ownership"];
 
@@ -18,6 +20,7 @@ export function OwnerInformationForm() {
   const [loading, setLoading] = useState(false);
   const [records, setRecords] = useState<any[]>([]);
   const [currentStation, setCurrentStation] = useState<any>(selectedStation);
+  const [showAutoPopulateNotice, setShowAutoPopulateNotice] = useState(false);
 
   const [formData, setFormData] = useState({
     ownerId: "",
@@ -59,6 +62,13 @@ export function OwnerInformationForm() {
     fetchStationAndRecords();
   }, [selectedStation, stationId]);
 
+  // Check for auto-populate data
+  useEffect(() => {
+    if (hasAutoPopulateData()) {
+      setShowAutoPopulateNotice(true);
+    }
+  }, [hasAutoPopulateData]);
+
   const fetchRecords = async (stationCode?: string) => {
     try {
       const token = localStorage.getItem('auth_token');
@@ -96,6 +106,9 @@ export function OwnerInformationForm() {
         stationTypeCode: "",
         stationCode: selectedStation?.station_code || "",
       });
+      // Clear auto-populate data after successful submission
+      clearInvestmentProjectData();
+      setShowAutoPopulateNotice(false);
       fetchRecords();
       setViewMode('records');
     } catch (error: any) {
@@ -106,6 +119,17 @@ export function OwnerInformationForm() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleApplyAutoPopulate = () => {
+    const partialData = getPartialPopulationData('owner');
+    setFormData(prev => ({ ...prev, ...partialData }));
+    setShowAutoPopulateNotice(false);
+  };
+
+  const handleDismissAutoPopulate = () => {
+    setShowAutoPopulateNotice(false);
+    clearInvestmentProjectData();
   };
 
   return (
@@ -152,7 +176,56 @@ export function OwnerInformationForm() {
       </div>
 
       {viewMode === 'form' ? (
-        <form onSubmit={handleSubmit} className="bg-card rounded-xl shadow-xl p-8 card-glow border-t-4 border-primary relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <>
+          {/* Auto-Populate Notice */}
+          {showAutoPopulateNotice && investmentProjectData && (
+            <div className="mb-6 p-4 bg-primary/5 border border-primary/20 rounded-lg animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-3 flex-1">
+                  <Zap className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-foreground mb-2">Auto-Fill Available</h3>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      We found matching owner information from your Investment/Franchise project. Would you like to automatically fill the owner details?
+                    </p>
+                    <div className="text-sm text-muted-foreground bg-background/50 p-2 rounded mb-3 max-h-24 overflow-y-auto">
+                      {investmentProjectData.ownerName && <div>• Owner Name: <span className="text-foreground font-medium">{investmentProjectData.ownerName}</span></div>}
+                      {investmentProjectData.idNo && <div>• Owner ID: <span className="text-foreground font-medium">{investmentProjectData.idNo}</span></div>}
+                      {investmentProjectData.ownerContactNo && <div>• Mobile: <span className="text-foreground font-medium">{investmentProjectData.ownerContactNo}</span></div>}
+                      {investmentProjectData.email && <div>• Email: <span className="text-foreground font-medium">{investmentProjectData.email}</span></div>}
+                      {investmentProjectData.nationalAddress && <div>• Address: <span className="text-foreground font-medium">{investmentProjectData.nationalAddress.substring(0, 40)}...</span></div>}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={handleDismissAutoPopulate}
+                  className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                  type="button"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="flex gap-3 mt-4">
+                <button
+                  type="button"
+                  onClick={handleApplyAutoPopulate}
+                  className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium transition-all hover:bg-primary/90 flex items-center justify-center gap-2"
+                >
+                  <Zap className="w-4 h-4" />
+                  Auto-Fill Owner Details
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDismissAutoPopulate}
+                  className="flex-1 px-4 py-2 bg-muted text-muted-foreground rounded-lg font-medium transition-all hover:bg-muted/80"
+                >
+                  Skip
+                </button>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="bg-card rounded-xl shadow-xl p-8 card-glow border-t-4 border-primary relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1">
@@ -271,7 +344,8 @@ export function OwnerInformationForm() {
               </button>
             </div>
           )}
-        </form>
+          </form>
+        </>
       ) : (
         <FormRecordsList
           title="Owner Information"

@@ -18,8 +18,8 @@ function DashboardTab() {
     const stats = [
         { label: "Properties", value: "63", icon: <Building className="w-5 h-5" />, color: "text-blue-500", bg: "bg-blue-500/10" },
         { label: "Active Rentals", value: "41", icon: <Home className="w-5 h-5" />, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-        { label: "Pending Deliveries", value: "8", icon: <Truck className="w-5 h-5" />, color: "text-amber-500", bg: "bg-amber-500/10" },
-        { label: "Avg. Yield", value: "9.3%", icon: <DollarSign className="w-5 h-5" />, color: "text-violet-500", bg: "bg-violet-500/10" },
+        { label: "Pending Deliveries", value: "8", icon: <Truck className="w-5 h-5" />, color: "text-info", bg: "bg-info/10" },
+        { label: "Avg. Yield", value: "9.3%", icon: <DollarSign className="w-5 h-5" />, color: "text-primary", bg: "bg-primary/10" },
     ];
 
     return (
@@ -46,7 +46,7 @@ function DashboardTab() {
                         <div key={p.property} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                             <div>
                                 <p className="text-sm font-semibold text-foreground">{p.property}</p>
-                                <p className="text-xs text-muted-foreground">{p.action} · {p.date}</p>
+                                <p className="text-xs text-muted-foreground">{p.action}  -  {p.date}</p>
                             </div>
                             <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${p.party === 'Darb' ? 'bg-primary/10 text-primary' : 'bg-slate-500/10 text-slate-600'}`}>{p.party}</span>
                         </div>
@@ -84,7 +84,7 @@ function PricingTableTab({ title, isOwner }: { title: string; isOwner: boolean }
                                 <td className="py-3 px-4 text-foreground font-bold">SAR {row.price}</td>
                                 <td className="py-3 px-4 text-muted-foreground">{row.type}</td>
                                 <td className="py-3 px-4">
-                                    <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${row.status === 'Active' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-amber-500/10 text-amber-600'}`}>{row.status}</span>
+                                    <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${row.status === 'Active' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-info/10 text-info'}`}>{row.status}</span>
                                 </td>
                             </tr>
                         ))}
@@ -188,3 +188,4 @@ export function PropertyDepartmentPage() {
         </div>
     );
 }
+

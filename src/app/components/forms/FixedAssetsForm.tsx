@@ -2,9 +2,11 @@ import { useState } from "react";
 import { Save, List, PlusCircle, Eye } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
+import { useResolvedStationCode } from "../../hooks/useResolvedStationCode";
 
 export function FixedAssetsForm() {
-  const { accessMode } = useStation();
+  const { accessMode, selectedStation } = useStation();
+  const resolvedStationCode = useResolvedStationCode();
   const isReadOnly = accessMode === 'view-only';
 
   const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
@@ -21,6 +23,14 @@ export function FixedAssetsForm() {
     costCenter: isReadOnly ? "CC-Riyadh-North" : "",
     stationCode: isReadOnly ? "N101" : ""
   });
+
+  const saveCompletionFlag = () => {
+    const stationCode = formData.stationCode || resolvedStationCode || selectedStation?.station_code;
+    if (!stationCode) return;
+
+    localStorage.setItem(`stationFormCompleted:${stationCode}:fixed-assets`, "true");
+    localStorage.setItem(`fixedAssets:${stationCode}`, JSON.stringify(formData));
+  };
 
   const mockRecords = [
     { code: "AST-882", name: "High-Flow Fuel Pump", group: "Equipment", location: "Riyadh Station", value: "45,000 SAR" },
@@ -70,7 +80,11 @@ export function FixedAssetsForm() {
       </div>
 
       {viewMode === 'form' ? (
-        <form onSubmit={(e) => { e.preventDefault(); alert("Fixed Asset saved!"); }} className="bg-card rounded-xl shadow-xl p-8 card-glow border-t-4 border-primary relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <form onSubmit={(e) => {
+          e.preventDefault();
+          saveCompletionFlag();
+          alert("Fixed Asset saved!");
+        }} className="bg-card rounded-xl shadow-xl p-8 card-glow border-t-4 border-primary relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div><label className="block text-sm font-medium text-muted-foreground mb-1">Asset Code (PK) *</label>
               <input type="text" value={formData.assetCode} onChange={(e) => setFormData({ ...formData, assetCode: e.target.value })}

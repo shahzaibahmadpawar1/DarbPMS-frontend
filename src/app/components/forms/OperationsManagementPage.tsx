@@ -5,7 +5,7 @@ type ActiveTab = "dashboard" | "inspections" | "fuel" | "daily-reports";
 
 function DashboardTab() {
     const stats = [
-        { label: "Daily Transactions", value: "1,240", icon: <Zap className="w-5 h-5" />, color: "text-amber-500", bg: "bg-amber-500/10" },
+        { label: "Daily Transactions", value: "1,240", icon: <Zap className="w-5 h-5" />, color: "text-info", bg: "bg-info/10" },
         { label: "Fuel Level (Avg)", value: "78%", icon: <Fuel className="w-5 h-5" />, color: "text-blue-500", bg: "bg-blue-500/10" },
         { label: "Inspections (MTD)", value: "24 / 30", icon: <ClipboardCheck className="w-5 h-5" />, color: "text-emerald-500", bg: "bg-emerald-500/10" },
         { label: "Active Incidents", value: "2", icon: <AlertTriangle className="w-5 h-5" />, color: "text-red-500", bg: "bg-red-500/10" },
@@ -35,7 +35,7 @@ function DashboardTab() {
                         <div key={i.item} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                             <p className="text-sm font-semibold text-foreground">{i.item}</p>
                             <div className="text-right">
-                                <p className={`text-sm font-bold ${i.status === 'success' ? 'text-emerald-500' : 'text-amber-500'}`}>{i.value}</p>
+                                <p className={`text-sm font-bold ${i.status === 'success' ? 'text-emerald-500' : 'text-info'}`}>{i.value}</p>
                                 <p className="text-xs text-muted-foreground">{i.trend}</p>
                             </div>
                         </div>
@@ -63,7 +63,7 @@ function InspectionsTab() {
                     <div key={i.id} className="p-4 bg-muted/30 border border-border rounded-xl flex items-center justify-between">
                         <div>
                             <p className="font-bold text-foreground">{i.station} Inspection</p>
-                            <p className="text-xs text-muted-foreground">ID: {i.id} · Inspector: {i.inspector} · {i.date}</p>
+                            <p className="text-xs text-muted-foreground">ID: {i.id}  -  Inspector: {i.inspector}  -  {i.date}</p>
                         </div>
                         <div className="text-right">
                             <p className="text-lg font-black text-primary">{i.score}</p>
@@ -143,3 +143,4 @@ export function OperationsManagementPage() {
 function PlusCircle({ className }: { className?: string }) {
     return <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}><circle cx="12" cy="12" r="10" /><path d="M12 8v8" /><path d="M8 12h8" /></svg>;
 }
+

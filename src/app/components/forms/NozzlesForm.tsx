@@ -14,7 +14,7 @@ export function NozzlesForm() {
     const [records, setRecords] = useState<any[]>([]);
 
     const [formData, setFormData] = useState({
-        nozzleSerialNumber: "",
+        quantity: "",
         fuelType: "",
         vendor: "",
         dispenserSerialNumber: "",
@@ -70,7 +70,7 @@ export function NozzlesForm() {
             if (response.ok) {
                 alert("Nozzle information saved successfully!");
                 setFormData({
-                    nozzleSerialNumber: "",
+                    quantity: "",
                     fuelType: "",
                     vendor: "",
                     dispenserSerialNumber: "",
@@ -134,11 +134,11 @@ export function NozzlesForm() {
                 <form onSubmit={handleSubmit} className="max-w-4xl bg-card rounded-2xl border border-border p-8 shadow-sm">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold text-muted-foreground">Serial Number *</label>
+                            <label className="text-sm font-semibold text-muted-foreground">Quantity *</label>
                             <input
-                                type="text"
-                                name="nozzleSerialNumber"
-                                value={formData.nozzleSerialNumber}
+                                type="number"
+                                name="quantity"
+                                value={formData.quantity}
                                 onChange={handleInputChange}
                                 required
                                 disabled={isReadOnly}

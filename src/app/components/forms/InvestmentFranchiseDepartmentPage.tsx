@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { getDepartmentLabel, getRoleLabel } from "@/services/api";
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 import {
     PlusCircle, BarChart2, FileText, BookOpen,
@@ -8,7 +9,7 @@ import {
     Layers, ClipboardList
 } from "lucide-react";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 type ActiveTab = "new-project" | "feasibility" | "reports" | "contracts";
 
 interface NewProjectForm {
@@ -63,7 +64,7 @@ const DEFAULT_DOCUMENT_SLOTS = ["Design File", "Documents", "Auto CAD Drawing (.
 
 const createId = () => `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
-// ─── Field Helper ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Field Helper â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
     return (
         <div>
@@ -78,7 +79,7 @@ function Field({ label, required, children }: { label: string; required?: boolea
 const inputCls = "w-full px-3 py-2.5 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground text-sm";
 const selectCls = inputCls;
 
-// ─── File Upload Pill ─────────────────────────────────────────────────────────
+// â”€â”€â”€ File Upload Pill â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function FileUpload({ label, file, onLabelChange, onChange, onRemoveFile, onRemoveSlot }: {
     label: string; file: File | null;
     onLabelChange?: (v: string) => void;
@@ -128,7 +129,7 @@ function FileUpload({ label, file, onLabelChange, onChange, onRemoveFile, onRemo
     );
 }
 
-// ─── Section Header ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Section Header â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function SectionHeader({ icon, title, subtitle }: { icon: React.ReactNode; title: string; subtitle?: string }) {
     return (
         <div className="flex items-center gap-3 pb-4 border-b border-border mb-6">
@@ -143,7 +144,7 @@ function SectionHeader({ icon, title, subtitle }: { icon: React.ReactNode; title
     );
 }
 
-// ─── Stat Card ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Stat Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function StatCard({ label, value, icon, color, bg }: {
     label: string; value: string | number; icon: React.ReactNode; color: string; bg: string;
 }) {
@@ -156,8 +157,9 @@ function StatCard({ label, value, icon, color, bg }: {
     );
 }
 
-// ─── New Project Tab ──────────────────────────────────────────────────────────
+// â”€â”€â”€ New Project Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function NewProjectTab() {
+    const { user } = useAuth();
     const [form, setForm] = useState<NewProjectForm>({
         requestType: "", city: "", projectName: "", projectCode: "",
         district: "", area: "", projectStatus: "", contractType: "",
@@ -166,6 +168,19 @@ function NewProjectTab() {
         idNo: "", nationalAddress: "", email: "", ownerType: "individual",
         requestSender: "", orderDate: "",
     });
+
+    useEffect(() => {
+        if (!user) return;
+
+        const roleLabel = getRoleLabel(user.role);
+        const rawDepartment = getDepartmentLabel(user.department);
+        const userDepartment = rawDepartment === "All Departments" ? "All Departments" : `${rawDepartment} Department`;
+
+        setForm((prev) => ({
+            ...prev,
+            requestSender: `${user.username || "User"} (${roleLabel}) - ${userDepartment}`,
+        }));
+    }, [user]);
 
     const [elements, setElements] = useState<CommercialElement[]>(
         DEFAULT_ELEMENT_NAMES.map(name => ({ id: createId(), name, count: "0", area: "" }))
@@ -310,7 +325,7 @@ function NewProjectTab() {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-6">
-            {/* ── Project Info ──────────────────────────────────────────────── */}
+            {/* â”€â”€ Project Info â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
                 <SectionHeader icon={<ClipboardList className="w-5 h-5" />} title="Project Information" subtitle="Basic details about the project request" />
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -332,8 +347,8 @@ function NewProjectTab() {
                     <Field label="District">
                         <input type="text" value={form.district} onChange={e => set("district", e.target.value)} className={inputCls} placeholder="e.g. Al-Malqa" />
                     </Field>
-                    <Field label="Area (m²)">
-                        <input type="number" value={form.area} onChange={e => set("area", e.target.value)} className={inputCls} placeholder="Total area in m²" />
+                    <Field label="Area/Region">
+                        <input type="text" value={form.area} onChange={e => set("area", e.target.value)} className={inputCls} placeholder="e.g. North Jeddah" />
                     </Field>
                     <Field label="Project Status" required>
                         <select value={form.projectStatus} onChange={e => set("projectStatus", e.target.value)} className={selectCls}>
@@ -356,8 +371,8 @@ function NewProjectTab() {
                     <Field label="Order Date" required>
                         <input type="date" value={form.orderDate} onChange={e => set("orderDate", e.target.value)} className={inputCls} />
                     </Field>
-                    <Field label="Request Sender">
-                        <input type="text" value={form.requestSender} onChange={e => set("requestSender", e.target.value)} className={inputCls} placeholder="Name of the sender" />
+                    <Field label="Requester">
+                        <input type="text" value={form.requestSender} className={`${inputCls} bg-muted cursor-not-allowed`} placeholder="Automatically filled" disabled />
                     </Field>
                     <Field label="Google Location">
                         <div className="relative">
@@ -369,7 +384,7 @@ function NewProjectTab() {
                 </div>
             </div>
 
-            {/* ── Elements ──────────────────────────────────────────────────── */}
+            {/* â”€â”€ Elements â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
                 <SectionHeader icon={<Layers className="w-5 h-5" />} title="Station Elements" subtitle="Specify the count and area for each commercial element at the site" />
                 <div className="flex justify-end mb-4">
@@ -435,7 +450,7 @@ function NewProjectTab() {
                 </div>
             </div>
 
-            {/* ── Attachments ───────────────────────────────────────────────── */}
+            {/* â”€â”€ Attachments â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
                 <SectionHeader icon={<Upload className="w-5 h-5" />} title="Project Documents" subtitle="Upload design files, documents, and drawings" />
                 <div className="flex justify-end mb-4">
@@ -467,7 +482,7 @@ function NewProjectTab() {
                 </div>
             </div>
 
-            {/* ── Owner Info ────────────────────────────────────────────────── */}
+            {/* â”€â”€ Owner Info â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
                 <SectionHeader icon={<User className="w-5 h-5" />} title="Owner Information" subtitle="Details about the land/project owner" />
 
@@ -523,7 +538,7 @@ function NewProjectTab() {
                 </div>
             </div>
 
-            {/* ── Submit ────────────────────────────────────────────────────── */}
+            {/* â”€â”€ Submit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <div className="flex justify-end">
                 <button type="submit"
                     className="btn-primary px-8 py-3 rounded-xl flex items-center gap-2 font-semibold text-sm shadow-lg hover:shadow-primary/25 transition-all">
@@ -534,7 +549,7 @@ function NewProjectTab() {
     );
 }
 
-// ─── Feasibility Tab ──────────────────────────────────────────────────────────
+// â”€â”€â”€ Feasibility Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function FeasibilityTab({ deptLabel }: { deptLabel: string }) {
     const [stats, setStats] = useState({ total: 0, approved: 0, signed_contract: 0, rejected: 0 });
     const [items, setItems] = useState([]);
@@ -558,15 +573,15 @@ function FeasibilityTab({ deptLabel }: { deptLabel: string }) {
     const statCards = [
         { label: "Total Opportunities", value: stats.total, icon: <TrendingUp className="w-5 h-5" />, color: "text-blue-500", bg: "bg-blue-500/10" },
         { label: "Approved", value: stats.approved, icon: <CheckCircle2 className="w-5 h-5" />, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-        { label: "Signed Contract", value: stats.signed_contract, icon: <FileText className="w-5 h-5" />, color: "text-violet-500", bg: "bg-violet-500/10" },
+        { label: "Signed Contract", value: stats.signed_contract, icon: <FileText className="w-5 h-5" />, color: "text-primary", bg: "bg-primary/10" },
         { label: "Rejected", value: stats.rejected, icon: <XCircle className="w-5 h-5" />, color: "text-red-500", bg: "bg-red-500/10" },
     ];
 
     const badgeColor: Record<string, string> = {
         "Approved": "bg-emerald-500/10 text-emerald-600",
-        "Signed Contract": "bg-violet-500/10 text-violet-600",
+        "Signed Contract": "bg-primary/10 text-primary",
         "Rejected": "bg-red-500/10 text-red-600",
-        "Pending Review": "bg-amber-500/10 text-amber-600",
+        "Pending Review": "bg-info/10 text-info",
     };
 
     return (
@@ -576,7 +591,7 @@ function FeasibilityTab({ deptLabel }: { deptLabel: string }) {
             </div>
             <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
                 <div className="p-5 border-b border-border">
-                    <h3 className="font-bold text-foreground">{deptLabel} — Opportunity Assessments</h3>
+                    <h3 className="font-bold text-foreground">{deptLabel}  -  Opportunity Assessments</h3>
                 </div>
                 <div className="divide-y divide-border">
                     {items.length === 0 ? (
@@ -585,7 +600,7 @@ function FeasibilityTab({ deptLabel }: { deptLabel: string }) {
                         <div key={item.id} className="flex items-center justify-between px-5 py-4 hover:bg-muted/30 transition-colors">
                             <div>
                                 <p className="text-sm font-semibold text-foreground">{item.project_name}</p>
-                                <p className="text-xs text-muted-foreground mt-0.5">{item.city} · {new Date(item.created_at).toLocaleDateString()}</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">{item.city}  -  {new Date(item.created_at).toLocaleDateString()}</p>
                             </div>
                             <span className={`px-3 py-1 rounded-full text-xs font-bold ${badgeColor[item.review_status] || "bg-muted text-muted-foreground"}`}>
                                 {item.review_status}
@@ -598,7 +613,7 @@ function FeasibilityTab({ deptLabel }: { deptLabel: string }) {
     );
 }
 
-// ─── Reports Tab ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ Reports Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ReportsTab({ deptLabel }: { deptLabel: string }) {
     const [attachments, setAttachments] = useState<Record<string, File | null>>({
         q1Report: null, q2Report: null, q3Report: null, annualReport: null,
@@ -615,7 +630,7 @@ function ReportsTab({ deptLabel }: { deptLabel: string }) {
         <div className="space-y-6">
             <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
                 <SectionHeader icon={<BarChart2 className="w-5 h-5" />}
-                    title={`${deptLabel} — Reports & Analysis`}
+                    title={`${deptLabel}  -  Reports & Analysis`}
                     subtitle="Upload and manage periodic performance reports" />
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {REPORT_TYPES.map(rt => (
@@ -656,7 +671,7 @@ function ReportsTab({ deptLabel }: { deptLabel: string }) {
     );
 }
 
-// ─── Contracts Tab ────────────────────────────────────────────────────────────
+// â”€â”€â”€ Contracts Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ContractsTab({ deptLabel }: { deptLabel: string }) {
     const [stats, setStats] = useState({ total: 0, contracted: 0, need_contract: 0 });
     const [items, setItems] = useState([]);
@@ -680,7 +695,7 @@ function ContractsTab({ deptLabel }: { deptLabel: string }) {
     const statCards = [
         { label: "Total Contracts", value: stats.total, icon: <FileText className="w-5 h-5" />, color: "text-blue-500", bg: "bg-blue-500/10" },
         { label: "Contracted", value: stats.contracted, icon: <CheckCircle2 className="w-5 h-5" />, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-        { label: "Need Contract", value: stats.need_contract, icon: <Clock className="w-5 h-5" />, color: "text-amber-500", bg: "bg-amber-500/10" },
+        { label: "Need Contract", value: stats.need_contract, icon: <Clock className="w-5 h-5" />, color: "text-info", bg: "bg-info/10" },
     ];
 
     return (
@@ -690,7 +705,7 @@ function ContractsTab({ deptLabel }: { deptLabel: string }) {
             </div>
             <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
                 <div className="p-5 border-b border-border flex items-center justify-between">
-                    <h3 className="font-bold text-foreground">{deptLabel} — Contract List</h3>
+                    <h3 className="font-bold text-foreground">{deptLabel}  -  Contract List</h3>
                 </div>
                 <div className="divide-y divide-border">
                     {items.length === 0 ? (
@@ -699,11 +714,11 @@ function ContractsTab({ deptLabel }: { deptLabel: string }) {
                         <div key={c.id} className="flex items-center justify-between px-5 py-4 hover:bg-muted/30 transition-colors">
                             <div>
                                 <p className="text-sm font-semibold text-foreground">{c.project_name}</p>
-                                <p className="text-xs text-muted-foreground mt-0.5">{c.contract_type} · {new Date(c.created_at).toLocaleDateString()}</p>
+                                <p className="text-xs text-muted-foreground mt-0.5">{c.contract_type}  -  {new Date(c.created_at).toLocaleDateString()}</p>
                             </div>
                             <span className={`px-3 py-1 rounded-full text-xs font-bold ${c.review_status === "Approved"
                                 ? "bg-emerald-500/10 text-emerald-600"
-                                : "bg-amber-500/10 text-amber-600"
+                                : "bg-info/10 text-info"
                                 }`}>
                                 {c.review_status === "Approved" ? "Active" : "Under Review"}
                             </span>
@@ -715,7 +730,7 @@ function ContractsTab({ deptLabel }: { deptLabel: string }) {
     );
 }
 
-// ─── Shared Department Page ───────────────────────────────────────────────────
+// â”€â”€â”€ Shared Department Page â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface DeptPageProps {
     title: string;
     description: string;
@@ -773,3 +788,4 @@ export function InvestmentFranchiseDepartmentPage({ title, description }: DeptPa
         </div>
     );
 }
+

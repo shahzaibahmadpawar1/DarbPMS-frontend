@@ -1,6 +1,9 @@
 import { useState, useEffect } from "react";
 import { Save, Eye, Upload, FileCheck, Trash2, Paperclip, X, ExternalLink, FileText } from "lucide-react";
 import { useStation } from "../../context/StationContext";
+import { useResolvedStationCode } from "../../hooks/useResolvedStationCode";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 const ATTACHMENT_TYPES = [
     { key: "operatingLicense", label: "Operating License", description: "Official operating license document" },
@@ -110,6 +113,7 @@ function PreviewModal({ file, label, onClose }: { file: File; label: string; onC
 // ── Main Page ────────────────────────────────────────────────────────────────
 export function GovernmentLicenseAttachmentsPage() {
     const { accessMode } = useStation();
+    const resolvedStationCode = useResolvedStationCode();
     const isReadOnly = accessMode === "view-only";
 
     const [attachments, setAttachments] = useState<AttachmentState>(
@@ -119,6 +123,56 @@ export function GovernmentLicenseAttachmentsPage() {
 
     const handleFileChange = (key: string, file: File | null) => {
         setAttachments((prev) => ({ ...prev, [key]: file }));
+    };
+
+    const handleSaveAttachments = async () => {
+        const token = localStorage.getItem("auth_token");
+
+        if (!token) {
+            alert("Authentication required. Please login again.");
+            return;
+        }
+
+        if (!resolvedStationCode) {
+            alert("Station code not found. Please open this form from a station page.");
+            return;
+        }
+
+        if (uploadedCount === 0) {
+            alert("Please upload at least one attachment before saving.");
+            return;
+        }
+
+        const payload = {
+            stationCode: resolvedStationCode,
+            operatingLicenseUrl: attachments.operatingLicense?.name || null,
+            petroleumTradeLicenseUrl: attachments.petroleumTradeLicense?.name || null,
+            civilDefenseCertificateUrl: attachments.civilDefenseCertificate?.name || null,
+            safetyInstallationsCertificateUrl: attachments.safetyInstallationsCertificate?.name || null,
+            maintenanceContractUrl: attachments.maintenanceContract?.name || null,
+            containerContractUrl: attachments.containerContract?.name || null,
+            municipalLicenseUrl: attachments.municipalLicense?.name || null,
+        };
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/government-licenses/attachments`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(payload),
+            });
+
+            const result = await response.json();
+            if (!response.ok) {
+                throw new Error(result?.error || "Failed to save attachments");
+            }
+
+            alert("Attachments saved successfully!");
+        } catch (error: any) {
+            alert(error?.message || "Failed to save attachments");
+        }
     };
 
     const uploadedCount = Object.values(attachments).filter(Boolean).length;
@@ -277,7 +331,7 @@ export function GovernmentLicenseAttachmentsPage() {
                     <div className="p-6 border-t border-border flex justify-end">
                         <button
                             type="button"
-                            onClick={() => alert("Attachments saved successfully!")}
+                            onClick={handleSaveAttachments}
                             className="btn-primary px-6 py-3 rounded-lg flex items-center gap-2 transition-all shadow-lg hover:shadow-primary/20"
                         >
                             <Save className="w-5 h-5" /> Save All Attachments

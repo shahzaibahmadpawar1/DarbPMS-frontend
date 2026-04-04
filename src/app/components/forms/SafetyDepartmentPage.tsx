@@ -8,7 +8,7 @@ function DashboardTab() {
         { label: "Safety Score", value: "98/100", icon: <ShieldAlert className="w-5 h-5" />, color: "text-emerald-500", bg: "bg-emerald-500/10" },
         { label: "Safe Days", value: "412", icon: <CheckCircle className="w-5 h-5" />, color: "text-primary", bg: "bg-primary/10" },
         { label: "Active Audits", value: "2", icon: <HardHat className="w-5 h-5" />, color: "text-blue-500", bg: "bg-blue-500/10" },
-        { label: "Near Misses", value: "1", icon: <FileWarning className="w-5 h-5" />, color: "text-orange-500", bg: "bg-orange-500/10" },
+        { label: "Near Misses", value: "1", icon: <FileWarning className="w-5 h-5" />, color: "text-primary", bg: "bg-primary/10" },
     ];
 
     return (
@@ -25,7 +25,7 @@ function DashboardTab() {
                 ))}
             </div>
             <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
-                <h3 className="font-semibold text-foreground mb-4 font-black flex items-center gap-2">
+                <h3 className="font-black text-foreground mb-4 flex items-center gap-2">
                     <HardHat className="w-4 h-4 text-primary" /> Recent Safety Metrics
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -62,7 +62,7 @@ export function SafetyDepartmentPage() {
     return (
         <div className="p-6">
             <div className="mb-6">
-                <h1 className="text-3xl font-bold text-foreground font-black tracking-tight flex items-center gap-3">
+                <h1 className="text-3xl font-black text-foreground tracking-tight flex items-center gap-3">
                     <ShieldAlert className="w-8 h-8 text-primary" /> SAFETY & HSE
                 </h1>
                 <p className="text-muted-foreground mt-1 font-medium">Health, Safety, and Environmental compliance portal</p>
@@ -98,3 +98,4 @@ export function SafetyDepartmentPage() {
         </div>
     );
 }
+

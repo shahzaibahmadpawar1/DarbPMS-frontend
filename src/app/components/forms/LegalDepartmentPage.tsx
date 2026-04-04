@@ -7,8 +7,8 @@ function DashboardTab() {
     const stats = [
         { label: "Active Cases", value: "12", icon: <Scale className="w-5 h-5" />, color: "text-blue-500", bg: "bg-blue-500/10" },
         { label: "Active Contracts", value: "38", icon: <FileText className="w-5 h-5" />, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-        { label: "Pending Review", value: "5", icon: <BarChart2 className="w-5 h-5" />, color: "text-amber-500", bg: "bg-amber-500/10" },
-        { label: "Resolved", value: "94", icon: <Scale className="w-5 h-5" />, color: "text-violet-500", bg: "bg-violet-500/10" },
+        { label: "Pending Review", value: "5", icon: <BarChart2 className="w-5 h-5" />, color: "text-info", bg: "bg-info/10" },
+        { label: "Resolved", value: "94", icon: <Scale className="w-5 h-5" />, color: "text-primary", bg: "bg-primary/10" },
     ];
 
     return (
@@ -35,9 +35,9 @@ function DashboardTab() {
                         <div key={c.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                             <div>
                                 <p className="text-sm font-semibold text-foreground">{c.type}</p>
-                                <p className="text-xs text-muted-foreground">{c.id} · {c.party} · {c.date}</p>
+                                <p className="text-xs text-muted-foreground">{c.id}  -  {c.party}  -  {c.date}</p>
                             </div>
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${c.status === 'Active' ? 'bg-blue-500/10 text-blue-600' : c.status === 'In Review' ? 'bg-amber-500/10 text-amber-600' : 'bg-emerald-500/10 text-emerald-600'}`}>
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${c.status === 'Active' ? 'bg-blue-500/10 text-blue-600' : c.status === 'In Review' ? 'bg-info/10 text-info' : 'bg-emerald-500/10 text-emerald-600'}`}>
                                 {c.status}
                             </span>
                         </div>
@@ -148,3 +148,4 @@ export function LegalDepartmentPage() {
         </div>
     );
 }
+

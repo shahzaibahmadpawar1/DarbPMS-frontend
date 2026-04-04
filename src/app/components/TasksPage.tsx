@@ -1,382 +1,574 @@
-import { useState, useEffect } from "react";
+import { ChangeEvent, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
+    AlertCircle,
     CheckCircle,
     Clock,
-    AlertCircle,
-    XCircle,
-    Filter,
     Search,
-    Calendar,
+    ShieldCheck,
+    Upload,
     User,
-    FileText,
-    MessageSquare,
-    Package,
-    Wrench,
-    Building2,
-    ChevronDown,
 } from "lucide-react";
 
-interface Task {
+type WorkflowTaskStatus =
+    | "manager_queue"
+    | "assigned"
+    | "employee_submitted"
+    | "under_super_admin_review"
+    | "approved"
+    | "rejected";
+
+type WorkflowTaskFlow = "contract" | "documents";
+type RoleViewTab = "manager" | "employee" | "super-admin";
+
+interface WorkflowTask {
     id: string;
+    investment_project_id: string;
     title: string;
-    description: string;
-    type: "procurement" | "ceo_complaint" | "maintenance" | "legal" | "investment" | "other";
-    status: "pending" | "in_progress" | "completed" | "rejected";
-    priority: "low" | "medium" | "high" | "urgent";
-    station: string;
-    assignedTo: string;
-    createdBy: string;
-    createdDate: string;
-    dueDate: string;
+    description: string | null;
+    flow_type: WorkflowTaskFlow;
+    status: WorkflowTaskStatus;
+    origin_department: "investment" | "franchise";
+    target_department: "investment" | "franchise";
+    assigned_to: string | null;
+    assigned_by: string | null;
+    manager_attachment_url: string | null;
+    employee_attachment_url: string | null;
+    manager_note: string | null;
+    employee_note: string | null;
+    super_admin_comment: string | null;
+    created_at: string;
+    updated_at: string;
+    project_name: string;
+    project_code: string;
+    review_status: string;
+    city: string | null;
+    assigned_to_username: string | null;
+    assigned_by_username: string | null;
 }
 
+interface AssignableUser {
+    id: string;
+    username: string;
+    role: string;
+    department: "investment" | "franchise" | null;
+}
+
+const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";
+
+const statusLabel: Record<WorkflowTaskStatus, string> = {
+    manager_queue: "Manager Queue",
+    assigned: "Assigned",
+    employee_submitted: "Employee Submitted",
+    under_super_admin_review: "Under Super Admin Review",
+    approved: "Approved",
+    rejected: "Rejected",
+};
+
+const statusClass: Record<WorkflowTaskStatus, string> = {
+    manager_queue: "bg-warning/10 text-warning border-warning/20",
+    assigned: "bg-info/10 text-info border-info/20",
+    employee_submitted: "bg-info/10 text-info border-info/20",
+    under_super_admin_review: "bg-primary/10 text-primary border-primary/20",
+    approved: "bg-success/10 text-success border-success/20",
+    rejected: "bg-error/10 text-error border-error/20",
+};
+
 export function TasksPage() {
-    const { token } = useAuth();
-    const [selectedFilter, setSelectedFilter] = useState<string>("all");
-    const [searchQuery, setSearchQuery] = useState("");
-    const [selectedStatus, setSelectedStatus] = useState<string>("all");
-    const [tasks, setTasks] = useState<Task[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const { token, user } = useAuth();
+    const [tasks, setTasks] = useState<WorkflowTask[]>([]);
+    const [assignableUsers, setAssignableUsers] = useState<AssignableUser[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState("");
 
-    const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+    const [selectedAssignee, setSelectedAssignee] = useState<Record<string, string>>({});
+    const [selectedDepartment, setSelectedDepartment] = useState<Record<string, "investment" | "franchise">>({});
+    const [managerFiles, setManagerFiles] = useState<Record<string, File | null>>({});
+    const [employeeFiles, setEmployeeFiles] = useState<Record<string, File | null>>({});
+    const [reviewComment, setReviewComment] = useState<Record<string, string>>({});
 
-    const statusFromReview = (reviewStatus: string): Task['status'] => {
-        switch (reviewStatus) {
-            case 'Pending Review': return 'pending';
-            case 'Validated': return 'in_progress';
-            case 'Approved': return 'completed';
-            case 'Rejected': return 'rejected';
-            default: return 'pending';
+    const canAssign = user?.role === "department_manager" || user?.role === "super_admin";
+    const isSuperAdmin = user?.role === "super_admin";
+
+    const [activeTab, setActiveTab] = useState<RoleViewTab>(() => {
+        if (isSuperAdmin) return "super-admin";
+        if (canAssign) return "manager";
+        return "employee";
+    });
+
+    useEffect(() => {
+        if (isSuperAdmin) {
+            setActiveTab("super-admin");
+            return;
         }
-    };
 
-    const titleFromProject = (project: any): string => {
-        switch (project.review_status) {
-            case 'Pending Review': return `New Project Submitted - ${project.project_name}`;
-            case 'Validated': return `Project Validated - Awaiting CEO Approval (${project.project_name})`;
-            case 'Approved': return `Project Approved - Station Created (${project.project_name})`;
-            case 'Rejected': return `Project Rejected - ${project.project_name}`;
-            default: return project.project_name;
+        if (canAssign) {
+            setActiveTab("manager");
+            return;
         }
-    };
 
-    const descriptionFromProject = (project: any): string => {
-        const dept = project.department_type === 'franchise' ? 'Franchise' : 'Investment';
-        switch (project.review_status) {
-            case 'Pending Review': return `${dept} project "${project.project_name}" (${project.project_code}) submitted and pending PM validation. City: ${project.city || 'N/A'}.`;
-            case 'Validated': return `${dept} project "${project.project_name}" has been validated by the Project Manager and is waiting for CEO approval.`;
-            case 'Approved': return `${dept} project "${project.project_name}" has been approved by the CEO. Station has been automatically created.`;
-            case 'Rejected': return `${dept} project "${project.project_name}" was rejected. Check comments for details.`;
-            default: return project.project_name;
+        setActiveTab("employee");
+    }, [isSuperAdmin, canAssign]);
+
+    const loadData = async () => {
+        if (!token) return;
+
+        setLoading(true);
+        try {
+            const [tasksResponse, usersResponse] = await Promise.all([
+                fetch(`${API_URL}/tasks`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                }),
+                canAssign
+                    ? fetch(`${API_URL}/tasks/assignable-users`, {
+                        headers: { Authorization: `Bearer ${token}` },
+                    })
+                    : Promise.resolve(null),
+            ]);
+
+            if (tasksResponse.ok) {
+                const tasksResult = await tasksResponse.json();
+                setTasks(Array.isArray(tasksResult?.data) ? tasksResult.data : []);
+            }
+
+            if (usersResponse && usersResponse.ok) {
+                const usersResult = await usersResponse.json();
+                setAssignableUsers(Array.isArray(usersResult?.data) ? usersResult.data : []);
+            }
+        } catch (error) {
+            console.error("Failed to fetch workflow tasks:", error);
+        } finally {
+            setLoading(false);
         }
     };
 
     useEffect(() => {
-        if (!token) return;
-        const fetchTasks = async () => {
-            setIsLoading(true);
-            try {
-                const response = await fetch(`${API_URL}/tasks`, {
-                    headers: { 'Authorization': `Bearer ${token}` },
-                });
-                if (response.ok) {
-                    const result = await response.json();
-                    const mappedTasks: Task[] = (result.data || []).map((project: any) => ({
-                        id: project.id,
-                        title: titleFromProject(project),
-                        description: descriptionFromProject(project),
-                        type: project.department_type === 'franchise' ? 'investment' : 'investment',
-                        status: statusFromReview(project.review_status),
-                        priority: project.priority_level?.toLowerCase() === 'high' ? 'high'
-                            : project.priority_level?.toLowerCase() === 'medium' ? 'medium'
-                                : project.priority_level?.toLowerCase() === 'urgent' ? 'urgent' : 'low',
-                        station: project.city || 'N/A',
-                        assignedTo: project.owner_name || 'Unassigned',
-                        createdBy: project.request_sender || 'System',
-                        createdDate: project.created_at ? new Date(project.created_at).toLocaleDateString() : 'N/A',
-                        dueDate: project.order_date ? new Date(project.order_date).toLocaleDateString() : 'N/A',
-                    }));
-                    setTasks(mappedTasks);
-                } else {
-                    console.error('Failed to fetch tasks:', response.statusText);
-                }
-            } catch (err) {
-                console.error('Error fetching tasks:', err);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-        fetchTasks();
+        loadData();
     }, [token]);
 
-    const taskTypes = [
-        { value: "all", label: "All Types", icon: FileText, color: "text-muted-foreground" },
-        { value: "procurement", label: "Procurement", icon: Package, color: "text-info" },
-        { value: "ceo_complaint", label: "CEO Complaints", icon: MessageSquare, color: "text-error" },
-        { value: "maintenance", label: "Maintenance", icon: Wrench, color: "text-primary" },
-        { value: "legal", label: "Legal", icon: FileText, color: "text-primary" },
-        { value: "investment", label: "Investment", icon: Building2, color: "text-success" },
-    ];
-
-    const statusOptions = [
-        { value: "all", label: "All Status", color: "bg-muted text-muted-foreground" },
-        { value: "pending", label: "Pending", color: "bg-warning/10 text-warning" },
-        { value: "in_progress", label: "In Progress", color: "bg-info/10 text-info" },
-        { value: "completed", label: "Completed", color: "bg-success/10 text-success" },
-        { value: "rejected", label: "Rejected", color: "bg-error/10 text-error" },
-    ];
-
-    const getStatusIcon = (status: string) => {
-        switch (status) {
-            case "pending":
-                return <Clock className="w-4 h-4" />;
-            case "in_progress":
-                return <AlertCircle className="w-4 h-4" />;
-            case "completed":
-                return <CheckCircle className="w-4 h-4" />;
-            case "rejected":
-                return <XCircle className="w-4 h-4" />;
-            default:
-                return <Clock className="w-4 h-4" />;
-        }
+    const matchesSearch = (task: WorkflowTask, query: string): boolean => {
+        const q = query.toLowerCase();
+        return (
+            task.project_name.toLowerCase().includes(q)
+            || task.project_code.toLowerCase().includes(q)
+            || task.title.toLowerCase().includes(q)
+            || task.origin_department.toLowerCase().includes(q)
+            || task.target_department.toLowerCase().includes(q)
+        );
     };
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case "pending":
-                return "bg-warning/10 text-warning border-warning/20";
-            case "in_progress":
-                return "bg-info/10 text-info border-info/20";
-            case "completed":
-                return "bg-success/10 text-success border-success/20";
-            case "rejected":
-                return "bg-error/10 text-error border-error/20";
-            default:
-                return "bg-muted text-muted-foreground border-border";
-        }
-    };
+    const managerTasks = useMemo(() => {
+        return tasks.filter((task) => {
+            const inManagerFlow = task.status === "manager_queue" || task.status === "assigned" || task.status === "employee_submitted";
+            return inManagerFlow && matchesSearch(task, search);
+        });
+    }, [tasks, search]);
 
-    const getPriorityColor = (priority: string) => {
-        switch (priority) {
-            case "urgent":
-                return "bg-error text-error-foreground";
-            case "high":
-                return "bg-primary text-primary-foreground";
-            case "medium":
-                return "bg-warning text-warning-foreground";
-            case "low":
-                return "bg-success text-success-foreground";
-            default:
-                return "bg-muted text-muted-foreground";
-        }
-    };
+    const employeeTasks = useMemo(() => {
+        return tasks.filter((task) => {
+            const assignedToMe = task.assigned_to === user?.id;
+            const actionable = task.status === "assigned" || task.status === "employee_submitted";
+            return assignedToMe && actionable && matchesSearch(task, search);
+        });
+    }, [tasks, user?.id, search]);
 
-    const getTypeIcon = (type: string) => {
-        const typeConfig = taskTypes.find((t) => t.value === type);
-        if (typeConfig) {
-            const Icon = typeConfig.icon;
-            return <Icon className={`w-5 h-5 ${typeConfig.color}`} />;
-        }
-        return <FileText className="w-5 h-5 text-gray-600" />;
-    };
+    const superAdminTasks = useMemo(() => {
+        return tasks.filter((task) => {
+            const reviewWindow = task.status === "under_super_admin_review" || task.status === "approved" || task.status === "rejected";
+            return reviewWindow && matchesSearch(task, search);
+        });
+    }, [tasks, search]);
 
-    // Filter tasks
-    const filteredTasks = tasks.filter((task) => {
-        const matchesType = selectedFilter === "all" || task.type === selectedFilter;
-        const matchesStatus = selectedStatus === "all" || task.status === selectedStatus;
-        const matchesSearch =
-            task.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            task.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            task.station.toLowerCase().includes(searchQuery.toLowerCase());
-        return matchesType && matchesStatus && matchesSearch;
-    });
-
-    // Calculate statistics
-    const stats = {
+    const stats = useMemo(() => ({
         total: tasks.length,
-        pending: tasks.filter((t) => t.status === "pending").length,
-        inProgress: tasks.filter((t) => t.status === "in_progress").length,
-        completed: tasks.filter((t) => t.status === "completed").length,
+        managerQueue: tasks.filter((t) => t.status === "manager_queue").length,
+        employeeWork: tasks.filter((t) => t.status === "assigned" || t.status === "employee_submitted").length,
+        superAdminReview: tasks.filter((t) => t.status === "under_super_admin_review").length,
+        approved: tasks.filter((t) => t.status === "approved").length,
+        rejected: tasks.filter((t) => t.status === "rejected").length,
+    }), [tasks]);
+
+    const uploadFile = async (file: File): Promise<string | null> => {
+        if (!token) return null;
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch(`${API_URL}/files/upload`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            alert(error?.error || "File upload failed");
+            return null;
+        }
+
+        const result = await response.json();
+        return result?.data?.url || null;
     };
+
+    const handleAssign = async (taskId: string) => {
+        const assignedToUserId = selectedAssignee[taskId];
+        const targetDepartment = selectedDepartment[taskId];
+
+        if (!assignedToUserId || !targetDepartment || !token) {
+            alert("Select employee and target department first.");
+            return;
+        }
+
+        const response = await fetch(`${API_URL}/tasks/${taskId}/assign`, {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ assignedToUserId, targetDepartment }),
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            alert(error?.error || "Failed to assign task");
+            return;
+        }
+
+        await loadData();
+    };
+
+    const handleManagerAttachment = async (taskId: string) => {
+        const file = managerFiles[taskId];
+        if (!file) {
+            alert("Select a file first.");
+            return;
+        }
+
+        const attachmentUrl = await uploadFile(file);
+        if (!attachmentUrl || !token) {
+            return;
+        }
+
+        const response = await fetch(`${API_URL}/tasks/${taskId}/manager-attachment`, {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ attachmentUrl }),
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            alert(error?.error || "Failed to save manager attachment");
+            return;
+        }
+
+        await loadData();
+    };
+
+    const handleEmployeeSubmit = async (taskId: string) => {
+        const file = employeeFiles[taskId];
+        if (!file) {
+            alert("Select a file first.");
+            return;
+        }
+
+        const attachmentUrl = await uploadFile(file);
+        if (!attachmentUrl || !token) {
+            return;
+        }
+
+        const response = await fetch(`${API_URL}/tasks/${taskId}/employee-submit`, {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ attachmentUrl }),
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            alert(error?.error || "Failed to submit employee attachment");
+            return;
+        }
+
+        await loadData();
+    };
+
+    const handleSuperAdminReview = async (taskId: string, decision: "approved" | "rejected") => {
+        if (!token) return;
+
+        const response = await fetch(`${API_URL}/tasks/${taskId}/review`, {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ decision, comment: reviewComment[taskId] || "" }),
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            alert(error?.error || "Failed to review task");
+            return;
+        }
+
+        await loadData();
+    };
+
+    const onManagerFileChange = (taskId: string, event: ChangeEvent<HTMLInputElement>) => {
+        const selected = event.target.files?.[0] || null;
+        setManagerFiles((prev) => ({ ...prev, [taskId]: selected }));
+    };
+
+    const onEmployeeFileChange = (taskId: string, event: ChangeEvent<HTMLInputElement>) => {
+        const selected = event.target.files?.[0] || null;
+        setEmployeeFiles((prev) => ({ ...prev, [taskId]: selected }));
+    };
+
+    const renderTaskCard = (task: WorkflowTask, mode: RoleViewTab) => {
+        const canEmployeeSubmit = task.assigned_to === user?.id || isSuperAdmin;
+
+        return (
+            <div key={task.id} className="bg-card/80 rounded-2xl border border-border p-5 space-y-4">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                        <h3 className="text-lg font-bold text-foreground">{task.project_name}</h3>
+                        <p className="text-xs text-muted-foreground">
+                            {task.project_code} | {task.flow_type.toUpperCase()} | {task.origin_department} {"->"} {task.target_department}
+                        </p>
+                    </div>
+                    <span className={`px-3 py-1 rounded-full border text-xs font-bold ${statusClass[task.status]}`}>
+                        {statusLabel[task.status]}
+                    </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+                    <p className="text-muted-foreground"><Clock className="w-4 h-4 inline mr-1" /> Created: {new Date(task.created_at).toLocaleDateString()}</p>
+                    <p className="text-muted-foreground"><User className="w-4 h-4 inline mr-1" /> Assigned To: {task.assigned_to_username || "Unassigned"}</p>
+                    <p className="text-muted-foreground">Project Status: {task.review_status}</p>
+                </div>
+
+                {(mode === "manager" || mode === "employee") && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {mode === "manager" && (
+                            <div className="space-y-2">
+                                <p className="text-xs font-bold text-muted-foreground uppercase">Manager Attachment</p>
+                                <input
+                                    type="file"
+                                    onChange={(e) => onManagerFileChange(task.id, e)}
+                                    className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                />
+                                {task.manager_attachment_url && (
+                                    <a href={task.manager_attachment_url} target="_blank" rel="noreferrer" className="text-xs text-primary underline">
+                                        View uploaded manager attachment
+                                    </a>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={() => handleManagerAttachment(task.id)}
+                                    className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90"
+                                >
+                                    <Upload className="w-4 h-4 inline mr-1" /> Upload Manager Attachment
+                                </button>
+                            </div>
+                        )}
+
+                        <div className="space-y-2">
+                            <p className="text-xs font-bold text-muted-foreground uppercase">Employee Attachment</p>
+                            <input
+                                type="file"
+                                onChange={(e) => onEmployeeFileChange(task.id, e)}
+                                className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                            />
+                            {task.employee_attachment_url && (
+                                <a href={task.employee_attachment_url} target="_blank" rel="noreferrer" className="text-xs text-primary underline">
+                                    View uploaded employee attachment
+                                </a>
+                            )}
+                            {canEmployeeSubmit && (
+                                <button
+                                    type="button"
+                                    onClick={() => handleEmployeeSubmit(task.id)}
+                                    className="px-4 py-2 bg-info text-white rounded-lg text-sm font-semibold hover:bg-info/90"
+                                >
+                                    <Upload className="w-4 h-4 inline mr-1" /> Submit Employee Attachment
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {mode === "manager" && canAssign && (
+                    <div className="border-t border-border pt-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <select
+                            value={selectedDepartment[task.id] || task.target_department}
+                            onChange={(e) => setSelectedDepartment((prev) => ({ ...prev, [task.id]: e.target.value as "investment" | "franchise" }))}
+                            className="px-3 py-2 border border-border rounded-lg bg-background"
+                        >
+                            <option value="investment">investment</option>
+                            <option value="franchise">franchise</option>
+                        </select>
+                        <select
+                            value={selectedAssignee[task.id] || ""}
+                            onChange={(e) => setSelectedAssignee((prev) => ({ ...prev, [task.id]: e.target.value }))}
+                            className="px-3 py-2 border border-border rounded-lg bg-background md:col-span-2"
+                        >
+                            <option value="">Select assignee</option>
+                            {assignableUsers.map((u) => (
+                                <option key={u.id} value={u.id}>
+                                    {u.username} ({u.department || "none"})
+                                </option>
+                            ))}
+                        </select>
+                        <button
+                            type="button"
+                            onClick={() => handleAssign(task.id)}
+                            className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90"
+                        >
+                            Assign
+                        </button>
+                    </div>
+                )}
+
+                {mode === "super-admin" && task.status === "under_super_admin_review" && (
+                    <div className="border-t border-border pt-4 space-y-3">
+                        <p className="text-sm font-semibold text-foreground"><ShieldCheck className="w-4 h-4 inline mr-1" /> Super Admin Decision</p>
+                        <textarea
+                            rows={2}
+                            value={reviewComment[task.id] || ""}
+                            onChange={(e) => setReviewComment((prev) => ({ ...prev, [task.id]: e.target.value }))}
+                            className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                            placeholder="Decision comment"
+                        />
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={() => handleSuperAdminReview(task.id, "approved")}
+                                className="px-4 py-2 bg-success text-white rounded-lg text-sm font-semibold"
+                            >
+                                <CheckCircle className="w-4 h-4 inline mr-1" /> Approve
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleSuperAdminReview(task.id, "rejected")}
+                                className="px-4 py-2 bg-error text-white rounded-lg text-sm font-semibold"
+                            >
+                                <AlertCircle className="w-4 h-4 inline mr-1" /> Reject
+                            </button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    const visibleTasks = activeTab === "manager"
+        ? managerTasks
+        : activeTab === "employee"
+            ? employeeTasks
+            : superAdminTasks;
 
     return (
         <div className="max-w-7xl mx-auto">
-            {/* Header */}
             <div className="mb-8">
-                <h1 className="text-4xl font-black text-gray-900 mb-2 tracking-tight">Tasks & Requests</h1>
-                <p className="text-gray-600 font-medium">
-                    Manage all tasks and requests from different departments
+                <h1 className="text-4xl font-black text-foreground mb-2 tracking-tight">Workflow Tasks</h1>
+                <p className="text-muted-foreground font-medium">
+                    Role-specific workflow queues for managers, employees, and super admin
                 </p>
             </div>
 
-            {isLoading ? (
+            {loading ? (
                 <div className="flex items-center justify-center p-20">
-                    <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                    <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
                 </div>
-            ) : (<>
-            {/* Statistics Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-                <div className="bg-card/80 backdrop-blur-xl rounded-xl shadow-md border border-border p-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-semibold text-muted-foreground">Total Tasks</p>
-                            <p className="text-3xl font-black text-foreground mt-1">{stats.total}</p>
+            ) : (
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
+                        <div className="bg-card/80 rounded-xl border border-border p-5">
+                            <p className="text-sm text-muted-foreground">Total</p>
+                            <p className="text-3xl font-black text-foreground">{stats.total}</p>
                         </div>
-                        <FileText className="w-10 h-10 text-primary" />
-                    </div>
-                </div>
-
-                <div className="bg-card/80 backdrop-blur-xl rounded-xl shadow-md border border-border p-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-semibold text-muted-foreground">Pending</p>
-                            <p className="text-3xl font-black text-warning mt-1">{stats.pending}</p>
+                        <div className="bg-card/80 rounded-xl border border-border p-5">
+                            <p className="text-sm text-muted-foreground">Manager Queue</p>
+                            <p className="text-3xl font-black text-warning">{stats.managerQueue}</p>
                         </div>
-                        <Clock className="w-10 h-10 text-warning" />
-                    </div>
-                </div>
-
-                <div className="bg-card/80 backdrop-blur-xl rounded-xl shadow-md border border-border p-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-semibold text-muted-foreground">In Progress</p>
-                            <p className="text-3xl font-black text-info mt-1">{stats.inProgress}</p>
+                        <div className="bg-card/80 rounded-xl border border-border p-5">
+                            <p className="text-sm text-muted-foreground">Employee Workbench</p>
+                            <p className="text-3xl font-black text-info">{stats.employeeWork}</p>
                         </div>
-                        <AlertCircle className="w-10 h-10 text-info" />
-                    </div>
-                </div>
-
-                <div className="bg-card/80 backdrop-blur-xl rounded-xl shadow-md border border-border p-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-sm font-semibold text-muted-foreground">Completed</p>
-                            <p className="text-3xl font-black text-success mt-1">{stats.completed}</p>
+                        <div className="bg-card/80 rounded-xl border border-border p-5">
+                            <p className="text-sm text-muted-foreground">Super Admin Review</p>
+                            <p className="text-3xl font-black text-primary">{stats.superAdminReview}</p>
                         </div>
-                        <CheckCircle className="w-10 h-10 text-success" />
-                    </div>
-                </div>
-            </div>
-
-            {/* Filters */}
-            <div className="bg-card/80 backdrop-blur-xl rounded-2xl shadow-lg border border-border card-glow p-6 mb-6">
-                <div className="flex items-center gap-4 mb-4">
-                    <Filter className="w-5 h-5 text-primary" />
-                    <h2 className="text-lg font-bold text-foreground">Filters</h2>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* Search */}
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                        <input
-                            type="text"
-                            placeholder="Search tasks..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background"
-                        />
+                        <div className="bg-card/80 rounded-xl border border-border p-5">
+                            <p className="text-sm text-muted-foreground">Approved</p>
+                            <p className="text-3xl font-black text-success">{stats.approved}</p>
+                        </div>
+                        <div className="bg-card/80 rounded-xl border border-border p-5">
+                            <p className="text-sm text-muted-foreground">Rejected</p>
+                            <p className="text-3xl font-black text-error">{stats.rejected}</p>
+                        </div>
                     </div>
 
-                    {/* Type Filter */}
-                    <div className="relative">
-                        <select
-                            value={selectedFilter}
-                            onChange={(e) => setSelectedFilter(e.target.value)}
-                            className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background appearance-none"
-                        >
-                            {taskTypes.map((type) => (
-                                <option key={type.value} value={type.value}>
-                                    {type.label}
-                                </option>
-                            ))}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
-                    </div>
+                    <div className="bg-card/80 rounded-2xl border border-border p-4 mb-6 space-y-4">
+                        <div className="relative">
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                            <input
+                                type="text"
+                                placeholder="Search by project, code, department..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="w-full pl-10 pr-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
+                            />
+                        </div>
 
-                    {/* Status Filter */}
-                    <div className="relative">
-                        <select
-                            value={selectedStatus}
-                            onChange={(e) => setSelectedStatus(e.target.value)}
-                            className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background appearance-none"
-                        >
-                            {statusOptions.map((status) => (
-                                <option key={status.value} value={status.value}>
-                                    {status.label}
-                                </option>
-                            ))}
-                        </select>
-                        <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
-                    </div>
-                </div>
-            </div>
-
-            {/* Tasks List */}
-            <div className="space-y-4">
-                {filteredTasks.length === 0 ? (
-                    <div className="bg-white/80 backdrop-blur-xl rounded-2xl shadow-lg border border-white/40 p-12 text-center">
-                        <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                        <h3 className="text-xl font-bold text-gray-900 mb-2">No tasks found</h3>
-                        <p className="text-gray-600">Try adjusting your filters or search query</p>
-                    </div>
-                ) : (
-                    filteredTasks.map((task) => (
-                        <div
-                            key={task.id}
-                            className="bg-card/80 backdrop-blur-xl rounded-xl shadow-md border border-border p-6 hover:shadow-xl transition-all duration-200 card-glow"
-                        >
-                            <div className="flex items-start justify-between mb-4">
-                                <div className="flex items-start gap-4 flex-1">
-                                    <div className="mt-1">{getTypeIcon(task.type)}</div>
-                                    <div className="flex-1">
-                                        <div className="flex items-center gap-3 mb-2">
-                                            <h3 className="text-lg font-bold text-gray-900">{task.title}</h3>
-                                            <span
-                                                className={`px-3 py-1 rounded-full text-xs font-bold ${getPriorityColor(
-                                                    task.priority
-                                                )}`}
-                                            >
-                                                {task.priority.toUpperCase()}
-                                            </span>
-                                        </div>
-                                        <p className="text-gray-600 mb-3">{task.description}</p>
-                                        <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
-                                            <div className="flex items-center gap-1">
-                                                <Building2 className="w-4 h-4" />
-                                                <span>{task.station}</span>
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                <User className="w-4 h-4" />
-                                                <span>Assigned to: {task.assignedTo}</span>
-                                            </div>
-                                            <div className="flex items-center gap-1">
-                                                <Calendar className="w-4 h-4" />
-                                                <span>Due: {task.dueDate}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div
-                                    className={`flex items-center gap-2 px-4 py-2 rounded-lg border font-semibold text-sm ${getStatusColor(
-                                        task.status
-                                    )}`}
+                        <div className="flex flex-wrap gap-2">
+                            {(canAssign || isSuperAdmin) && (
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab("manager")}
+                                    className={`px-4 py-2 rounded-lg border text-sm font-semibold ${activeTab === "manager" ? "bg-primary text-white border-primary" : "bg-background border-border text-foreground"}`}
                                 >
-                                    {getStatusIcon(task.status)}
-                                    <span className="capitalize">{task.status.replace("_", " ")}</span>
-                                </div>
-                            </div>
-                            <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-                                <div className="text-xs text-gray-500">
-                                    Created by {task.createdBy} on {task.createdDate}
-                                </div>
-                                <div className="text-xs text-gray-500">ID: {task.id}</div>
-                            </div>
+                                    Manager Queue
+                                </button>
+                            )}
+
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab("employee")}
+                                className={`px-4 py-2 rounded-lg border text-sm font-semibold ${activeTab === "employee" ? "bg-primary text-white border-primary" : "bg-background border-border text-foreground"}`}
+                            >
+                                Employee Workbench
+                            </button>
+
+                            {isSuperAdmin && (
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab("super-admin")}
+                                    className={`px-4 py-2 rounded-lg border text-sm font-semibold ${activeTab === "super-admin" ? "bg-primary text-white border-primary" : "bg-background border-border text-foreground"}`}
+                                >
+                                    Super Admin Review
+                                </button>
+                            )}
                         </div>
-                    ))
-                )}
-            </div>
-            </>)}
+                    </div>
+
+                    <div className="space-y-4">
+                        {visibleTasks.length === 0 ? (
+                            <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">
+                                No tasks in this view.
+                            </div>
+                        ) : (
+                            visibleTasks.map((task) => renderTaskCard(task, activeTab))
+                        )}
+                    </div>
+                </>
+            )}
         </div>
     );
 }

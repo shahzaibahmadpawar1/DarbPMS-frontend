@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Save, List, PlusCircle, Eye, Trash2, Upload, X } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
+import { useResolvedStationCode } from "../../hooks/useResolvedStationCode";
 
 interface ProjectComponent {
     id: string;
@@ -33,11 +34,12 @@ interface FuelTank {
 
 interface CompletionStage {
     id: string;
-    completionRate: string;
-    theCondition: string;
-    item: string;
     stage: string;
-    number: string;
+    customStage: string;
+    condition: string;
+    completionRate: string;
+    remarks: string;
+    attachment: File | null;
 }
 
 interface DocumentUpload {
@@ -46,7 +48,8 @@ interface DocumentUpload {
 }
 
 export function SurveyReportForm() {
-    const { accessMode } = useStation();
+    const { accessMode, selectedStation } = useStation();
+    const resolvedStationCode = useResolvedStationCode();
     const isReadOnly = accessMode === 'view-only';
 
     const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
@@ -60,6 +63,13 @@ export function SurveyReportForm() {
     const [city, setCity] = useState(isReadOnly ? "Jeddah" : "");
     const [location, setLocation] = useState(isReadOnly ? "https://maps.app.goo.gl/BsSRbvX1GwVzwEpd6" : "");
     const [theDate, setTheDate] = useState(isReadOnly ? "2024-01-15" : "");
+    const [stationStatusCode, setStationStatusCode] = useState(isReadOnly ? "1" : "");
+    const [stationStatusRemarks, setStationStatusRemarks] = useState(isReadOnly ? "Station is currently active and operating normally." : "");
+    const [stationStatusStage, setStationStatusStage] = useState(isReadOnly ? "operating license" : "");
+    const [stationStatusCustomStage, setStationStatusCustomStage] = useState("");
+    const [stationStatusCondition, setStationStatusCondition] = useState(isReadOnly ? "Operational readiness verified" : "");
+    const [stationStatusCompletionRate, setStationStatusCompletionRate] = useState(isReadOnly ? "100.00%" : "");
+    const [stationStatusAttachment, setStationStatusAttachment] = useState<File | null>(null);
 
     // Project Components
     const [projectComponents, setProjectComponents] = useState<ProjectComponent[]>(
@@ -121,19 +131,9 @@ export function SurveyReportForm() {
     // Completion Stages
     const [completionStages, setCompletionStages] = useState<CompletionStage[]>(
         isReadOnly ? [
-            { id: "1", completionRate: "100.00%", theCondition: "Remaining manhole covers", item: "Fuel room", stage: "", number: "1" },
-            { id: "2", completionRate: "100.00%", theCondition: "", item: "Water tanks", stage: "", number: "2" },
-            { id: "3", completionRate: "0.00%", theCondition: "Construction has not yet begun: a well will be built on the site", item: "orchards", stage: "tanks", number: "5" },
-            { id: "4", completionRate: "100.00%", theCondition: "The metal structure has been completed", item: "Fuel canopy", stage: "", number: "6" },
-            { id: "5", completionRate: "100.00%", theCondition: "Structural work included the construction of the canopy's iron frame", item: "supermarket", stage: "", number: "7" },
-            { id: "6", completionRate: "0.00%", theCondition: "Foundation works, beams, and column reinforcement", item: "kiosks", stage: "", number: "8" },
-            { id: "7", completionRate: "0.00%", theCondition: "nothing", item: "Mosque", stage: "", number: "9" },
-            { id: "8", completionRate: "100.00%", theCondition: "Building and metal structure works", item: "Car service", stage: "", number: "10" },
-            { id: "9", completionRate: "100.00%", theCondition: "Structural works and buildings", item: "Commercial shops", stage: "", number: "11" },
-            { id: "10", completionRate: "100.00%", theCondition: "Bone works", item: "Drive Thru Restaurants", stage: "", number: "12" },
-            { id: "11", completionRate: "95.00%", theCondition: "Foundation and extension works", item: "Plumbing extensions, general site drainage", stage: "", number: "14" },
-            { id: "12", completionRate: "95.00%", theCondition: "Foundation and extension works", item: "Electrical Extensions", stage: "", number: "17" },
-            { id: "13", completionRate: "90.00%", theCondition: "Factory building remnants", item: "Gasoline extensions", stage: "", number: "20" },
+            { id: "1", stage: "operating license", customStage: "", condition: "License documents completed", completionRate: "100.00%", remarks: "Ready for compliance check", attachment: null },
+            { id: "2", stage: "electricity connection", customStage: "", condition: "Grid connection under process", completionRate: "75.00%", remarks: "Awaiting final utility approval", attachment: null },
+            { id: "3", stage: "other", customStage: "Fuel canopy setup", condition: "Steel structure completed", completionRate: "90.00%", remarks: "Pending final paint and signage", attachment: null },
         ] : []
     );
 
@@ -150,6 +150,29 @@ export function SurveyReportForm() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
+        const stationCode = resolvedStationCode || selectedStation?.station_code;
+
+        if (stationCode) {
+            localStorage.setItem(`stationFormCompleted:${stationCode}:survey-report`, "true");
+            localStorage.setItem(`surveyReport:${stationCode}`, JSON.stringify({
+                projectStartDate,
+                projectDeliveryDate,
+                typeOfContract,
+                reportNumber,
+                projectName,
+                city,
+                location,
+                theDate,
+                stationStatusCode,
+                stationStatusStage,
+                stationStatusCustomStage,
+                stationStatusCondition,
+                stationStatusCompletionRate,
+                stationStatusRemarks,
+                stationStatusAttachmentName: stationStatusAttachment?.name || "",
+            }));
+        }
+
         console.log("Survey Report:", {
             projectStartDate,
             projectDeliveryDate,
@@ -159,6 +182,13 @@ export function SurveyReportForm() {
             city,
             location,
             theDate,
+            stationStatusCode,
+            stationStatusStage,
+            stationStatusCustomStage,
+            stationStatusCondition,
+            stationStatusCompletionRate,
+            stationStatusRemarks,
+            stationStatusAttachment,
             projectComponents,
             mosqueAreas,
             fuelPumps,
@@ -253,11 +283,12 @@ export function SurveyReportForm() {
     const addCompletionStage = () => {
         setCompletionStages([...completionStages, {
             id: Date.now().toString(),
-            completionRate: "",
-            theCondition: "",
-            item: "",
             stage: "",
-            number: "",
+            customStage: "",
+            condition: "",
+            completionRate: "",
+            remarks: "",
+            attachment: null,
         }]);
     };
 
@@ -268,6 +299,12 @@ export function SurveyReportForm() {
     const updateCompletionStage = (id: string, field: keyof CompletionStage, value: string) => {
         setCompletionStages(completionStages.map(stage =>
             stage.id === id ? { ...stage, [field]: value } : stage
+        ));
+    };
+
+    const updateCompletionAttachment = (id: string, file: File | null) => {
+        setCompletionStages(completionStages.map(stage =>
+            stage.id === id ? { ...stage, attachment: file } : stage
         ));
     };
 
@@ -340,8 +377,8 @@ export function SurveyReportForm() {
 
                         {/* Project Completion Rate Report */}
                         <div className="mb-8">
-                            <h2 className="text-xl font-semibold text-foreground mb-4 border-b border-border pb-2 bg-orange-500/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3">
-                                Project Completion Rate Report
+                            <h2 className="text-xl font-semibold text-foreground mb-4 border-b border-border pb-2 bg-primary/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3">
+                                Project Completion Rate
                             </h2>
                             <div className="grid grid-cols-4 gap-4 mt-4">
                                 <div>
@@ -441,7 +478,7 @@ export function SurveyReportForm() {
                         {/* Project Components */}
                         <div className="mb-8">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                                <h2 className="text-xl font-semibold text-foreground border-b border-border pb-2 bg-orange-500/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3 flex-1">
+                                <h2 className="text-xl font-semibold text-foreground border-b border-border pb-2 bg-primary/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3 flex-1">
                                     Project Components
                                 </h2>
                                 {!isReadOnly && (
@@ -506,7 +543,7 @@ export function SurveyReportForm() {
                         {/* Mosque Section */}
                         <div className="mb-8">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                                <h2 className="text-xl font-semibold text-foreground border-b border-border pb-2 bg-orange-500/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3 flex-1">
+                                <h2 className="text-xl font-semibold text-foreground border-b border-border pb-2 bg-primary/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3 flex-1">
                                     Mosque
                                 </h2>
                                 {!isReadOnly && (
@@ -610,7 +647,7 @@ export function SurveyReportForm() {
                         {/* Fuel Pumps Section */}
                         <div className="mb-8">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                                <h2 className="text-xl font-semibold text-foreground border-b border-border pb-2 bg-orange-500/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3 flex-1">
+                                <h2 className="text-xl font-semibold text-foreground border-b border-border pb-2 bg-primary/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3 flex-1">
                                     Fuel Pumps
                                 </h2>
                                 {!isReadOnly && (
@@ -675,7 +712,7 @@ export function SurveyReportForm() {
                         {/* Fuel Tanks Section */}
                         <div className="mb-8">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                                <h2 className="text-xl font-semibold text-foreground border-b border-border pb-2 bg-orange-500/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3 flex-1">
+                                <h2 className="text-xl font-semibold text-foreground border-b border-border pb-2 bg-primary/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3 flex-1">
                                     Fuel Tanks
                                 </h2>
                                 {!isReadOnly && (
@@ -754,7 +791,7 @@ export function SurveyReportForm() {
 
                         {/* Project Documents */}
                         <div className="mb-8">
-                            <h2 className="text-xl font-semibold text-foreground mb-4 border-b border-border pb-2 bg-orange-500/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3">
+                            <h2 className="text-xl font-semibold text-foreground mb-4 border-b border-border pb-2 bg-primary/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3">
                                 Project Documents
                             </h2>
                             <div className="space-y-3 mt-4">
@@ -782,7 +819,7 @@ export function SurveyReportForm() {
 
                         {/* License Authorities */}
                         <div className="mb-8">
-                            <h2 className="text-xl font-semibold text-foreground mb-4 border-b border-border pb-2 bg-orange-500/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3">
+                            <h2 className="text-xl font-semibold text-foreground mb-4 border-b border-border pb-2 bg-primary/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3">
                                 License Authorities
                             </h2>
                             <div className="space-y-3 mt-4">
@@ -811,7 +848,7 @@ export function SurveyReportForm() {
                         {/* Completion Stages */}
                         <div className="mb-8">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                                <h2 className="text-xl font-semibold text-foreground border-b border-border pb-2 bg-orange-500/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3 flex-1">
+                                <h2 className="text-xl font-semibold text-foreground border-b border-border pb-2 bg-primary/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3 flex-1">
                                     Project Completion Stages
                                 </h2>
                                 {!isReadOnly && (
@@ -829,17 +866,55 @@ export function SurveyReportForm() {
                                 <table className="w-full border-collapse">
                                     <thead>
                                         <tr className="bg-muted/50">
-                                            <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Completion Rate</th>
-                                            <th className="border border-border px-4 py-2 text-left text-sm font-semibold">The Condition</th>
-                                            <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Item</th>
                                             <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Stage</th>
-                                            <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Number</th>
+                                            <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Condition</th>
+                                            <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Completion Rate</th>
+                                            <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Remarks</th>
+                                            <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Attachment</th>
                                             {!isReadOnly && <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Actions</th>}
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {completionStages.map((stage) => (
                                             <tr key={stage.id}>
+                                                <td className="border border-border px-2 py-2">
+                                                    <div className="space-y-2">
+                                                        <select
+                                                            value={stage.stage}
+                                                            onChange={(e) => updateCompletionStage(stage.id, 'stage', e.target.value)}
+                                                            className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted"
+                                                            disabled={isReadOnly}
+                                                        >
+                                                            <option value="">Select Stage</option>
+                                                            <option value="operating license">operating license</option>
+                                                            <option value="electricity connection">electricity connection</option>
+                                                            <option value="automation">automation</option>
+                                                            <option value="cameras">cameras</option>
+                                                            <option value="finishing stage">finishing stage</option>
+                                                            <option value="it works">it works</option>
+                                                            <option value="other">other</option>
+                                                        </select>
+                                                        {stage.stage === 'other' && (
+                                                            <input
+                                                                type="text"
+                                                                value={stage.customStage}
+                                                                onChange={(e) => updateCompletionStage(stage.id, 'customStage', e.target.value)}
+                                                                className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted"
+                                                                placeholder="Enter custom stage"
+                                                                disabled={isReadOnly}
+                                                            />
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td className="border border-border px-2 py-2">
+                                                    <input
+                                                        type="text"
+                                                        value={stage.condition}
+                                                        onChange={(e) => updateCompletionStage(stage.id, 'condition', e.target.value)}
+                                                        className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted"
+                                                        disabled={isReadOnly}
+                                                    />
+                                                </td>
                                                 <td className="border border-border px-2 py-2">
                                                     <input
                                                         type="text"
@@ -851,40 +926,35 @@ export function SurveyReportForm() {
                                                     />
                                                 </td>
                                                 <td className="border border-border px-2 py-2">
-                                                    <input
-                                                        type="text"
-                                                        value={stage.theCondition}
-                                                        onChange={(e) => updateCompletionStage(stage.id, 'theCondition', e.target.value)}
-                                                        className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted"
+                                                    <textarea
+                                                        value={stage.remarks}
+                                                        onChange={(e) => updateCompletionStage(stage.id, 'remarks', e.target.value)}
+                                                        className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted min-h-[70px]"
+                                                        placeholder="Add comment or remark"
                                                         disabled={isReadOnly}
                                                     />
                                                 </td>
                                                 <td className="border border-border px-2 py-2">
-                                                    <input
-                                                        type="text"
-                                                        value={stage.item}
-                                                        onChange={(e) => updateCompletionStage(stage.id, 'item', e.target.value)}
-                                                        className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted"
-                                                        disabled={isReadOnly}
-                                                    />
-                                                </td>
-                                                <td className="border border-border px-2 py-2">
-                                                    <input
-                                                        type="text"
-                                                        value={stage.stage}
-                                                        onChange={(e) => updateCompletionStage(stage.id, 'stage', e.target.value)}
-                                                        className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted"
-                                                        disabled={isReadOnly}
-                                                    />
-                                                </td>
-                                                <td className="border border-border px-2 py-2">
-                                                    <input
-                                                        type="text"
-                                                        value={stage.number}
-                                                        onChange={(e) => updateCompletionStage(stage.id, 'number', e.target.value)}
-                                                        className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted"
-                                                        disabled={isReadOnly}
-                                                    />
+                                                    <div className="flex flex-col gap-2">
+                                                        {!isReadOnly && (
+                                                            <label className="cursor-pointer w-fit">
+                                                                <input
+                                                                    type="file"
+                                                                    className="hidden"
+                                                                    onChange={(e) => updateCompletionAttachment(stage.id, e.target.files?.[0] || null)}
+                                                                />
+                                                                <div className="p-2 hover:bg-primary/10 rounded-lg transition-colors">
+                                                                    <Upload className="w-5 h-5 text-primary" />
+                                                                </div>
+                                                            </label>
+                                                        )}
+                                                        {stage.attachment && (
+                                                            <span className="text-xs text-muted-foreground truncate">{stage.attachment.name}</span>
+                                                        )}
+                                                        {!stage.attachment && isReadOnly && (
+                                                            <span className="text-xs text-muted-foreground">No attachment</span>
+                                                        )}
+                                                    </div>
                                                 </td>
                                                 {!isReadOnly && (
                                                     <td className="border border-border px-2 py-2 text-center">
@@ -904,9 +974,118 @@ export function SurveyReportForm() {
                             </div>
                         </div>
 
+                        {/* Station Status */}
+                        <div className="mb-8">
+                            <h2 className="text-xl font-semibold text-foreground mb-4 border-b border-border pb-2 bg-primary/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3">
+                                Station Status
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-muted-foreground mb-1">Status</label>
+                                    <select
+                                        value={stationStatusCode}
+                                        onChange={(e) => setStationStatusCode(e.target.value)}
+                                        className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
+                                        disabled={isReadOnly}
+                                    >
+                                        <option value="">Select Status</option>
+                                        <option value="1">Active</option>
+                                        <option value="2">Inactive</option>
+                                        <option value="3">Under Construction</option>
+                                        <option value="4">Under Development</option>
+                                        <option value="5">Pending</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-muted-foreground mb-1">Stage</label>
+                                    <select
+                                        value={stationStatusStage}
+                                        onChange={(e) => setStationStatusStage(e.target.value)}
+                                        className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
+                                        disabled={isReadOnly}
+                                    >
+                                        <option value="">Select Stage</option>
+                                        <option value="operating license">operating license</option>
+                                        <option value="electricity connection">electricity connection</option>
+                                        <option value="automation">automation</option>
+                                        <option value="cameras">cameras</option>
+                                        <option value="finishing stage">finishing stage</option>
+                                        <option value="it works">it works</option>
+                                        <option value="other">other</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-muted-foreground mb-1">Condition</label>
+                                    <input
+                                        type="text"
+                                        value={stationStatusCondition}
+                                        onChange={(e) => setStationStatusCondition(e.target.value)}
+                                        className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
+                                        disabled={isReadOnly}
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-muted-foreground mb-1">Completion Rate</label>
+                                    <input
+                                        type="text"
+                                        value={stationStatusCompletionRate}
+                                        onChange={(e) => setStationStatusCompletionRate(e.target.value)}
+                                        className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
+                                        placeholder="e.g., 100.00%"
+                                        disabled={isReadOnly}
+                                    />
+                                </div>
+                                {stationStatusStage === 'other' && (
+                                    <div>
+                                        <label className="block text-sm font-medium text-muted-foreground mb-1">Custom Stage</label>
+                                        <input
+                                            type="text"
+                                            value={stationStatusCustomStage}
+                                            onChange={(e) => setStationStatusCustomStage(e.target.value)}
+                                            className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
+                                            placeholder="Enter custom stage"
+                                            disabled={isReadOnly}
+                                        />
+                                    </div>
+                                )}
+                                <div>
+                                    <label className="block text-sm font-medium text-muted-foreground mb-1">Attachment</label>
+                                    <div className="flex items-center gap-2 min-h-[42px]">
+                                        {!isReadOnly && (
+                                            <label className="cursor-pointer">
+                                                <input
+                                                    type="file"
+                                                    className="hidden"
+                                                    onChange={(e) => setStationStatusAttachment(e.target.files?.[0] || null)}
+                                                />
+                                                <div className="p-2 hover:bg-primary/10 rounded-lg transition-colors">
+                                                    <Upload className="w-5 h-5 text-primary" />
+                                                </div>
+                                            </label>
+                                        )}
+                                        {stationStatusAttachment ? (
+                                            <span className="text-xs text-muted-foreground truncate">{stationStatusAttachment.name}</span>
+                                        ) : (
+                                            <span className="text-xs text-muted-foreground">No attachment</span>
+                                        )}
+                                    </div>
+                                </div>
+                                <div className="md:col-span-3">
+                                    <label className="block text-sm font-medium text-muted-foreground mb-1">Remarks</label>
+                                    <textarea
+                                        value={stationStatusRemarks}
+                                        onChange={(e) => setStationStatusRemarks(e.target.value)}
+                                        className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground min-h-[120px]"
+                                        placeholder="Add remarks, e.g., why station is pending..."
+                                        disabled={isReadOnly}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
                         {/* Project Obstacles */}
                         <div className="mb-8">
-                            <h2 className="text-xl font-semibold text-foreground mb-4 border-b border-border pb-2 bg-orange-500/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3">
+                            <h2 className="text-xl font-semibold text-foreground mb-4 border-b border-border pb-2 bg-primary/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3">
                                 Project Obstacles
                             </h2>
                             <textarea
@@ -920,7 +1099,7 @@ export function SurveyReportForm() {
 
                         {/* Visit Note */}
                         <div className="mb-8">
-                            <h2 className="text-xl font-semibold text-foreground mb-4 border-b border-border pb-2 bg-orange-500/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3">
+                            <h2 className="text-xl font-semibold text-foreground mb-4 border-b border-border pb-2 bg-primary/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3">
                                 Visit Note
                             </h2>
                             <textarea
@@ -935,7 +1114,7 @@ export function SurveyReportForm() {
                         {/* Project Photos */}
                         <div className="mb-8">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                                <h2 className="text-xl font-semibold text-foreground border-b border-border pb-2 bg-orange-500/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3 flex-1">
+                                <h2 className="text-xl font-semibold text-foreground border-b border-border pb-2 bg-primary/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3 flex-1">
                                     Project Photos
                                 </h2>
                                 <label className="cursor-pointer">
@@ -1031,3 +1210,4 @@ export function SurveyReportForm() {
         </div>
     );
 }
+

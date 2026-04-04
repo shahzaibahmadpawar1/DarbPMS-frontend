@@ -4,205 +4,102 @@
  * This is the SINGLE SOURCE OF TRUTH for all colors in the application.
  * To change the entire app's color scheme, modify only the HSL values below.
  * 
- * Color Scheme: Professional Orange & Grey
+ * Color Scheme: Enterprise Slate & Cobalt
  */
 
 @theme {
-  --color-primary: hsl(24 95% 53%);
+   --color-primary: hsl(221 83% 53%);
   --color-primary-foreground: hsla(0, 0%, 100%, 1.00);
   --color-secondary: hsl(215 16% 47%);
   --color-secondary-foreground: hsl(0 0% 100%);
   --color-sidebar: hsl(222 47% 11%);
-  --color-sidebar-foreground: hsl(0 0% 100%);
-  --color-accent: hsl(24 90% 60%);
+   --color-sidebar-foreground: hsl(210 40% 98%);
+   --color-accent: hsl(221 83% 53%);
   --color-accent-foreground: hsl(0 0% 100%);
-  --color-background: hsl(0 0% 100%);
+   --color-background: hsl(210 40% 98%);
   --color-foreground: hsl(222 47% 11%);
   --color-card: hsl(0 0% 100%);
   --color-card-foreground: hsl(222 47% 11%);
   --color-popover: hsl(0 0% 100%);
   --color-popover-foreground: hsl(222 47% 11%);
-  --color-border: hsl(214 15% 91%);
-  --color-input: hsl(214 15% 91%);
-  --color-ring: hsl(24 95% 53%);
-  --color-muted: hsl(210 20% 98%);
+   --color-border: hsl(214 32% 91%);
+   --color-input: hsl(214 32% 91%);
+   --color-ring: hsl(221 83% 53%);
+   --color-muted: hsl(210 40% 98%);
   --color-muted-foreground: hsl(215 16% 47%);
   --color-destructive: hsl(0 84% 60%);
   --color-destructive-foreground: hsl(0 0% 100%);
   --color-success: hsl(142 76% 36%);
   --color-success-foreground: hsl(0 0% 100%);
-  --color-warning: hsl(38 92% 50%);
+   --color-warning: hsl(215 16% 47%);
   --color-warning-foreground: hsl(0 0% 100%);
   --color-error: hsl(0 84% 60%);
   --color-error-foreground: hsl(0 0% 100%);
   --color-info: hsl(215 16% 47%);
   --color-info-foreground: hsl(0 0% 100%);
 
-  --shadow-primary: 0 10px 15px -3px hsl(24 95% 53% / 0.1), 0 4px 6px -2px hsl(24 95% 53% / 0.05);
-  --shadow-glow: 0 0 20px hsl(24 95% 53% / 0.3), 0 0 40px hsl(24 95% 53% / 0.15);
+   --shadow-primary: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+   --shadow-glow: none;
 }
 
 :root {
   /* ========================================
-     PRIMARY COLORS - Orange Theme
+     PRIMARY COLORS - Cobalt Blue (Professional)
      ======================================== */
-  --primary: 24 95% 53%;           /* #f97316 - Main Orange */
-  --primary-foreground: 0 0% 100%; /* White text on primary */
-  
-  --primary-50: 24 95% 97%;        /* Very light orange */
-  --primary-100: 24 95% 92%;       /* Light orange */
-  --primary-200: 24 95% 82%;       /* Lighter orange */
-  --primary-300: 24 95% 72%;       /* Light-medium orange */
-  --primary-400: 24 95% 62%;       /* Medium orange */
-  --primary-500: 24 95% 53%;       /* Base orange (same as primary) */
-  --primary-600: 24 95% 43%;       /* Dark orange */
-  --primary-700: 24 85% 35%;       /* Darker orange */
-  --primary-800: 24 75% 27%;       /* Very dark orange */
-  --primary-900: 24 65% 20%;       /* Deepest orange */
+  --primary: 221 83% 53%;           /* #2563eb - Cobalt Blue */
+  --primary-foreground: 0 0% 100%;  /* White text */
+
+  --primary-50: 221 83% 96%;
+  --primary-100: 221 83% 90%;
+  --primary-500: 221 83% 53%;       /* Base Blue */
+  --primary-900: 221 83% 20%;
 
   /* ========================================
-     SECONDARY COLORS - Slate Grey
+     SECONDARY COLORS - Slate & Charcoal
      ======================================== */
-  --secondary: 215 16% 47%;              /* Slate Grey */
-  --secondary-foreground: 0 0% 100%;      /* White text on slate */
-  
-  --sidebar: 222 47% 11%;                 /* Dark Slate Sidebar */
-  --sidebar-foreground: 0 0% 100%;        /* White text on sidebar */
-  
-  --secondary-50: 215 16% 95%;           /* Very light slate */
-  --secondary-100: 215 16% 90%;          /* Light slate */
-  --secondary-200: 215 16% 80%;          /* Lighter slate */
-  --secondary-300: 215 16% 70%;          /* Light-medium slate */
-  --secondary-400: 215 16% 60%;          /* Medium slate */
-  --secondary-500: 215 16% 47%;          /* Base slate (same as secondary) */
-  --secondary-600: 215 16% 40%;          /* Dark slate */
-  --secondary-700: 215 16% 30%;          /* Darker slate */
-  --secondary-800: 215 16% 20%;          /* Very dark slate */
-  --secondary-900: 215 16% 10%;          /* Deepest slate */
+  --secondary: 215 16% 47%;
+  --secondary-foreground: 0 0% 100%;
+
+  --sidebar: 222 47% 11%;           /* Deep Charcoal Sidebar */
+  --sidebar-foreground: 210 40% 98%;
+
+  --background: 210 40% 98%;        /* Ghost White - Anti-glare */
+  --foreground: 222 47% 11%;        /* Dark Charcoal Text */
+
+  --card: 0 0% 100%;                /* Pure White Surfaces */
+  --card-foreground: 222 47% 11%;
+
+  --border: 214 32% 91%;            /* Subtle Grey Borders */
+  --input: 214 32% 91%;
+  --ring: 221 83% 53%;
 
   /* ========================================
-     ACCENT COLORS
+     FLAT OVERRIDES (Removing Gradients & Mixes)
      ======================================== */
-  --accent: 24 90% 60%;                  /* Light Orange accent */
-  --accent-foreground: 0 0% 100%;        /* White text on accent */
+  --gradient-primary: hsl(var(--primary));
+  --gradient-primary-to-secondary: hsl(var(--primary));
+  --gradient-subtle: transparent;
+  --gradient-card: hsl(var(--card));
 
   /* ========================================
-     BACKGROUND & SURFACE
+     PROFESSIONAL SHADOWS (Flat Design)
      ======================================== */
-  --background: 0 0% 100%;               /* Pure white */
-  --foreground: 222 47% 11%;             /* Dark grey text */
-  
-  --card: 0 0% 100%;                     /* White cards */
-  --card-foreground: 222 47% 11%;        /* Dark text on cards */
-  
-  --popover: 0 0% 100%;                  /* White popovers */
-  --popover-foreground: 222 47% 11%;     /* Dark text on popovers */
-
-  /* ========================================
-     BORDERS & DIVIDERS
-     ======================================== */
-  --border: 214 15% 91%;                 /* Light grey borders */
-  --input: 214 15% 91%;                  /* Input borders */
-  --ring: 24 95% 53%;                    /* Orange focus rings */
-
-  /* ========================================
-     SEMANTIC COLORS (Status Indicators)
-     ======================================== */
-  --success: 142 76% 36%;                /* Green for success */
-  --success-foreground: 0 0% 100%;       /* White text */
-  
-  --warning: 38 92% 50%;                 /* Amber for warnings */
-  --warning-foreground: 0 0% 100%;       /* White text */
-  
-  --error: 0 84% 60%;                    /* Red for errors */
-  --error-foreground: 0 0% 100%;         /* White text */
-  
-  --info: 215 16% 47%;                   /* Slate for info */
-  --info-foreground: 0 0% 100%;          /* White text */
-
-  /* ========================================
-     STATUS COLORS (Project/Task States)
-     ======================================== */
-  --status-active: 24 95% 53%;           /* Orange - Active/In Progress */
-  --status-pending: 38 92% 50%;          /* Amber - Pending */
-  --status-completed: 142 76% 36%;       /* Green - Completed */
-  --status-rejected: 0 84% 60%;          /* Red - Rejected/Failed */
-  --status-planning: 215 16% 47%;        /* Slate - Planning */
-
-  /* ========================================
-     GRADIENTS
-     ======================================== */
-  --gradient-primary: linear-gradient(135deg, hsl(24 95% 53%) 0%, hsl(24 95% 43%) 100%);
-  --gradient-primary-to-secondary: linear-gradient(135deg, hsl(24 95% 53%) 0%, hsl(215 19% 35%) 100%);
-  --gradient-subtle: linear-gradient(135deg, hsl(24 95% 53% / 0.1) 0%, transparent 100%);
-  --gradient-card: linear-gradient(135deg, hsl(0 0% 100%) 0%, hsl(24 95% 97%) 100%);
-
-  /* ========================================
-     SHADOWS
-     ======================================== */
-  --shadow-sm: 0 1px 2px 0 hsl(24 95% 53% / 0.05);
-  --shadow-md: 0 4px 6px -1px hsl(24 95% 53% / 0.1), 0 2px 4px -1px hsl(24 95% 53% / 0.06);
-  --shadow-lg: 0 10px 15px -3px hsl(24 95% 53% / 0.1), 0 4px 6px -2px hsl(24 95% 53% / 0.05);
-  --shadow-xl: 0 20px 25px -5px hsl(24 95% 53% / 0.1), 0 10px 10px -5px hsl(24 95% 53% / 0.04);
-  --shadow-2xl: 0 25px 50px -12px hsl(24 95% 53% / 0.25);
-  --shadow-glow: 0 0 20px hsl(24 95% 53% / 0.3), 0 0 40px hsl(24 95% 53% / 0.15);
-
-  /* ========================================
-     MUTED COLORS (For subtle elements)
-     ======================================== */
-  --muted: 210 20% 98%;                  /* Very light grey background */
-  --muted-foreground: 215 16% 47%;       /* Grey text */
-
-  /* ========================================
-     DESTRUCTIVE (Delete/Remove actions)
-     ======================================== */
-  --destructive: 0 84% 60%;              /* Red */
-  --destructive-foreground: 0 0% 100%;   /* White text */
-
-  /* ========================================
-     CHART COLORS (For data visualization)
-     ======================================== */
-  --chart-1: 24 95% 53%;                 /* Orange */
-  --chart-2: 215 16% 47%;                /* Grey */
-  --chart-3: 142 76% 36%;                /* Green */
-  --chart-4: 38 92% 50%;                 /* Amber */
-  --chart-5: 215 16% 47%;                /* Slate */
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-xl: none;
+  --shadow-glow: none;
 }
 
 /* ========================================
    DARK MODE THEME
    ======================================== */
 .dark {
-  --background: 222 47% 11%;             /* Deep slate background */
-  --foreground: 210 20% 98%;             /* Light text */
-  
-  --card: 217 33% 17%;                   /* Dark card background */
-  --card-foreground: 210 20% 98%;        /* Light text on cards */
-  
-  --popover: 217 33% 17%;                /* Dark popover */
-  --popover-foreground: 210 20% 98%;     /* Light text */
-  
-  --primary: 24 95% 53%;                 /* Keep orange bright */
-  --primary-foreground: 0 0% 100%;       /* White text */
-  
-  --secondary: 215 25% 27%;              /* Darker grey */
-  --secondary-foreground: 210 20% 98%;   /* Light text */
-  
-  --muted: 217 33% 17%;                  /* Dark muted background */
-  --muted-foreground: 214 13% 83%;       /* Light grey text */
-  
-  --accent: 24 90% 60%;                  /* Bright orange accent */
-  --accent-foreground: 0 0% 100%;        /* White text */
-  
-  --border: 215 25% 27%;                 /* Dark borders */
-  --input: 215 25% 27%;                  /* Dark input borders */
-  --ring: 24 95% 53%;                    /* Orange focus rings */
-  
-  /* Dark mode gradients */
-  --gradient-primary: linear-gradient(135deg, hsl(24 95% 53%) 0%, hsl(24 95% 43%) 100%);
-  --gradient-primary-to-secondary: linear-gradient(135deg, hsl(24 95% 53%) 0%, hsl(215 25% 27%) 100%);
-  --gradient-subtle: linear-gradient(135deg, hsl(24 95% 53% / 0.15) 0%, transparent 100%);
-  --gradient-card: linear-gradient(135deg, hsl(217 33% 17%) 0%, hsl(222 47% 11%) 100%);
+   --background: 222 47% 11%;
+   --foreground: 210 40% 98%;
+   --card: 217 33% 17%;
+   --primary: 217 91% 60%;           /* Slightly lighter blue for dark mode */
+   --border: 215 25% 27%;
 }
 
 /* ========================================

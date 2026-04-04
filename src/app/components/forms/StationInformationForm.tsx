@@ -1,17 +1,20 @@
 import { useState, useEffect } from "react";
-import { Save, List, PlusCircle, Eye } from "lucide-react";
+import { Save, List, PlusCircle, Eye, Zap, X } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
+import { useAutoPopulate } from "../../hooks/useAutoPopulate";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 export function StationInformationForm() {
   const { accessMode } = useStation();
+  const { investmentProjectData, getPartialPopulationData, hasAutoPopulateData, clearInvestmentProjectData } = useAutoPopulate();
   const isReadOnly = accessMode === 'view-only';
   const stationTypes = ["operation", "rent", "franchise", "investment", "ownership"];
 
   const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
   const [records, setRecords] = useState<any[]>([]);
+  const [showAutoPopulateNotice, setShowAutoPopulateNotice] = useState(false);
 
   // Empty form data ready for user input
   const [formData, setFormData] = useState({
@@ -23,13 +26,19 @@ export function StationInformationForm() {
     street: "",
     geographicLocation: "",
     stationTypeCode: "",
-    stationStatusCode: "",
   });
 
   // Fetch existing records
   useEffect(() => {
     fetchRecords();
   }, []);
+
+  // Check for auto-populate data
+  useEffect(() => {
+    if (hasAutoPopulateData()) {
+      setShowAutoPopulateNotice(true);
+    }
+  }, [hasAutoPopulateData]);
 
   const fetchRecords = async () => {
     try {
@@ -85,8 +94,10 @@ export function StationInformationForm() {
           street: "",
           geographicLocation: "",
           stationTypeCode: "",
-          stationStatusCode: "",
         });
+        // Clear auto-populate data after successful submission
+        clearInvestmentProjectData();
+        setShowAutoPopulateNotice(false);
         // Refresh records
         fetchRecords();
         // Optionally navigate to the stations list
@@ -100,6 +111,17 @@ export function StationInformationForm() {
       console.error("Error saving station:", error);
       alert("Failed to save station information. Please make sure the backend server is running.");
     }
+  };
+
+  const handleApplyAutoPopulate = () => {
+    const partialData = getPartialPopulationData('station', { includeCode: false, includeName: false });
+    setFormData(prev => ({ ...prev, ...partialData }));
+    setShowAutoPopulateNotice(false);
+  };
+
+  const handleDismissAutoPopulate = () => {
+    setShowAutoPopulateNotice(false);
+    clearInvestmentProjectData();
   };
 
   return (
@@ -146,7 +168,55 @@ export function StationInformationForm() {
       </div>
 
       {viewMode === 'form' ? (
-        <form onSubmit={handleSubmit} className="bg-card rounded-xl shadow-xl p-8 card-glow border-t-4 border-primary relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <>
+          {/* Auto-Populate Notice */}
+          {showAutoPopulateNotice && investmentProjectData && (
+            <div className="mb-6 p-4 bg-primary/5 border border-primary/20 rounded-lg animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-3 flex-1">
+                  <Zap className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-foreground mb-2">Auto-Fill Available</h3>
+                    <p className="text-sm text-muted-foreground mb-3">
+                      We found matching location information from your Investment/Franchise project. Would you like to automatically fill the location fields?
+                    </p>
+                    <div className="text-sm text-muted-foreground bg-background/50 p-2 rounded mb-3 max-h-24 overflow-y-auto">
+                      {investmentProjectData.city && <div>• City: <span className="text-foreground font-medium">{investmentProjectData.city}</span></div>}
+                      {investmentProjectData.district && <div>• District: <span className="text-foreground font-medium">{investmentProjectData.district}</span></div>}
+                      {investmentProjectData.area && <div>• Area/Region: <span className="text-foreground font-medium">{investmentProjectData.area}</span></div>}
+                      {investmentProjectData.googleLocation && <div>• Location: <span className="text-foreground font-medium">{investmentProjectData.googleLocation.substring(0, 40)}...</span></div>}
+                    </div>
+                  </div>
+                </div>
+                <button
+                  onClick={handleDismissAutoPopulate}
+                  className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
+                  type="button"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="flex gap-3 mt-4">
+                <button
+                  type="button"
+                  onClick={handleApplyAutoPopulate}
+                  className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium transition-all hover:bg-primary/90 flex items-center justify-center gap-2"
+                >
+                  <Zap className="w-4 h-4" />
+                  Auto-Fill Location Fields
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDismissAutoPopulate}
+                  className="flex-1 px-4 py-2 bg-muted text-muted-foreground rounded-lg font-medium transition-all hover:bg-muted/80"
+                >
+                  Skip
+                </button>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="bg-card rounded-xl shadow-xl p-8 card-glow border-t-4 border-primary relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
           {/* Basic Information */}
           <div className="mb-6">
             <h2 className="text-xl font-semibold text-foreground mb-4 border-b border-border pb-2">
@@ -268,21 +338,6 @@ export function StationInformationForm() {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-muted-foreground mb-1">Station Status Code (FK)</label>
-                <select
-                  value={formData.stationStatusCode}
-                  onChange={(e) => setFormData({ ...formData, stationStatusCode: e.target.value })}
-                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
-                  disabled={isReadOnly}
-                >
-                  <option value="">Select Status</option>
-                  <option value="1">Active</option>
-                  <option value="2">Inactive</option>
-                  <option value="3">Under Construction</option>
-                  <option value="4">Under Development</option>
-                </select>
-              </div>
             </div>
           </div>
 
@@ -298,7 +353,8 @@ export function StationInformationForm() {
               </button>
             </div>
           )}
-        </form>
+          </form>
+        </>
       ) : (
         <FormRecordsList
           title="Station Information"

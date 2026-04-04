@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { DashboardLayout } from "@/app/components/DashboardLayout";
 import { Dashboard } from "@/app/components/Dashboard";
 import { ExecutiveDashboard } from "@/app/components/ExecutiveDashboard";
@@ -41,7 +41,6 @@ import { StationFormsPage } from "@/app/components/StationFormsPage";
 import { SingleStationAnalytics } from "@/app/components/SingleStationAnalytics";
 import { SingleStationDashboard } from "@/app/components/SingleStationDashboard";
 import { ReportsPage } from "@/app/components/ReportsPage";
-import { AddNewProjectForm } from "@/app/components/AddNewProjectForm";
 import { TasksPage } from "@/app/components/TasksPage";
 import { StationProvider } from "@/app/context/StationContext";
 import { AuthProvider } from "@/context/AuthContext";
@@ -71,7 +70,7 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/mode-selection" element={<ProtectedRoute><ModeSelectionPage /></ProtectedRoute>} />
             <Route path="/select-station" element={<ProtectedRoute><StationSelectionPage /></ProtectedRoute>} />
-            <Route path="/add-new-project" element={<ProtectedRoute><AddNewProjectForm /></ProtectedRoute>} />
+            <Route path="/add-new-project" element={<ProtectedRoute><Navigate to="/station/new-station/form/investment-department" replace /></ProtectedRoute>} />
 
             {/* All Stations Dashboard */}
             {/* All Stations Dashboard & Analytics */}

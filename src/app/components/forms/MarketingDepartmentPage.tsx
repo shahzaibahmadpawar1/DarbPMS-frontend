@@ -1,11 +1,11 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { LayoutDashboard, BarChart2, Share2, Megaphone, Target, PieChart, Users } from "lucide-react";
 
 type ActiveTab = "dashboard" | "campaigns" | "branding" | "performance";
 
 function DashboardTab() {
     const stats = [
-        { label: "Brand Presence", value: "88%", icon: <Target className="w-5 h-5" />, color: "text-violet-500", bg: "bg-violet-500/10" },
+        { label: "Brand Presence", value: "88%", icon: <Target className="w-5 h-5" />, color: "text-primary", bg: "bg-primary/10" },
         { label: "Active Campaigns", value: "4", icon: <Megaphone className="w-5 h-5" />, color: "text-primary", bg: "bg-primary/10" },
         { label: "Total Reach", value: "1.2M", icon: <Share2 className="w-5 h-5" />, color: "text-blue-500", bg: "bg-blue-500/10" },
         { label: "NPS Score", value: "42", icon: <Users className="w-5 h-5" />, color: "text-emerald-500", bg: "bg-emerald-500/10" },
@@ -78,3 +78,4 @@ export function MarketingDepartmentPage() {
         </div>
     );
 }
+

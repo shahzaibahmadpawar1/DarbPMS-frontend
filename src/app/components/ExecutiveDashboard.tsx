@@ -75,14 +75,14 @@ function CircularProgressGauge({
                 {/* Center text */}
                 <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center">
-                        <div className="text-2xl font-bold text-gray-800">{percentage.toFixed(1)}%</div>
+                        <div className="text-2xl font-bold text-foreground">{percentage.toFixed(1)}%</div>
                     </div>
                 </div>
             </div>
             <div className="mt-3 text-center">
-                <div className="text-sm font-semibold text-gray-700">{label}</div>
+                <div className="text-sm font-semibold text-foreground">{label}</div>
                 <div className="flex items-center justify-center gap-1 mt-1">
-                    <span className="text-xs text-gray-500">Prev Mth:</span>
+                    <span className="text-xs text-muted-foreground">Prev Mth:</span>
                     <span className={`text-xs font-semibold ${isPositive ? "text-green-600" : "text-red-600"}`}>
                         {previousMonth.toFixed(1)}%
                     </span>
@@ -137,10 +137,10 @@ function SpeedometerGauge({ value, label, max = 100 }: { value: number; label: s
                     <circle cx="70" cy="70" r="4" fill="#020713" />
                 </svg>
                 <div className="absolute bottom-2 left-0 right-0 text-center">
-                    <div className="text-xl font-bold text-gray-800">{value}%</div>
+                    <div className="text-xl font-bold text-foreground">{value}%</div>
                 </div>
             </div>
-            <div className="text-sm font-semibold text-gray-700 mt-2">{label}</div>
+            <div className="text-sm font-semibold text-foreground mt-2">{label}</div>
         </div>
     );
 }
@@ -201,9 +201,9 @@ export function ExecutiveDashboard() {
 
     // Regional expenses
     // const regionalData = [
-    //   { region: "North America", amount: 14.2, color: "#f97316" },
+    //   { region: "North America", amount: 14.2, color: "#2563eb" },
     //   { region: "South America", amount: 9.1, color: "#10b981" },
-    //   { region: "Europe", amount: 2.5, color: "#f97316" },
+    //   { region: "Europe", amount: 2.5, color: "#2563eb" },
     //   { region: "Asia Pacific", amount: 5.8, color: "#f59e0b" },
     //   { region: "Middle East", amount: 11.8, color: "#ef4444" },
     //   { region: "Africa", amount: 8.0, color: "#06b6d4" },
@@ -221,17 +221,17 @@ export function ExecutiveDashboard() {
     // Key risks
     const keyRisks = [
         {
-            icon: "🔴",
+            icon: "[high]",
             message: "Key users for acceptance testing not assigned. Internal testing only.",
             severity: "high",
         },
         {
-            icon: "🟡",
+            icon: "[medium]",
             message: "Project dependencies have shifted. Budget analysis in progress.",
             severity: "medium",
         },
         {
-            icon: "🟡",
+            icon: "[medium]",
             message: "Staff availability for project work trending downwards as shown below.",
             severity: "medium",
         },
@@ -556,7 +556,7 @@ export function ExecutiveDashboard() {
                                             className={`h-2 rounded-full transition-all duration-500 ${item.spent > 70
                                                 ? "bg-success"
                                                 : item.spent > 40
-                                                    ? "bg-gradient-to-r from-primary to-secondary"
+                                                    ? "bg-primary"
                                                     : "bg-warning"
                                                 }`}
                                             style={{
@@ -675,6 +675,7 @@ export function ExecutiveDashboard() {
         </div>
     );
 }
+
 
 
 

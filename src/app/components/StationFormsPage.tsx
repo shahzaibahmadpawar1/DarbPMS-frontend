@@ -1,29 +1,143 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { CheckCircle, XCircle, Activity } from "lucide-react";
+import { CheckCircle, Activity } from "lucide-react";
 import logo from "../../assets/logo.png";
 import { stationSections } from "../data/formSections";
 import { useStation } from "../context/StationContext";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
+type CompletionMap = Record<string, boolean>;
+
+const FORM_COMPLETION_ENDPOINTS: Record<string, string> = {
+  "cameras": "/cameras/station/{stationCode}",
+  "dispensers": "/dispensers/station/{stationCode}",
+  "tanks": "/tanks/station/{stationCode}",
+  "areas": "/areas/station/{stationCode}",
+  "owner-information": "/owners/station/{stationCode}",
+  "deed-information": "/deeds/station/{stationCode}",
+  "building-permit": "/building-permits/station/{stationCode}",
+  "contract": "/contracts/station/{stationCode}",
+  "commercial-license": "/commercial-licenses/station/{stationCode}",
+  "salamah-license": "/government-licenses/salamah/station/{stationCode}",
+  "taqyees-license": "/government-licenses/taqyees/station/{stationCode}",
+  "environmental-license": "/government-licenses/environmental/station/{stationCode}",
+  "government-license-attachments": "/government-licenses/attachments/station/{stationCode}",
+  "survey-report": "/investment-projects/station/{stationCode}",
+};
+
+function hasPersistedData(data: unknown, formPath?: string): boolean {
+  if (Array.isArray(data)) {
+    return data.length > 0;
+  }
+
+  if (data && typeof data === "object") {
+    if (formPath === "government-license-attachments") {
+      const attachments = data as Record<string, unknown>;
+      return [
+        attachments.operating_license_url,
+        attachments.petroleum_trade_license_url,
+        attachments.civil_defense_certificate_url,
+        attachments.safety_installations_certificate_url,
+        attachments.maintenance_contract_url,
+        attachments.container_contract_url,
+        attachments.municipal_license_url,
+      ].some(Boolean);
+    }
+
+    return Object.keys(data as Record<string, unknown>).length > 0;
+  }
+
+  return Boolean(data);
+}
+
 export function StationFormsPage() {
   const { stationId } = useParams();
   const { setSelectedStation } = useStation();
   const [loading, setLoading] = useState(true);
   const [station, setStation] = useState<any | null>(null);
+  const [completionByPath, setCompletionByPath] = useState<CompletionMap>({});
 
   useEffect(() => {
     const fetchStation = async () => {
       if (!stationId) return;
       const token = localStorage.getItem("auth_token");
 
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      };
+
+      const getLocalCompletionFlag = (stationCode: string, path: string): boolean => {
+        return localStorage.getItem(`stationFormCompleted:${stationCode}:${path}`) === "true";
+      };
+
+      const fetchEndpointHasData = async (path: string, endpointTemplate: string, stationCode: string): Promise<boolean> => {
+        const endpoint = endpointTemplate.replace("{stationCode}", encodeURIComponent(stationCode));
+
+        try {
+          const response = await fetch(`${API_BASE_URL}${endpoint}`, { headers });
+          if (!response.ok) return false;
+
+          const payload = await response.json();
+          return hasPersistedData(payload?.data, path);
+        } catch {
+          return false;
+        }
+      };
+
+      const resolveNozzlesCompletion = async (stationCode: string): Promise<boolean> => {
+        try {
+          const dispensersRes = await fetch(`${API_BASE_URL}/dispensers/station/${encodeURIComponent(stationCode)}`, { headers });
+          if (!dispensersRes.ok) return false;
+
+          const dispensersPayload = await dispensersRes.json();
+          const dispensers = Array.isArray(dispensersPayload?.data) ? dispensersPayload.data : [];
+          if (dispensers.length === 0) return false;
+
+          const nozzleChecks = await Promise.all(
+            dispensers.map(async (dispenser: any) => {
+              const serial = dispenser?.dispenser_serial_number || dispenser?.serial_number || dispenser?.serialNumber;
+              if (!serial) return false;
+
+              const nozzlesRes = await fetch(`${API_BASE_URL}/nozzles/dispenser/${encodeURIComponent(serial)}`, { headers });
+              if (!nozzlesRes.ok) return false;
+
+              const nozzlesPayload = await nozzlesRes.json();
+              return hasPersistedData(nozzlesPayload?.data);
+            })
+          );
+
+          return nozzleChecks.some(Boolean);
+        } catch {
+          return false;
+        }
+      };
+
+      const resolveCompletion = async (stationCode: string): Promise<CompletionMap> => {
+        const completionEntries = await Promise.all(
+          Object.entries(FORM_COMPLETION_ENDPOINTS).map(async ([path, endpointTemplate]) => {
+            const completed = await fetchEndpointHasData(path, endpointTemplate, stationCode);
+            return [path, completed] as const;
+          })
+        );
+
+        const completion = Object.fromEntries(completionEntries) as CompletionMap;
+        completion["station-information"] = true;
+        completion["nozzles"] = await resolveNozzlesCompletion(stationCode);
+        completion["survey-report"] = completion["survey-report"] || getLocalCompletionFlag(stationCode, "survey-report");
+        completion["fixed-assets"] = getLocalCompletionFlag(stationCode, "fixed-assets");
+
+        if (typeof completion["fixed-assets"] === "undefined") {
+          completion["fixed-assets"] = false;
+        }
+
+        return completion;
+      };
+
       try {
         const response = await fetch(`${API_BASE_URL}/stations/${stationId}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
+          headers,
         });
 
         if (!response.ok) {
@@ -48,10 +162,10 @@ export function StationFormsPage() {
           project: s.district || "N/A",
           customerName: s.street || "N/A",
           status: s.station_status_code || "Active",
-          formsCompleted: stationSections.reduce((sum, section) => sum + section.items.filter((item) => item.completed).length, 0),
-          totalForms: stationSections.reduce((sum, section) => sum + section.items.length, 0),
         };
 
+        const completion = await resolveCompletion(s.station_code);
+        setCompletionByPath(completion);
         setStation(mapped);
         setSelectedStation({
           id: mapped.id,
@@ -71,6 +185,17 @@ export function StationFormsPage() {
     fetchStation();
   }, [stationId, setSelectedStation]);
 
+  const sectionsWithCompletion = stationSections.map((section) => ({
+    ...section,
+    items: section.items.map((item) => ({
+      ...item,
+      completed: Boolean(completionByPath[item.path]),
+    })),
+  }));
+
+  const totalForms = sectionsWithCompletion.reduce((sum, section) => sum + section.items.length, 0);
+  const formsCompleted = sectionsWithCompletion.reduce((sum, section) => sum + section.items.filter((item) => item.completed).length, 0);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[300px]">
@@ -87,7 +212,7 @@ export function StationFormsPage() {
     );
   }
 
-  const completionPercentage = Math.round((station.formsCompleted / station.totalForms) * 100);
+  const completionPercentage = totalForms > 0 ? Math.round((formsCompleted / totalForms) * 100) : 0;
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
@@ -120,7 +245,7 @@ export function StationFormsPage() {
         <div className="mt-5 max-w-md">
           <div className="flex items-center justify-between mb-1">
             <span className="text-xs font-semibold text-muted-foreground">Form Completion</span>
-            <span className="text-xs font-bold text-primary">{station.formsCompleted}/{station.totalForms} ({completionPercentage}%)</span>
+            <span className="text-xs font-bold text-primary">{formsCompleted}/{totalForms} ({completionPercentage}%)</span>
           </div>
           <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
             <div className="h-full gradient-primary rounded-full" style={{ width: `${completionPercentage}%` }} />
@@ -130,26 +255,20 @@ export function StationFormsPage() {
 
       <div className="bg-card/80 backdrop-blur-xl rounded-2xl shadow-lg border border-border p-4 sm:p-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {stationSections.map((section) => (
+          {sectionsWithCompletion.map((section) => (
             <div key={section.group} className="space-y-2">
               <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">{section.group}</h4>
               {section.items.map((item) => (
                 <Link
                   key={item.title}
                   to={`/station/${station.id}/form/${item.path}`}
-                  className={`flex items-center justify-between gap-2 px-3 py-2 rounded-lg transition-colors text-sm font-medium border group ${item.completed
-                    ? "bg-success/5 text-success border-success/20 hover:bg-success/10 hover:border-success/30"
-                    : "bg-error/5 text-error border-error/20 hover:bg-error/10 hover:border-error/30"}`}
+                  className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg transition-colors text-sm font-medium border group bg-card text-foreground border-border hover:bg-muted/40 hover:border-primary/20"
                 >
                   <div className="flex items-center gap-2">
                     {item.icon}
                     <span>{item.title}</span>
                   </div>
-                  {item.completed ? (
-                    <CheckCircle className="w-4 h-4 text-success flex-shrink-0" />
-                  ) : (
-                    <XCircle className="w-4 h-4 text-error flex-shrink-0" />
-                  )}
+                  {item.completed && <CheckCircle className="w-4 h-4 text-success flex-shrink-0" />}
                 </Link>
               ))}
             </div>

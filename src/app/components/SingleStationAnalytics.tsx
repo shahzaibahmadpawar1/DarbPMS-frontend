@@ -36,7 +36,7 @@ export function SingleStationAnalytics() {
                     <div className="flex-1">
                         <h1 className="text-4xl font-black text-gray-900 tracking-tight">{stationData.name}</h1>
                         <p className="text-gray-600 font-medium">Station Analytics Dashboard</p>
-                        <p className="text-sm text-gray-500 mt-1">{station.region} • {station.city} • {station.project}</p>
+                        <p className="text-sm text-gray-500 mt-1">{station.region}  -  {station.city}  -  {station.project}</p>
                     </div>
                 </div>
 
@@ -50,7 +50,7 @@ export function SingleStationAnalytics() {
                     </div>
                     <div className="w-full h-2.5 bg-gray-200 rounded-full overflow-hidden">
                         <div
-                            className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all duration-500"
+                            className="h-full bg-primary rounded-full transition-all duration-500"
                             style={{ width: `${Math.round((stationData.formsCompleted / stationData.totalForms) * 100)}%` }}
                         ></div>
                     </div>
@@ -144,7 +144,7 @@ export function SingleStationAnalytics() {
                     </div>
                     <div className="mt-6 grid grid-cols-2 gap-4">
                         <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 rounded-full bg-gradient-to-r from-primary to-secondary"></div>
+                            <div className="w-3 h-3 rounded-full bg-primary"></div>
                             <span className="text-sm font-medium text-gray-700">Completed: {stationData.formsCompleted}</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -165,7 +165,7 @@ export function SingleStationAnalytics() {
                             </div>
                             <div className="w-full h-4 bg-gray-200 rounded-full overflow-hidden">
                                 <div
-                                    className="h-full bg-gradient-to-r from-primary to-secondary rounded-full transition-all duration-500"
+                                    className="h-full bg-primary rounded-full transition-all duration-500"
                                     style={{ width: '72%' }}
                                 ></div>
                             </div>
@@ -260,3 +260,4 @@ export function SingleStationAnalytics() {
         </div>
     );
 }
+

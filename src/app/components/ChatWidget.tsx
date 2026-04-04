@@ -18,8 +18,8 @@ interface ChatWidgetProps {
 const roles = [
     { id: "land-owner", name: "Land Owner", color: "bg-green-500", online: true },
     { id: "project-manager", name: "Project Manager", color: "bg-secondary", online: true },
-    { id: "engineer", name: "Engineer", color: "bg-orange-500", online: false },
-    { id: "contractor", name: "Contractor", color: "bg-orange-500", online: true },
+    { id: "engineer", name: "Engineer", color: "bg-primary/100", online: false },
+    { id: "contractor", name: "Contractor", color: "bg-primary/100", online: true },
     { id: "admin", name: "Admin", color: "bg-red-500", online: true },
 ];
 
@@ -89,7 +89,7 @@ export function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
                 }`}
         >
             {/* Header */}
-            <div className="bg-gradient-to-r from-primary to-secondary rounded-t-2xl p-4 flex items-center justify-between">
+            <div className="bg-primary rounded-t-2xl p-4 flex items-center justify-between">
                 <div className="flex items-center gap-3 flex-1">
                     <div className="relative">
                         <div className={`w-10 h-10 ${selectedRole.color} rounded-full flex items-center justify-center`}>
@@ -170,13 +170,13 @@ export function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
                             >
                                 <div
                                     className={`max-w-[75%] ${message.isCurrentUser
-                                        ? 'bg-gradient-to-r from-primary to-secondary text-white'
+                                        ? 'bg-primary text-white'
                                         : 'bg-white border border-gray-200 text-gray-900'
                                         } rounded-2xl p-3 shadow-sm`}
                                 >
                                     {!message.isCurrentUser && (
                                         <p className="text-xs font-semibold mb-1 text-primary">
-                                            {message.sender} • {message.role}
+                                            {message.sender}  -  {message.role}
                                         </p>
                                     )}
                                     <p className="text-sm">{message.content}</p>
@@ -205,7 +205,7 @@ export function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
                             <button
                                 onClick={handleSendMessage}
                                 disabled={!newMessage.trim()}
-                                className="w-10 h-10 bg-gradient-to-r from-primary to-secondary rounded-xl flex items-center justify-center hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                                 aria-label="Send message"
                             >
                                 <Send className="w-5 h-5 text-white" />
@@ -217,3 +217,4 @@ export function ChatWidget({ isOpen, onClose }: ChatWidgetProps) {
         </div>
     );
 }
+

@@ -9,7 +9,7 @@ type ActiveTab = "dashboard" | "new-ticket" | "ticket-tracking" | "work-orders" 
 function DashboardTab() {
     const stats = [
         { label: "Open Tickets", value: "14", icon: <AlertTriangle className="w-5 h-5" />, color: "text-red-500", bg: "bg-red-500/10" },
-        { label: "In Progress", value: "8", icon: <Clock className="w-5 h-5" />, color: "text-amber-500", bg: "bg-amber-500/10" },
+        { label: "In Progress", value: "8", icon: <Clock className="w-5 h-5" />, color: "text-info", bg: "bg-info/10" },
         { label: "Resolved", value: "42", icon: <CheckCircle2 className="w-5 h-5" />, color: "text-emerald-500", bg: "bg-emerald-500/10" },
         { label: "Work Orders", value: "6", icon: <Wrench className="w-5 h-5" />, color: "text-blue-500", bg: "bg-blue-500/10" },
     ];
@@ -31,17 +31,17 @@ function DashboardTab() {
                 <h3 className="font-semibold text-foreground mb-4">Recent Tickets</h3>
                 <div className="space-y-3">
                     {[
-                        { id: "TKT-2024-088", issue: "Pump 3 – Nozzle Leak", priority: "High", status: "Open", date: "2024-06-14" },
-                        { id: "TKT-2024-087", issue: "POS Terminal – Screen Failure", priority: "Medium", status: "In Progress", date: "2024-06-13" },
-                        { id: "TKT-2024-086", issue: "HVAC – Canopy A/C Unit", priority: "Low", status: "Resolved", date: "2024-06-12" },
+                        { id: "TKT-2024-088", issue: "Pump 3  -  Nozzle Leak", priority: "High", status: "Open", date: "2024-06-14" },
+                        { id: "TKT-2024-087", issue: "POS Terminal  -  Screen Failure", priority: "Medium", status: "In Progress", date: "2024-06-13" },
+                        { id: "TKT-2024-086", issue: "HVAC  -  Canopy A/C Unit", priority: "Low", status: "Resolved", date: "2024-06-12" },
                     ].map((t) => (
                         <div key={t.id} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                             <div>
                                 <p className="text-sm font-semibold text-foreground">{t.issue}</p>
-                                <p className="text-xs text-muted-foreground">{t.id} · {t.date}</p>
+                                <p className="text-xs text-muted-foreground">{t.id}  -  {t.date}</p>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${t.priority === 'High' ? 'bg-red-500/10 text-red-600' : t.priority === 'Medium' ? 'bg-amber-500/10 text-amber-600' : 'bg-slate-500/10 text-slate-600'}`}>{t.priority}</span>
+                                <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${t.priority === 'High' ? 'bg-red-500/10 text-red-600' : t.priority === 'Medium' ? 'bg-info/10 text-info' : 'bg-slate-500/10 text-slate-600'}`}>{t.priority}</span>
                                 <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${t.status === 'Open' ? 'bg-red-500/10 text-red-600' : t.status === 'In Progress' ? 'bg-blue-500/10 text-blue-600' : 'bg-emerald-500/10 text-emerald-600'}`}>{t.status}</span>
                             </div>
                         </div>
@@ -120,18 +120,18 @@ function TicketTrackingTab() {
             </div>
             <div className="space-y-3">
                 {[
-                    { id: "TKT-2024-088", issue: "Pump 3 – Nozzle Leak", priority: "High", status: "Open", assignee: "Ahmed Al-Harbi", date: "2024-06-14" },
-                    { id: "TKT-2024-087", issue: "POS Terminal – Screen Failure", priority: "Medium", status: "In Progress", assignee: "Mohammed Khalid", date: "2024-06-13" },
-                    { id: "TKT-2024-086", issue: "HVAC – Canopy A/C Unit", priority: "Low", status: "Resolved", assignee: "Sara Hassan", date: "2024-06-12" },
-                    { id: "TKT-2024-085", issue: "Transformer Fault – Area B", priority: "Critical", status: "Open", assignee: "Unassigned", date: "2024-06-11" },
+                    { id: "TKT-2024-088", issue: "Pump 3  -  Nozzle Leak", priority: "High", status: "Open", assignee: "Ahmed Al-Harbi", date: "2024-06-14" },
+                    { id: "TKT-2024-087", issue: "POS Terminal  -  Screen Failure", priority: "Medium", status: "In Progress", assignee: "Mohammed Khalid", date: "2024-06-13" },
+                    { id: "TKT-2024-086", issue: "HVAC  -  Canopy A/C Unit", priority: "Low", status: "Resolved", assignee: "Sara Hassan", date: "2024-06-12" },
+                    { id: "TKT-2024-085", issue: "Transformer Fault  -  Area B", priority: "Critical", status: "Open", assignee: "Unassigned", date: "2024-06-11" },
                 ].map((t) => (
                     <div key={t.id} className="flex items-center justify-between p-4 bg-muted/50 rounded-xl border border-border hover:shadow-md transition-all cursor-pointer">
                         <div>
                             <p className="text-sm font-bold text-foreground">{t.issue}</p>
-                            <p className="text-xs text-muted-foreground">{t.id} · Assignee: {t.assignee} · {t.date}</p>
+                            <p className="text-xs text-muted-foreground">{t.id}  -  Assignee: {t.assignee}  -  {t.date}</p>
                         </div>
                         <div className="flex items-center gap-2">
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${t.priority === 'Critical' || t.priority === 'High' ? 'bg-red-500/10 text-red-600' : t.priority === 'Medium' ? 'bg-amber-500/10 text-amber-600' : 'bg-slate-500/10 text-slate-600'}`}>{t.priority}</span>
+                            <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${t.priority === 'Critical' || t.priority === 'High' ? 'bg-red-500/10 text-red-600' : t.priority === 'Medium' ? 'bg-info/10 text-info' : 'bg-slate-500/10 text-slate-600'}`}>{t.priority}</span>
                             <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${t.status === 'Open' ? 'bg-red-500/10 text-red-600' : t.status === 'In Progress' ? 'bg-blue-500/10 text-blue-600' : 'bg-emerald-500/10 text-emerald-600'}`}>{t.status}</span>
                         </div>
                     </div>
@@ -247,3 +247,4 @@ export function MaintenanceQualityDepartmentPage() {
         </div>
     );
 }
+

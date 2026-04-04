@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Save, List, PlusCircle, FileText, Eye, Check, X } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
@@ -459,7 +459,7 @@ export function ProcurementDepartmentForm() {
                                 <textarea
                                     value={formData.notes}
                                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316] disabled:bg-gray-100"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-gray-100"
                                     rows={4}
                                     placeholder="Add any additional notes or comments"
                                     disabled={isReadOnly}
@@ -533,3 +533,4 @@ export function ProcurementDepartmentForm() {
         </div>
     );
 }
+

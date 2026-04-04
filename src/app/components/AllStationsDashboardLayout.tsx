@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import {
     LayoutDashboard,
@@ -15,7 +15,6 @@ import {
     Clock,
     Users,
     Building2,
-    RotateCcw,
 } from "lucide-react";
 import { BackToDashboardButton } from "./BackToDashboardButton";
 import { LanguageSwitcher } from "./LanguageSwitcher";
@@ -25,7 +24,7 @@ import { useTranslation } from "../../utils/translations";
 import { useAuth } from "@/context/AuthContext";
 import { getRoleLabel } from "@/services/api";
 import { useStation } from "../context/StationContext";
-import { clearStationAutofillData, useStationFormAutofill } from "../hooks/useStationFormAutofill";
+import { useStationFormAutofill } from "../hooks/useStationFormAutofill";
 import logo from "../../assets/logo.png";
 import * as XLSX from 'xlsx';
 import axios from "axios";
@@ -48,6 +47,7 @@ export function AllStationsDashboardLayout() {
     });
     const [chatOpen, setChatOpen] = useState(false);
     const [taskCount, setTaskCount] = useState(0);
+    const [underReviewCount, setUnderReviewCount] = useState(0);
     const [importLoading, setImportLoading] = useState(false);
     const location = useLocation();
     const { t, lang } = useTranslation();
@@ -77,11 +77,6 @@ export function AllStationsDashboardLayout() {
     }, []);
 
     useEffect(() => {
-        if (isDeptUser) {
-            setTaskCount(0);
-            return;
-        }
-
         const token = localStorage.getItem("auth_token");
         if (!token) {
             setTaskCount(0);
@@ -109,7 +104,38 @@ export function AllStationsDashboardLayout() {
         return () => {
             isMounted = false;
         };
-    }, [isDeptUser, location.pathname]);
+    }, [location.pathname]);
+
+    useEffect(() => {
+        const token = localStorage.getItem("auth_token");
+        if (!token) {
+            setUnderReviewCount(0);
+            return;
+        }
+
+        let isMounted = true;
+        const fetchUnderReviewCount = async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/investment-projects`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!response.ok) return;
+
+                const result = await response.json();
+                if (isMounted && Array.isArray(result?.data)) {
+                    const nonApprovedCount = result.data.filter((project: any) => project.review_status !== 'Approved').length;
+                    setUnderReviewCount(nonApprovedCount);
+                }
+            } catch {
+                if (isMounted) setUnderReviewCount(0);
+            }
+        };
+
+        fetchUnderReviewCount();
+        return () => {
+            isMounted = false;
+        };
+    }, [location.pathname]);
 
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -188,6 +214,11 @@ export function AllStationsDashboardLayout() {
             ...(isInvestmentUser ? [{ titleKey: "investmentDept" as const, path: "/station/new-station/form/investment-department", icon: <FileText className="w-5 h-5" /> }] : []),
             ...(isFranchiseUser ? [{ titleKey: "franchiseDept" as const, path: "/station/new-station/form/franchise-department", icon: <FileText className="w-5 h-5" /> }] : []),
             { titleKey: "underReview", path: "/all-stations-under-review", icon: <Clock className="w-5 h-5" /> },
+                     { titleKey: "stations", path: "/all-stations-list", icon: <img src={logo} alt="" className="w-5 h-5 object-contain brightness-0 invert" /> },
+                     { titleKey: "requests", path: "/all-stations-requests", icon: <Inbox className="w-5 h-5" /> },
+                     { titleKey: "tasks", path: "/all-stations-tasks", icon: <ClipboardList className="w-5 h-5" /> },
+                     { titleKey: "reports", path: "/all-stations-reports", icon: <FileText className="w-5 h-5" /> },
+                     { titleKey: "contactCEO", path: "/all-stations-contact-ceo", icon: <MessageCircle className="w-5 h-5" /> },
           ]
         : [
             { titleKey: "dashboard", path: "/all-stations-dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
@@ -204,17 +235,6 @@ export function AllStationsDashboardLayout() {
 
     const handleChatClick = () => {
         setChatOpen(!chatOpen);
-    };
-
-    const handleClearAutofill = () => {
-        const confirmed = window.confirm("Clear saved autofill data for this station?");
-        if (!confirmed) return;
-
-        clearStationAutofillData({
-            pathname: location.pathname,
-            stationCode: selectedStation?.station_code,
-        });
-        alert("Autofill data cleared for this station.");
     };
 
     return (
@@ -272,17 +292,26 @@ export function AllStationsDashboardLayout() {
                                 to={item.path}
                                 onClick={() => window.innerWidth < 1024 && setSidebarOpen(false)}
                                 className={`flex items-center ${sidebarOpen ? 'gap-3 px-4' : 'justify-center px-2'} py-3 rounded-lg transition-all duration-200 ${location.pathname === item.path
-                                    ? "bg-gradient-to-r from-primary to-secondary text-white shadow-lg"
+                                    ? "bg-primary text-white shadow-lg"
                                     : "text-white/80 hover:bg-white/15 hover:text-white"
                                     } relative`}
                                 title={!sidebarOpen ? t(item.titleKey) : undefined}
                             >
                                 {item.icon}
-                                {sidebarOpen && <span className="text-sm font-medium">{t(item.titleKey)}</span>}
-                                {sidebarOpen && item.titleKey === "tasks" && taskCount > 0 && (
-                                    <span className="absolute top-2 left-8 min-w-4 h-4 px-1 bg-red-500 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white leading-none">
-                                        {taskCount > 99 ? "99+" : taskCount}
-                                    </span>
+                                {sidebarOpen && (
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <span className="text-sm font-medium truncate">{t(item.titleKey)}</span>
+                                        {item.titleKey === "tasks" && taskCount > 0 && (
+                                            <span className="min-w-5 h-5 px-1.5 bg-info text-info-foreground rounded-full flex items-center justify-center text-[10px] font-bold leading-none shadow-sm">
+                                                {taskCount > 99 ? "99+" : taskCount}
+                                            </span>
+                                        )}
+                                        {item.titleKey === "underReview" && underReviewCount > 0 && (
+                                            <span className="min-w-5 h-5 px-1.5 bg-info text-info-foreground rounded-full flex items-center justify-center text-[10px] font-bold leading-none shadow-sm">
+                                                {underReviewCount > 99 ? "99+" : underReviewCount}
+                                            </span>
+                                        )}
+                                    </div>
                                 )}
                             </Link>
                         ))}
@@ -292,11 +321,13 @@ export function AllStationsDashboardLayout() {
                             title={!sidebarOpen ? t("chat") : undefined}
                         >
                             <MessageCircle className="w-5 h-5" />
-                            {sidebarOpen && <span className="text-sm font-medium">{t("chat")}</span>}
                             {sidebarOpen && (
-                                <span className="absolute top-2 left-8 w-4 h-4 bg-red-500 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-white">
-                                    3
-                                </span>
+                                <div className="flex items-center gap-2 min-w-0">
+                                    <span className="text-sm font-medium truncate">{t("chat")}</span>
+                                    <span className="min-w-5 h-5 px-1.5 bg-info text-info-foreground rounded-full flex items-center justify-center text-[10px] font-bold leading-none shadow-sm">
+                                        3
+                                    </span>
+                                </div>
                             )}
                         </button>
                     </nav>
@@ -342,13 +373,6 @@ export function AllStationsDashboardLayout() {
                                 </span>
                             )}
                         </div>
-                        <button
-                            onClick={handleClearAutofill}
-                            className="p-1.5 sm:p-2 hover:bg-muted rounded-lg transition-colors flex-shrink-0"
-                            title="Clear Autofill Data"
-                        >
-                            <RotateCcw className="w-4 h-4" />
-                        </button>
                         <LanguageSwitcher />
                     </div>
 
@@ -359,7 +383,7 @@ export function AllStationsDashboardLayout() {
                             {/* User info badge */}
                             {user && (
                                 <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/8 border border-primary/20 rounded-lg">
-                                    <div className="w-7 h-7 bg-gradient-to-br from-primary to-secondary rounded-full flex items-center justify-center flex-shrink-0">
+                                    <div className="w-7 h-7 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
                                         <span className="text-xs font-bold text-white uppercase">{user.username[0]}</span>
                                     </div>
                                     <div className="leading-none">
@@ -368,14 +392,6 @@ export function AllStationsDashboardLayout() {
                                     </div>
                                 </div>
                             )}
-                            <button
-                                onClick={handleClearAutofill}
-                                className="flex items-center gap-2 px-3 md:px-4 py-2 border border-border rounded-lg hover:bg-muted transition-all duration-200 font-semibold text-xs md:text-sm"
-                                title="Clear Autofill Data"
-                            >
-                                <RotateCcw className="w-4 h-4" />
-                                <span className="hidden sm:inline">Clear Autofill</span>
-                            </button>
                             {!isDeptUser && (
                                 <label
                                     className={`flex items-center gap-2 px-3 md:px-4 py-2 border-2 border-primary/20 text-primary rounded-lg hover:bg-primary/5 transition-all duration-200 font-semibold text-xs md:text-sm cursor-pointer ${importLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -393,8 +409,8 @@ export function AllStationsDashboardLayout() {
                             )}
                             {!isDeptUser && (
                                 <Link
-                                    to="/station/new-station/form/station-information"
-                                    className="flex items-center gap-2 px-3 md:px-4 py-2 bg-gradient-to-r from-primary to-secondary text-primary-foreground rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-xs md:text-sm"
+                                    to="/station/new-station/form/investment-department"
+                                    className="flex items-center gap-2 px-3 md:px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-xs md:text-sm"
                                 >
                                     <PlusCircle className="w-4 h-4" />
                                     <span className="hidden sm:inline">{t("addNewProject")}</span>
@@ -415,3 +431,4 @@ export function AllStationsDashboardLayout() {
         </div>
     );
 }
+

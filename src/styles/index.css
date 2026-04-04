@@ -47,71 +47,52 @@
    CARD STYLES (Using Theme Variables)
    ======================================== */
 .card-glow {
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--shadow-sm);
   border: 1px solid hsl(var(--border));
   background: hsl(var(--card));
-  backdrop-filter: blur(12px);
   position: relative;
-  transition: all 0.3s ease;
+  transition: border-color 0.2s ease;
 }
 
 .card-glow:hover {
-  box-shadow: var(--shadow-xl);
-  transform: translateY(-2px);
+  border-color: hsl(var(--primary) / 0.5);
+  transform: none;
 }
 
 .card-accent::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: var(--gradient-primary);
-  border-radius: 4px 4px 0 0;
+  display: none;
 }
 
 /* ========================================
    INPUT STYLES (Using Theme Variables)
    ======================================== */
 input, select, textarea {
-  transition: all 0.3s ease;
-  background-color: hsl(var(--background)) !important;
-  border-color: hsl(var(--border)) !important;
-  box-shadow: var(--shadow-sm) !important;
-}
-
-input:hover, select:hover, textarea:hover {
-  border-color: hsl(var(--primary) / 0.4) !important;
-  box-shadow: var(--shadow-md) !important;
+  transition: border-color 0.2s ease;
+  background-color: hsl(var(--card)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  box-shadow: none !important;
 }
 
 input:focus, select:focus, textarea:focus {
-  box-shadow: 0 0 0 4px hsl(var(--primary) / 0.15), var(--shadow-md) !important;
   border-color: hsl(var(--primary)) !important;
-  outline: none;
-  transform: translateY(-1px);
+  box-shadow: 0 0 0 2px hsl(var(--primary) / 0.1) !important;
+  transform: none;
 }
 
 /* ========================================
    BUTTON UTILITIES (Using Theme Variables)
    ======================================== */
 .btn-primary {
-  background: var(--gradient-primary-to-secondary) !important;
+  background: hsl(var(--primary)) !important;
   color: hsl(var(--primary-foreground)) !important;
-  box-shadow: var(--shadow-md) !important;
-  border: none !important;
-  transition: all 0.3s ease !important;
+  border-radius: 6px !important;
+  font-weight: 500 !important;
+  box-shadow: var(--shadow-sm) !important;
 }
 
 .btn-primary:hover {
-  box-shadow: var(--shadow-lg) !important;
-  transform: translateY(-2px);
-  filter: brightness(1.1);
-}
-
-.btn-primary:active {
-  transform: translateY(0);
+  filter: brightness(0.9);
+  transform: none;
 }
 
 .btn-secondary {
@@ -161,7 +142,7 @@ input:focus, select:focus, textarea:focus {
 }
 
 .sidebar-gradient {
-  background: var(--gradient-primary-to-secondary) !important;
+  background: hsl(var(--sidebar)) !important;
 }
 
 /* ========================================
@@ -218,8 +199,7 @@ nav::-webkit-scrollbar-thumb:hover {
    TEXT UTILITIES (Using Theme Variables)
    ======================================== */
 .text-gradient {
-  background: var(--gradient-primary);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  background: none;
+  -webkit-text-fill-color: initial;
+  color: hsl(var(--primary));
 }

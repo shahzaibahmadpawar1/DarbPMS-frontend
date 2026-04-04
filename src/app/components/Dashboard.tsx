@@ -8,7 +8,7 @@ import { useAuth } from "@/context/AuthContext";
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
 export function Dashboard() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const [stationType, setStationType] = useState<string>("All");
   const stationTypes = ["operation", "rent", "franchise", "investment", "ownership"];
   const [dashStats, setDashStats] = useState<any>(null);
@@ -37,8 +37,10 @@ export function Dashboard() {
 
   const s = dashStats?.stations || {};
   const projects = dashStats?.projects || {};
+  const workflow = dashStats?.workflow || {};
   const recentActivities: any[] = dashStats?.recentActivities || [];
   const stationsList: any[] = dashStats?.stationsList || [];
+  const isDeptWorkflowUser = user?.role === 'department_manager' && (user?.department === 'investment' || user?.department === 'franchise');
 
   const stats = [
     {
@@ -46,7 +48,7 @@ export function Dashboard() {
       value: isLoading ? "..." : (s.total || "0"),
       icon: <img src={logo} alt="" className="w-8 h-8 object-contain brightness-0 invert" />,
       change: `${projects.approved || 0} approved`,
-      color: "bg-gradient-to-br from-primary to-secondary",
+      color: "bg-primary",
       path: "/total-stations",
     },
     {
@@ -78,7 +80,7 @@ export function Dashboard() {
       value: isLoading ? "..." : (s.opening_soon || "0"),
       icon: <Calendar className="w-8 h-8" />,
       change: "",
-      color: "bg-gradient-to-br from-primary to-secondary",
+      color: "bg-primary",
       path: "/total-stations",
     },
     {
@@ -97,8 +99,8 @@ export function Dashboard() {
     <div className="p-8">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-4xl font-black text-gray-900 mb-2 tracking-tight">Dashboard</h1>
-          <p className="text-gray-600"><BrandName /> Project Management & Tracking System</p>
+          <h1 className="text-4xl font-black text-foreground mb-2 tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground"><BrandName /> Project Management & Tracking System</p>
         </div>
 
         {/* Station Type Filter */}
@@ -148,20 +150,40 @@ export function Dashboard() {
       </div>
 
       {/* Projects Overview */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-        {[
-          { label: 'Total Projects', value: projects.total || 0, color: 'bg-blue-50 text-blue-700 border-blue-100' },
-          { label: 'Pending Review', value: projects.pending_review || 0, color: 'bg-amber-50 text-amber-700 border-amber-100' },
-          { label: 'Validated', value: projects.validated || 0, color: 'bg-purple-50 text-purple-700 border-purple-100' },
-          { label: 'Approved', value: projects.approved || 0, color: 'bg-emerald-50 text-emerald-700 border-emerald-100' },
-        ].map(item => (
-          <Link key={item.label} to="/all-stations-under-review"
-            className={`bg-card rounded-xl border p-4 flex flex-col gap-1 hover:shadow-md transition-all ${item.color}`}>
-            <p className="text-xs font-bold uppercase tracking-wide opacity-70">{item.label}</p>
-            <p className="text-3xl font-black">{isLoading ? '...' : item.value}</p>
-          </Link>
-        ))}
-      </div>
+      {isDeptWorkflowUser ? (
+        <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-4 mb-8">
+          {[
+            { label: 'New Project', value: workflow.new_project || 0, color: 'bg-warning/10 text-warning border-warning/20' },
+            { label: 'Total Projects', value: workflow.total_projects || 0, color: 'bg-primary/10 text-primary border-primary/20' },
+            { label: 'Under Review', value: workflow.under_review || 0, color: 'bg-info/10 text-info border-info/20' },
+            { label: 'Contracted', value: workflow.contracted || 0, color: 'bg-primary/10 text-primary border-primary/20' },
+            { label: 'Documented', value: workflow.documented || 0, color: 'bg-info/10 text-info border-info/20' },
+            { label: 'Approved', value: workflow.approved || 0, color: 'bg-success/10 text-success border-success/20' },
+            { label: 'Rejected', value: workflow.rejected || 0, color: 'bg-error/10 text-error border-error/20' },
+          ].map(item => (
+            <Link key={item.label} to="/all-stations-under-review"
+              className={`bg-card rounded-xl border p-4 flex flex-col gap-1 hover:shadow-md transition-all ${item.color}`}>
+              <p className="text-xs font-bold uppercase tracking-wide opacity-70">{item.label}</p>
+              <p className="text-3xl font-black">{isLoading ? '...' : item.value}</p>
+            </Link>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          {[
+            { label: 'Total Projects', value: projects.total || 0, color: 'bg-primary/10 text-primary border-primary/20' },
+            { label: 'Pending Review', value: projects.pending_review || 0, color: 'bg-warning/10 text-warning border-warning/20' },
+            { label: 'Validated', value: projects.validated || 0, color: 'bg-info/10 text-info border-info/20' },
+            { label: 'Approved', value: projects.approved || 0, color: 'bg-success/10 text-success border-success/20' },
+          ].map(item => (
+            <Link key={item.label} to="/all-stations-under-review"
+              className={`bg-card rounded-xl border p-4 flex flex-col gap-1 hover:shadow-md transition-all ${item.color}`}>
+              <p className="text-xs font-bold uppercase tracking-wide opacity-70">{item.label}</p>
+              <p className="text-3xl font-black">{isLoading ? '...' : item.value}</p>
+            </Link>
+          ))}
+        </div>
+      )}
 
       {/* Total Stations Progress Widget */}
       <div className="bg-card rounded-xl shadow-xl p-8 mb-8 card-glow relative overflow-hidden">
@@ -211,7 +233,7 @@ export function Dashboard() {
               >
                 <div>
                   <p className="font-medium text-foreground">{activity.project_name || activity.action}</p>
-                  <p className="text-sm text-muted-foreground capitalize">{activity.review_status || activity.station} • {activity.department_type}</p>
+                  <p className="text-sm text-muted-foreground capitalize">{activity.review_status || activity.station} | {activity.department_type}</p>
                 </div>
                 <span className="text-sm text-muted-foreground">
                   {activity.created_at ? new Date(activity.created_at).toLocaleDateString() : activity.time}
@@ -230,6 +252,7 @@ export function Dashboard() {
     </div>
   );
 }
+
 
 
 

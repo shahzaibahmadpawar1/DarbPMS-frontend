@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import {
-    Clock, CheckCircle, XCircle, MessageSquare,
+    Clock, CheckCircle, MessageSquare,
     ChevronDown, ChevronUp, ExternalLink, MapPin,
     Calendar, User, FileText, Phone, Mail, Hash,
     Layers, Tag, Building2, AlertCircle, Download,
@@ -81,8 +81,8 @@ export function UnderReviewProjectsPage() {
         fetchProjects();
     }, []);
 
-    const handleUpdateStatus = async (projectId: string, newStatus: string) => {
-        if (!comment && (newStatus === 'Rejected' || newStatus === 'Validated')) {
+    const handleWorkflowAction = async (projectId: string, action: 'Approve' | 'Contract' | 'Documents') => {
+        if (!comment.trim()) {
             alert("Please provide a comment.");
             return;
         }
@@ -96,13 +96,13 @@ export function UnderReviewProjectsPage() {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    reviewStatus: newStatus,
+                    action,
                     comment: comment
                 })
             });
 
             if (response.ok) {
-                alert(`Project ${newStatus} successfully!`);
+                alert(`Action ${action} applied successfully!`);
                 setComment("");
                 setExpandedId(null);
                 fetchProjects();
@@ -120,17 +120,17 @@ export function UnderReviewProjectsPage() {
 
     const getStatusBadge = (status: string) => {
         switch (status) {
-            case 'Pending Review': return "bg-amber-100 text-amber-700 border-amber-200";
-            case 'Validated': return "bg-blue-100 text-blue-700 border-blue-200";
-            case 'Approved': return "bg-emerald-100 text-emerald-700 border-emerald-200";
+            case 'Pending Review': return "bg-info/10 text-info border-info/20";
+            case 'Validated': return "bg-primary/10 text-primary border-primary/20";
+            case 'Approved': return "bg-success/10 text-success border-success/20";
             case 'Rejected': return "bg-red-100 text-red-700 border-red-200";
-            default: return "bg-gray-100 text-gray-700 border-gray-200";
+            default: return "bg-muted text-muted-foreground border-border";
         }
     };
 
     const isSuperAdmin = user?.role === 'super_admin';
     const isDepartmentManager = user?.role === 'department_manager';
-    const canValidate = isSuperAdmin || isDepartmentManager;
+    const canTakeDecision = isSuperAdmin || isDepartmentManager;
 
     const filteredProjects = projects;
 
@@ -165,14 +165,14 @@ export function UnderReviewProjectsPage() {
                                 onClick={() => setExpandedId(expandedId === project.id ? null : project.id)}
                             >
                                 <div className="flex items-center gap-4">
-                                    <div className={`p-3 rounded-xl ${project.department_type === 'investment' ? 'bg-blue-500/10 text-blue-500' : 'bg-purple-500/10 text-purple-500'
+                                    <div className={`p-3 rounded-xl ${project.department_type === 'investment' ? 'bg-info/10 text-info' : 'bg-primary/10 text-primary'
                                         }`}>
                                         <FileText className="w-5 h-5" />
                                     </div>
                                     <div>
                                         <h3 className="font-bold text-lg text-foreground">{project.project_name}</h3>
                                         <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                                            {project.project_code} • {project.department_type}
+                                            {project.project_code}  -  {project.department_type}
                                         </p>
                                     </div>
                                 </div>
@@ -188,7 +188,7 @@ export function UnderReviewProjectsPage() {
                             {/* Details Panel */}
                             {expandedId === project.id && (
                                 <div className="px-6 pb-6 animate-in slide-in-from-top-2 duration-300">
-                                    {/* ── Project Info ── */}
+                                    {/* Project Info */}
                                     <div className="border-t border-border pt-6 mb-6">
                                         <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
                                             <FileText className="w-3.5 h-3.5" /> Project Information
@@ -203,7 +203,7 @@ export function UnderReviewProjectsPage() {
                                                 <div className="flex items-center gap-2 text-sm"><MapPin className="w-3.5 h-3.5 text-primary flex-shrink-0" /><span>{project.city || 'N/A'}{project.district ? `, ${project.district}` : ''}</span></div>
                                             </div>
                                             <div className="space-y-1">
-                                                <p className="text-xs font-bold text-muted-foreground uppercase">Area (m²)</p>
+                                                <p className="text-xs font-bold text-muted-foreground uppercase">Area (m2)</p>
                                                 <div className="flex items-center gap-2 text-sm"><Layers className="w-3.5 h-3.5 text-primary flex-shrink-0" /><span>{project.area || 'N/A'}</span></div>
                                             </div>
                                             <div className="space-y-1">
@@ -217,7 +217,7 @@ export function UnderReviewProjectsPage() {
                                             <div className="space-y-1">
                                                 <p className="text-xs font-bold text-muted-foreground uppercase">Priority Level</p>
                                                 <div className="flex items-center gap-2 text-sm">
-                                                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${project.priority_level === 'High' ? 'bg-red-100 text-red-700' : project.priority_level === 'Medium' ? 'bg-amber-100 text-amber-700' : 'bg-green-100 text-green-700'}`}>{project.priority_level || 'N/A'}</span>
+                                                    <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${project.priority_level === 'High' ? 'bg-red-100 text-red-700' : project.priority_level === 'Medium' ? 'bg-info/10 text-info' : 'bg-green-100 text-green-700'}`}>{project.priority_level || 'N/A'}</span>
                                                 </div>
                                             </div>
                                             <div className="space-y-1">
@@ -241,7 +241,7 @@ export function UnderReviewProjectsPage() {
                                         </div>
                                     </div>
 
-                                    {/* ── Owner Info ── */}
+                                    {/* Owner Info */}
                                     <div className="border-t border-border pt-6 mb-6">
                                         <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
                                             <User className="w-3.5 h-3.5" /> Owner Information
@@ -271,7 +271,7 @@ export function UnderReviewProjectsPage() {
                                         </div>
                                     </div>
 
-                                    {/* ── Station Elements ── */}
+                                    {/* Station Elements */}
                                     {(project.super_market > 0 || project.fuel_station > 0 || project.kiosks > 0 || project.retail_shop > 0 || project.drive_through > 0) && (
                                         <div className="border-t border-border pt-6 mb-6">
                                             <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
@@ -288,23 +288,23 @@ export function UnderReviewProjectsPage() {
                                                     <div key={el.label} className="bg-muted/50 rounded-xl p-3 border border-border text-center">
                                                         <p className="text-xs font-bold text-muted-foreground mb-1">{el.label}</p>
                                                         <p className="text-lg font-black text-foreground">{el.count}</p>
-                                                        {el.area > 0 && <p className="text-xs text-muted-foreground mt-1">{el.area} m²</p>}
+                                                        {el.area > 0 && <p className="text-xs text-muted-foreground mt-1">{el.area} m2</p>}
                                                     </div>
                                                 ))}
                                             </div>
                                         </div>
                                     )}
 
-                                    {/* ── Documents ── */}
+                                    {/* Documents */}
                                     {(project.design_file_url || project.documents_url || project.autocad_url) && (
                                         <div className="border-t border-border pt-6 mb-6">
                                             <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-4 flex items-center gap-2">
                                                 <Download className="w-3.5 h-3.5" /> Project Documents
                                             </h4>
                                             <div className="flex flex-wrap gap-3">
-                                                {project.design_file_url && <a href={project.design_file_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100 transition-colors"><Download className="w-4 h-4" />Design File</a>}
-                                                {project.documents_url && <a href={project.documents_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-purple-50 text-purple-700 rounded-lg text-sm font-medium hover:bg-purple-100 transition-colors"><Download className="w-4 h-4" />Documents</a>}
-                                                {project.autocad_url && <a href={project.autocad_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-amber-50 text-amber-700 rounded-lg text-sm font-medium hover:bg-amber-100 transition-colors"><Download className="w-4 h-4" />AutoCAD (.dwg)</a>}
+                                                {project.design_file_url && <a href={project.design_file_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/15 transition-colors"><Download className="w-4 h-4" />Design File</a>}
+                                                {project.documents_url && <a href={project.documents_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/15 transition-colors"><Download className="w-4 h-4" />Documents</a>}
+                                                {project.autocad_url && <a href={project.autocad_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-info/10 text-info rounded-lg text-sm font-medium hover:bg-info/10 transition-colors"><Download className="w-4 h-4" />AutoCAD (.dwg)</a>}
                                             </div>
                                         </div>
                                     )}
@@ -313,7 +313,7 @@ export function UnderReviewProjectsPage() {
                                     <div className="bg-muted/30 rounded-xl p-4 space-y-4 mb-6">
                                         {project.pm_comment && (
                                             <div className="flex gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-600 flex-shrink-0">
+                                                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary flex-shrink-0">
                                                     <MessageSquare className="w-4 h-4" />
                                                 </div>
                                                 <div>
@@ -354,49 +354,38 @@ export function UnderReviewProjectsPage() {
                                             />
                                         </div>
 
-                                        <div className="flex justify-end gap-3 font-semibold">
-                                            {/* Department manager and super admin can validate pending items */}
-                                            {canValidate && project.review_status === 'Pending Review' && (
-                                                <button
-                                                    disabled={isSubmitting}
-                                                    onClick={() => handleUpdateStatus(project.id, 'Validated')}
-                                                    className="px-6 py-2.5 bg-primary text-white rounded-lg flex items-center gap-2 hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all disabled:opacity-50"
-                                                >
-                                                    <CheckCircle className="w-4 h-4" />
-                                                    Validate for Final Approval
-                                                </button>
-                                            )}
-
-                                            {/* Super admin final approval actions */}
-                                            {isSuperAdmin && project.review_status === 'Validated' && (
+                                        <div className="flex justify-end gap-3 font-semibold flex-wrap">
+                                            {canTakeDecision && project.review_status === 'Pending Review' && (
                                                 <>
                                                     <button
                                                         disabled={isSubmitting}
-                                                        onClick={() => handleUpdateStatus(project.id, 'Approved')}
+                                                        onClick={() => handleWorkflowAction(project.id, 'Approve')}
                                                         className="px-6 py-2.5 bg-emerald-600 text-white rounded-lg flex items-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all disabled:opacity-50"
                                                     >
                                                         <CheckCircle className="w-4 h-4" />
-                                                        Approve Project
+                                                        Approve
                                                     </button>
                                                     <button
                                                         disabled={isSubmitting}
-                                                        onClick={() => handleUpdateStatus(project.id, 'Rejected')}
-                                                        className="px-6 py-2.5 bg-red-600 text-white rounded-lg flex items-center gap-2 hover:bg-red-700 shadow-lg shadow-red-200 transition-all disabled:opacity-50"
+                                                        onClick={() => handleWorkflowAction(project.id, 'Contract')}
+                                                        className="px-6 py-2.5 bg-primary text-white rounded-lg flex items-center gap-2 hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all disabled:opacity-50"
                                                     >
-                                                        <XCircle className="w-4 h-4" />
-                                                        Reject Project
+                                                        <FileText className="w-4 h-4" />
+                                                        Contract
+                                                    </button>
+                                                    <button
+                                                        disabled={isSubmitting}
+                                                        onClick={() => handleWorkflowAction(project.id, 'Documents')}
+                                                        className="px-6 py-2.5 bg-info text-white rounded-lg flex items-center gap-2 hover:bg-info/90 shadow-lg shadow-info/20 transition-all disabled:opacity-50"
+                                                    >
+                                                        <Download className="w-4 h-4" />
+                                                        Documents
                                                     </button>
                                                 </>
                                             )}
 
-                                            {isSuperAdmin && project.review_status !== 'Rejected' && project.review_status !== 'Approved' && (
-                                                <button
-                                                    disabled={isSubmitting}
-                                                    onClick={() => handleUpdateStatus(project.id, 'Rejected')}
-                                                    className="px-6 py-2.5 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-all"
-                                                >
-                                                    Cancel / Reject
-                                                </button>
+                                            {project.review_status === 'Validated' && (
+                                                <p className="text-sm text-muted-foreground">Workflow started. Continue from Tasks.</p>
                                             )}
                                         </div>
                                     </div>
@@ -409,3 +398,4 @@ export function UnderReviewProjectsPage() {
         </div>
     );
 }
+

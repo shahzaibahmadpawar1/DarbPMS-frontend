@@ -7,7 +7,7 @@ function DashboardTab() {
     const stats = [
         { label: "Total Employees", value: "156", icon: <Users className="w-5 h-5" />, color: "text-primary", bg: "bg-primary/10" },
         { label: "New Hires (MTD)", value: "12", icon: <UserPlus className="w-5 h-5" />, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-        { label: "Leaves Today", value: "8", icon: <Calendar className="w-5 h-5" />, color: "text-amber-500", bg: "bg-amber-500/10" },
+        { label: "Leaves Today", value: "8", icon: <Calendar className="w-5 h-5" />, color: "text-info", bg: "bg-info/10" },
         { label: "Certifications", value: "45", icon: <Award className="w-5 h-5" />, color: "text-blue-500", bg: "bg-blue-500/10" },
     ];
 
@@ -103,3 +103,4 @@ export function HumanResourcePage() {
         </div>
     );
 }
+

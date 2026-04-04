@@ -6,7 +6,7 @@ type ActiveTab = "dashboard" | "licenses" | "compliance" | "inspections";
 function DashboardTab() {
     const stats = [
         { label: "Valid Licenses", value: "24", icon: <BadgeCheck className="w-5 h-5" />, color: "text-emerald-500", bg: "bg-emerald-500/10" },
-        { label: "Renewals Due", value: "3", icon: <AlertCircle className="w-5 h-5" />, color: "text-orange-500", bg: "bg-orange-500/10" },
+        { label: "Renewals Due", value: "3", icon: <AlertCircle className="w-5 h-5" />, color: "text-primary", bg: "bg-primary/10" },
         { label: "Agencies Linked", value: "12", icon: <Landmark className="w-5 h-5" />, color: "text-primary", bg: "bg-primary/10" },
         { label: "Incidents", value: "0", icon: <Shield className="w-5 h-5" />, color: "text-blue-500", bg: "bg-blue-500/10" },
     ];
@@ -39,7 +39,7 @@ function DashboardTab() {
                             </div>
                             <div className="text-right">
                                 <p className="text-xs font-bold text-foreground">{r.due}</p>
-                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase ${r.status === 'Active' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-orange-500/10 text-orange-600'}`}>{r.status}</span>
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-bold uppercase ${r.status === 'Active' ? 'bg-emerald-500/10 text-emerald-600' : 'bg-primary/10 text-primary'}`}>{r.status}</span>
                             </div>
                         </div>
                     ))}
@@ -94,3 +94,4 @@ export function GovernmentRelationsDepartmentPage() {
         </div>
     );
 }
+

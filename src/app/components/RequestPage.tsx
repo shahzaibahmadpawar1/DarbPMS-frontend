@@ -1,6 +1,9 @@
-import { useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { FileText, Check, X, Save, List, PlusCircle } from "lucide-react";
 import { FormRecordsList } from "./FormRecordsList";
+import { departmentSections } from "../data/formSections";
+import { useAuth } from "@/context/AuthContext";
+import { getDepartmentLabel, getRoleLabel } from "@/services/api";
 
 type RequestType =
     | "general-request"
@@ -36,6 +39,10 @@ const requestTypes = [
     { value: "facility-request", label: "Facility Request" },
 ];
 
+const departmentOptions = Array.from(
+    new Set(departmentSections.flatMap((section) => section.items.map((item) => item.title)))
+);
+
 const mockRecords = [
     { id: "REQ-001", type: "General Request", requester: "Ahmed Ali", status: "Approved", date: "2024-06-01" },
     { id: "REQ-002", type: "IT Support Request", requester: "Sara Hassan", status: "Pending", date: "2024-06-08" },
@@ -44,6 +51,7 @@ const mockRecords = [
 ];
 
 export function RequestPage() {
+    const { user } = useAuth();
     const [viewMode, setViewMode] = useState<"form" | "records">("form");
     const [formData, setFormData] = useState<RequestFormData>({
         requestType: "",
@@ -57,6 +65,24 @@ export function RequestPage() {
         description: "",
         notes: "",
     });
+
+    useEffect(() => {
+        if (!user) return;
+
+        const roleLabel = getRoleLabel(user.role);
+        const rawDepartment = getDepartmentLabel(user.department);
+        const requesterDepartment = rawDepartment === "All Departments" ? "All Departments" : `${rawDepartment} Department`;
+        const suggestedDepartment =
+            requesterDepartment === "All Departments"
+                ? ""
+                : departmentOptions.find((option) => option.toLowerCase() === requesterDepartment.toLowerCase()) || "";
+
+        setFormData((prev) => ({
+            ...prev,
+            requester: `${user.username || "Requester"} (${roleLabel}) - ${requesterDepartment}`,
+            department: prev.department || suggestedDepartment,
+        }));
+    }, [user]);
 
     const renderRequestTypeFields = () => {
         if (!formData.requestType) {
@@ -149,6 +175,26 @@ export function RequestPage() {
                             Request Information
                         </h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            {/* Department */}
+                            <div className="md:col-span-2">
+                                <label className="block text-sm font-medium text-muted-foreground mb-1">
+                                    Department <span className="text-red-500">*</span>
+                                </label>
+                                <select
+                                    value={formData.department}
+                                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                                    className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
+                                    required
+                                >
+                                    <option value="">Select Department</option>
+                                    {departmentOptions.map((department) => (
+                                        <option key={department} value={department}>
+                                            {department}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
                             {/* Request Type */}
                             <div className="md:col-span-2">
                                 <label className="block text-sm font-medium text-muted-foreground mb-1">
@@ -197,18 +243,8 @@ export function RequestPage() {
                                 <input
                                     type="text"
                                     value={formData.requester}
-                                    onChange={(e) => setFormData({ ...formData, requester: e.target.value })}
-                                    className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-medium text-muted-foreground mb-1">Department</label>
-                                <input
-                                    type="text"
-                                    value={formData.department}
-                                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                                    className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
+                                    readOnly
+                                    className="w-full px-3 py-2 border border-border rounded-lg bg-muted/40 text-foreground"
                                 />
                             </div>
 
@@ -268,7 +304,7 @@ export function RequestPage() {
                                 <textarea
                                     value={formData.notes}
                                     onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#f97316]"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary"
                                     rows={4}
                                     placeholder="Add any additional notes or comments"
                                 />
@@ -334,7 +370,7 @@ export function RequestPage() {
                             className="btn-primary px-6 py-3 rounded-lg flex items-center gap-2 transition-all shadow-lg hover:shadow-primary/20"
                         >
                             <Save className="w-5 h-5" />
-                            Save Request
+                            Send Requset
                         </button>
                     </div>
                 </form>
@@ -348,3 +384,4 @@ export function RequestPage() {
         </div>
     );
 }
+

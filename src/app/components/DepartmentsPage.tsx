@@ -31,28 +31,16 @@ export function DepartmentsPage() {
                             <Link
                                 key={item.title}
                                 to={`${basePath}/${item.path}`}
-                                className={`rounded-lg md:rounded-xl shadow-md border p-3 md:p-4 hover:shadow-xl hover:scale-105 transition-all duration-200 card-glow group flex items-center justify-between ${item.completed
-                                    ? "bg-success/5 border-success/20 hover:bg-success/10"
-                                    : "bg-error/5 border-error/20 hover:bg-error/10"
-                                }`}
+                                className="rounded-lg md:rounded-xl shadow-md border border-border p-3 md:p-4 hover:shadow-xl hover:scale-105 transition-all duration-200 card-glow group flex items-center"
                             >
                                 <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1">
-                                    <div className={`w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center transition-colors flex-shrink-0 ${item.completed
-                                        ? "bg-success/10 group-hover:bg-success/20"
-                                        : "bg-error/10 group-hover:bg-error/20"
-                                    }`}>
+                                    <div className="w-8 h-8 md:w-10 md:h-10 rounded-lg flex items-center justify-center transition-colors flex-shrink-0 bg-muted group-hover:bg-muted/80 text-foreground">
                                         {item.icon}
                                     </div>
-                                    <span className={`text-xs sm:text-sm font-semibold transition-colors truncate ${item.completed
-                                        ? "text-success group-hover:text-success"
-                                        : "text-error group-hover:text-error"
-                                    }`}>
+                                    <span className="text-xs sm:text-sm font-semibold transition-colors truncate text-foreground">
                                         {item.title}
                                     </span>
                                 </div>
-                                <span className={`text-xs font-bold px-2 py-1 rounded-full ${item.completed ? "bg-success/10 text-success" : "bg-error/10 text-error"}`}>
-                                    {item.completed ? "Ready" : "Pending"}
-                                </span>
                             </Link>
                         ))}
                     </div>

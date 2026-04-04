@@ -1,5 +1,19 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 
+export interface InvestmentProjectData {
+    projectName?: string;
+    projectCode?: string;
+    city?: string;
+    district?: string;
+    area?: string;
+    googleLocation?: string;
+    ownerName?: string;
+    ownerContactNo?: string;
+    idNo?: string;
+    nationalAddress?: string;
+    email?: string;
+}
+
 interface StationContextType {
     selectedStation: {
         id: string;
@@ -12,6 +26,9 @@ interface StationContextType {
     setSelectedStation: (station: StationContextType["selectedStation"]) => void;
     accessMode: 'admin' | 'view-only' | null;
     setAccessMode: (mode: 'admin' | 'view-only' | null) => void;
+    investmentProjectData: InvestmentProjectData | null;
+    setInvestmentProjectData: (data: InvestmentProjectData | null) => void;
+    clearInvestmentProjectData: () => void;
 }
 
 const StationContext = createContext<StationContextType | undefined>(undefined);
@@ -27,6 +44,16 @@ export function StationProvider({ children }: { children: ReactNode }) {
         // Default to 'admin' mode for production (editable forms)
         return saved || 'admin';
     });
+
+    const [investmentProjectData, setInvestmentProjectData] = useState<InvestmentProjectData | null>(() => {
+        const saved = localStorage.getItem("investmentProjectData");
+        return saved ? JSON.parse(saved) : null;
+    });
+
+    const clearInvestmentProjectData = () => {
+        setInvestmentProjectData(null);
+        localStorage.removeItem("investmentProjectData");
+    };
 
     useEffect(() => {
         if (selectedStation) {
@@ -44,8 +71,24 @@ export function StationProvider({ children }: { children: ReactNode }) {
         }
     }, [accessMode]);
 
+    useEffect(() => {
+        if (investmentProjectData) {
+            localStorage.setItem("investmentProjectData", JSON.stringify(investmentProjectData));
+        } else {
+            localStorage.removeItem("investmentProjectData");
+        }
+    }, [investmentProjectData]);
+
     return (
-        <StationContext.Provider value={{ selectedStation, setSelectedStation, accessMode, setAccessMode }}>
+        <StationContext.Provider value={{ 
+            selectedStation, 
+            setSelectedStation, 
+            accessMode, 
+            setAccessMode,
+            investmentProjectData,
+            setInvestmentProjectData,
+            clearInvestmentProjectData,
+        }}>
             {children}
         </StationContext.Provider>
     );

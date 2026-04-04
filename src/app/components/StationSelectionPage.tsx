@@ -13,7 +13,7 @@ import { LanguageSwitcher } from "./LanguageSwitcher";
 import { useStation } from "../context/StationContext";
 import logo from "../../assets/logo.png";
 
-// Demo Data - Reorganized: Region → City → Project → Location
+// Demo Data - Reorganized: Region â†’ City â†’ Project â†’ Location
 const demoData = {
     regions: [
         {
@@ -282,7 +282,7 @@ export function StationSelectionPage() {
                                             key={location}
                                             onClick={() => handleLocationSelect(location)}
                                             className={`group p-6 rounded-2xl border transition-all text-left flex items-center justify-between ${selectedLocation === location
-                                                ? 'bg-gradient-to-r from-primary to-secondary border-primary text-white shadow-xl shadow-primary/20'
+                                                ? 'bg-primary border-primary text-white shadow-xl shadow-primary/20'
                                                 : 'bg-white/50 border-border text-foreground hover:border-primary/40 hover:shadow-lg'
                                                 }`}
                                         >
@@ -314,10 +314,11 @@ export function StationSelectionPage() {
                     </div>
 
                     <div className="mt-8 text-center text-sm font-medium text-muted-foreground tracking-wider uppercase">
-                        Project Management System • Step {step} of 4
+                        Project Management System  -  Step {step} of 4
                     </div>
                 </div>
             </div>
         </div>
     );
 }
+

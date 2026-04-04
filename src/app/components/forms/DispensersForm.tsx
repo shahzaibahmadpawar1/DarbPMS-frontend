@@ -14,7 +14,7 @@ export function DispensersForm() {
     const [records, setRecords] = useState<any[]>([]);
 
     const [formData, setFormData] = useState({
-        dispenserSerialNumber: "",
+        quantity: "",
         dispenserName: "",
         model: "",
         vendor: "",
@@ -74,7 +74,7 @@ export function DispensersForm() {
             if (response.ok) {
                 alert("Dispenser information saved successfully!");
                 setFormData({
-                    dispenserSerialNumber: "",
+                    quantity: "",
                     dispenserName: "",
                     model: "",
                     vendor: "",
@@ -142,11 +142,11 @@ export function DispensersForm() {
                 <form onSubmit={handleSubmit} className="max-w-4xl bg-card rounded-2xl border border-border p-8 shadow-sm">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold text-muted-foreground">Serial Number *</label>
+                            <label className="text-sm font-semibold text-muted-foreground">Quantity *</label>
                             <input
-                                type="text"
-                                name="dispenserSerialNumber"
-                                value={formData.dispenserSerialNumber}
+                                type="number"
+                                name="quantity"
+                                value={formData.quantity}
                                 onChange={handleInputChange}
                                 required
                                 disabled={isReadOnly}
