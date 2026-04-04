@@ -5,6 +5,31 @@ import {
     Calendar, User, FileText, Phone, Mail, Hash,
     Layers, Tag, Building2, AlertCircle, Download,
 } from "lucide-react";
+
+const normalizeStorageUrl = (url: string | null | undefined): string | null => {
+    if (!url) return null;
+
+    try {
+        const parsed = new URL(url);
+        const marker = "/storage/v1/object/public/";
+        const index = parsed.pathname.indexOf(marker);
+        if (index === -1) {
+            return url;
+        }
+
+        const suffix = parsed.pathname.slice(index + marker.length);
+        const slashIndex = suffix.indexOf("/");
+        if (slashIndex === -1) {
+            return url;
+        }
+
+        const objectPath = suffix.slice(slashIndex + 1);
+        parsed.pathname = `${marker}pms/${objectPath}`;
+        return parsed.toString();
+    } catch {
+        return url;
+    }
+};
 import { useAuth } from "@/context/AuthContext";
 
 // API endpoints
@@ -302,9 +327,9 @@ export function UnderReviewProjectsPage() {
                                                 <Download className="w-3.5 h-3.5" /> Project Documents
                                             </h4>
                                             <div className="flex flex-wrap gap-3">
-                                                {project.design_file_url && <a href={project.design_file_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/15 transition-colors"><Download className="w-4 h-4" />Design File</a>}
-                                                {project.documents_url && <a href={project.documents_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/15 transition-colors"><Download className="w-4 h-4" />Documents</a>}
-                                                {project.autocad_url && <a href={project.autocad_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-info/10 text-info rounded-lg text-sm font-medium hover:bg-info/10 transition-colors"><Download className="w-4 h-4" />AutoCAD (.dwg)</a>}
+                                                {project.design_file_url && <a href={normalizeStorageUrl(project.design_file_url) || project.design_file_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/15 transition-colors"><Download className="w-4 h-4" />Design File</a>}
+                                                {project.documents_url && <a href={normalizeStorageUrl(project.documents_url) || project.documents_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-lg text-sm font-medium hover:bg-primary/15 transition-colors"><Download className="w-4 h-4" />Documents</a>}
+                                                {project.autocad_url && <a href={normalizeStorageUrl(project.autocad_url) || project.autocad_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-4 py-2 bg-info/10 text-info rounded-lg text-sm font-medium hover:bg-info/10 transition-colors"><Download className="w-4 h-4" />AutoCAD (.dwg)</a>}
                                             </div>
                                         </div>
                                     )}

@@ -3,7 +3,7 @@ import { Save, Eye, Upload, FileCheck, Trash2, Paperclip, X, ExternalLink, FileT
 import { useStation } from "../../context/StationContext";
 import { useResolvedStationCode } from "../../hooks/useResolvedStationCode";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";
 
 const ATTACHMENT_TYPES = [
     { key: "operatingLicense", label: "Operating License", description: "Official operating license document" },
@@ -15,8 +15,13 @@ const ATTACHMENT_TYPES = [
     { key: "municipalLicense", label: "Municipal License", description: "Municipal authority approval document" },
 ];
 
-type AttachmentState = Record<string, File | null>;
-type ObjectUrls = Record<string, string>;
+type AttachmentEntry = {
+    file: File | null;
+    url: string | null;
+    name: string | null;
+};
+
+type AttachmentState = Record<string, AttachmentEntry>;
 
 function isImage(file: File) {
     return file.type.startsWith("image/");
@@ -117,13 +122,78 @@ export function GovernmentLicenseAttachmentsPage() {
     const isReadOnly = accessMode === "view-only";
 
     const [attachments, setAttachments] = useState<AttachmentState>(
-        Object.fromEntries(ATTACHMENT_TYPES.map((t) => [t.key, null]))
+        Object.fromEntries(ATTACHMENT_TYPES.map((t) => [t.key, { file: null, url: null, name: null }]))
     );
     const [preview, setPreview] = useState<{ file: File; label: string } | null>(null);
+    const [saving, setSaving] = useState(false);
 
     const handleFileChange = (key: string, file: File | null) => {
-        setAttachments((prev) => ({ ...prev, [key]: file }));
+        setAttachments((prev) => ({
+            ...prev,
+            [key]: {
+                file,
+                url: file ? null : prev[key]?.url || null,
+                name: file ? file.name : prev[key]?.name || null,
+            },
+        }));
     };
+
+    const uploadFile = async (file: File, token: string): Promise<string> => {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch(`${API_BASE_URL}/files/upload`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result?.data?.url) {
+            throw new Error(result?.error || "File upload failed");
+        }
+
+        return result.data.url as string;
+    };
+
+    useEffect(() => {
+        const token = localStorage.getItem("auth_token");
+        if (!token || !resolvedStationCode) {
+            return;
+        }
+
+        const loadExistingAttachments = async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/government-licenses/attachments/station/${resolvedStationCode}`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                const result = await response.json();
+                if (!response.ok || !result?.data) {
+                    return;
+                }
+
+                const row = result.data;
+                setAttachments({
+                    operatingLicense: { file: null, url: row.operating_license_url || null, name: null },
+                    petroleumTradeLicense: { file: null, url: row.petroleum_trade_license_url || null, name: null },
+                    civilDefenseCertificate: { file: null, url: row.civil_defense_certificate_url || null, name: null },
+                    safetyInstallationsCertificate: { file: null, url: row.safety_installations_certificate_url || null, name: null },
+                    maintenanceContract: { file: null, url: row.maintenance_contract_url || null, name: null },
+                    containerContract: { file: null, url: row.container_contract_url || null, name: null },
+                    municipalLicense: { file: null, url: row.municipal_license_url || null, name: null },
+                });
+            } catch (_error) {
+                // Silent fail keeps page usable when no existing records are present.
+            }
+        };
+
+        loadExistingAttachments();
+    }, [resolvedStationCode]);
 
     const handleSaveAttachments = async () => {
         const token = localStorage.getItem("auth_token");
@@ -143,18 +213,45 @@ export function GovernmentLicenseAttachmentsPage() {
             return;
         }
 
-        const payload = {
-            stationCode: resolvedStationCode,
-            operatingLicenseUrl: attachments.operatingLicense?.name || null,
-            petroleumTradeLicenseUrl: attachments.petroleumTradeLicense?.name || null,
-            civilDefenseCertificateUrl: attachments.civilDefenseCertificate?.name || null,
-            safetyInstallationsCertificateUrl: attachments.safetyInstallationsCertificate?.name || null,
-            maintenanceContractUrl: attachments.maintenanceContract?.name || null,
-            containerContractUrl: attachments.containerContract?.name || null,
-            municipalLicenseUrl: attachments.municipalLicense?.name || null,
-        };
-
         try {
+            setSaving(true);
+
+            const uploadOrReuse = async (entry: AttachmentEntry): Promise<string | null> => {
+                if (entry.file) {
+                    return uploadFile(entry.file, token);
+                }
+                return entry.url || null;
+            };
+
+            const [
+                operatingLicenseUrl,
+                petroleumTradeLicenseUrl,
+                civilDefenseCertificateUrl,
+                safetyInstallationsCertificateUrl,
+                maintenanceContractUrl,
+                containerContractUrl,
+                municipalLicenseUrl,
+            ] = await Promise.all([
+                uploadOrReuse(attachments.operatingLicense),
+                uploadOrReuse(attachments.petroleumTradeLicense),
+                uploadOrReuse(attachments.civilDefenseCertificate),
+                uploadOrReuse(attachments.safetyInstallationsCertificate),
+                uploadOrReuse(attachments.maintenanceContract),
+                uploadOrReuse(attachments.containerContract),
+                uploadOrReuse(attachments.municipalLicense),
+            ]);
+
+            const payload = {
+                stationCode: resolvedStationCode,
+                operatingLicenseUrl,
+                petroleumTradeLicenseUrl,
+                civilDefenseCertificateUrl,
+                safetyInstallationsCertificateUrl,
+                maintenanceContractUrl,
+                containerContractUrl,
+                municipalLicenseUrl,
+            };
+
             const response = await fetch(`${API_BASE_URL}/government-licenses/attachments`, {
                 method: "POST",
                 headers: {
@@ -169,13 +266,25 @@ export function GovernmentLicenseAttachmentsPage() {
                 throw new Error(result?.error || "Failed to save attachments");
             }
 
+            setAttachments((prev) => ({
+                operatingLicense: { file: null, url: payload.operatingLicenseUrl, name: prev.operatingLicense.file?.name || prev.operatingLicense.name || null },
+                petroleumTradeLicense: { file: null, url: payload.petroleumTradeLicenseUrl, name: prev.petroleumTradeLicense.file?.name || prev.petroleumTradeLicense.name || null },
+                civilDefenseCertificate: { file: null, url: payload.civilDefenseCertificateUrl, name: prev.civilDefenseCertificate.file?.name || prev.civilDefenseCertificate.name || null },
+                safetyInstallationsCertificate: { file: null, url: payload.safetyInstallationsCertificateUrl, name: prev.safetyInstallationsCertificate.file?.name || prev.safetyInstallationsCertificate.name || null },
+                maintenanceContract: { file: null, url: payload.maintenanceContractUrl, name: prev.maintenanceContract.file?.name || prev.maintenanceContract.name || null },
+                containerContract: { file: null, url: payload.containerContractUrl, name: prev.containerContract.file?.name || prev.containerContract.name || null },
+                municipalLicense: { file: null, url: payload.municipalLicenseUrl, name: prev.municipalLicense.file?.name || prev.municipalLicense.name || null },
+            }));
+
             alert("Attachments saved successfully!");
         } catch (error: any) {
             alert(error?.message || "Failed to save attachments");
+        } finally {
+            setSaving(false);
         }
     };
 
-    const uploadedCount = Object.values(attachments).filter(Boolean).length;
+    const uploadedCount = Object.values(attachments).filter((entry) => Boolean(entry.file || entry.url)).length;
 
     return (
         <div className="p-8">
@@ -240,8 +349,9 @@ export function GovernmentLicenseAttachmentsPage() {
 
                 <div className="divide-y divide-border">
                     {ATTACHMENT_TYPES.map((att, index) => {
-                        const file = attachments[att.key];
-                        const isUploaded = Boolean(file);
+                        const entry = attachments[att.key];
+                        const isUploaded = Boolean(entry?.file || entry?.url);
+                        const fileName = entry?.file?.name || entry?.name || entry?.url || "Uploaded file";
 
                         return (
                             <div
@@ -263,7 +373,7 @@ export function GovernmentLicenseAttachmentsPage() {
                                         </p>
                                         {isUploaded ? (
                                             <p className="text-xs text-emerald-600 dark:text-emerald-500 truncate mt-0.5">
-                                                ✓ {file!.name}
+                                                ✓ {fileName}
                                             </p>
                                         ) : (
                                             <p className="text-xs text-muted-foreground mt-0.5">{att.description}</p>
@@ -277,7 +387,16 @@ export function GovernmentLicenseAttachmentsPage() {
                                     {isUploaded && (
                                         <button
                                             type="button"
-                                            onClick={() => setPreview({ file: file!, label: att.label })}
+                                            onClick={() => {
+                                                if (entry?.file) {
+                                                    setPreview({ file: entry.file, label: att.label });
+                                                    return;
+                                                }
+
+                                                if (entry?.url) {
+                                                    window.open(entry.url, "_blank", "noopener,noreferrer");
+                                                }
+                                            }}
                                             className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border bg-background hover:bg-primary/5 hover:border-primary/40 text-sm font-semibold text-foreground transition-all"
                                             title="View attachment"
                                         >
@@ -332,9 +451,10 @@ export function GovernmentLicenseAttachmentsPage() {
                         <button
                             type="button"
                             onClick={handleSaveAttachments}
+                            disabled={saving}
                             className="btn-primary px-6 py-3 rounded-lg flex items-center gap-2 transition-all shadow-lg hover:shadow-primary/20"
                         >
-                            <Save className="w-5 h-5" /> Save All Attachments
+                            <Save className="w-5 h-5" /> {saving ? "Saving..." : "Save All Attachments"}
                         </button>
                     </div>
                 )}

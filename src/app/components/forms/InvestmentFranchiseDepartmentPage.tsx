@@ -216,9 +216,39 @@ function NewProjectTab() {
     };
 
     const { token } = useAuth();
+
+    const uploadProjectFile = async (file: File): Promise<string> => {
+        if (!token) {
+            throw new Error("Authentication required.");
+        }
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch(`${API_URL}/files/upload`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+        });
+
+        const result = await response.json();
+        if (!response.ok || !result?.data?.url) {
+            throw new Error(result?.details || result?.error || "Failed to upload document");
+        }
+
+        return result.data.url as string;
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
+            if (!token) {
+                alert("Authentication required. Please login again.");
+                return;
+            }
+
             const normalizeElementName = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, "");
             const mapped = {
                 superMarket: 0,
@@ -271,6 +301,31 @@ function NewProjectTab() {
                 }
             });
 
+            let designFileUrl: string | null = null;
+            let documentsUrl: string | null = null;
+            let autocadUrl: string | null = null;
+
+            const uploadedDocuments = [] as Array<{ label: string; fileName: string | null; fileUrl: string | null }>;
+            for (const doc of projectDocuments) {
+                if (!doc.file) {
+                    uploadedDocuments.push({ label: doc.label, fileName: null, fileUrl: null });
+                    continue;
+                }
+
+                const fileUrl = await uploadProjectFile(doc.file);
+                const label = (doc.label || "").toLowerCase();
+
+                if (!designFileUrl && label.includes("design")) {
+                    designFileUrl = fileUrl;
+                } else if (!autocadUrl && (label.includes("cad") || label.includes("dwg"))) {
+                    autocadUrl = fileUrl;
+                } else if (!documentsUrl) {
+                    documentsUrl = fileUrl;
+                }
+
+                uploadedDocuments.push({ label: doc.label, fileName: doc.file.name, fileUrl });
+            }
+
             const body = {
                 departmentType: (window.location.pathname.includes('investment') ? 'investment' : 'franchise'),
                 ...form,
@@ -287,9 +342,10 @@ function NewProjectTab() {
                 area: parseFloat(form.area) || 0,
                 commercialElements: elements,
                 extraCommercialElements,
-                projectDocuments: projectDocuments.map(doc => ({ label: doc.label, fileName: doc.file?.name || null })),
-                // Files would typically be uploaded first and URLs sent here
-                // For now, we simulation-submit without files
+                designFileUrl,
+                documentsUrl,
+                autocadUrl,
+                projectDocuments: uploadedDocuments,
             };
 
             const response = await fetch(`${API_URL}/investment-projects`, {
@@ -384,7 +440,6 @@ function NewProjectTab() {
                 </div>
             </div>
 
-            {/* â”€â”€ Elements â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
                 <SectionHeader icon={<Layers className="w-5 h-5" />} title="Station Elements" subtitle="Specify the count and area for each commercial element at the site" />
                 <div className="flex justify-end mb-4">

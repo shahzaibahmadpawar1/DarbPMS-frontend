@@ -214,7 +214,8 @@ export function TasksPage() {
 
     const handleAssign = async (taskId: string) => {
         const assignedToUserId = selectedAssignee[taskId];
-        const targetDepartment = selectedDepartment[taskId];
+        const fallbackDepartment = tasks.find((task) => task.id === taskId)?.target_department;
+        const targetDepartment = selectedDepartment[taskId] || fallbackDepartment;
 
         if (!assignedToUserId || !targetDepartment || !token) {
             alert("Select employee and target department first.");
@@ -271,13 +272,12 @@ export function TasksPage() {
 
     const handleEmployeeSubmit = async (taskId: string) => {
         const file = employeeFiles[taskId];
-        if (!file) {
-            alert("Select a file first.");
-            return;
+        let attachmentUrl: string | null = null;
+        if (file) {
+            attachmentUrl = await uploadFile(file);
         }
 
-        const attachmentUrl = await uploadFile(file);
-        if (!attachmentUrl || !token) {
+        if ((file && !attachmentUrl) || !token) {
             return;
         }
 
@@ -287,7 +287,7 @@ export function TasksPage() {
                 Authorization: `Bearer ${token}`,
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({ attachmentUrl }),
+            body: JSON.stringify({ attachmentUrl: attachmentUrl || undefined }),
         });
 
         if (!response.ok) {
@@ -396,7 +396,7 @@ export function TasksPage() {
                                     onClick={() => handleEmployeeSubmit(task.id)}
                                     className="px-4 py-2 bg-info text-white rounded-lg text-sm font-semibold hover:bg-info/90"
                                 >
-                                    <Upload className="w-4 h-4 inline mr-1" /> Submit Employee Attachment
+                                    <Upload className="w-4 h-4 inline mr-1" /> {employeeFiles[task.id] ? "Upload & Submit Employee Attachment" : "Submit For Review"}
                                 </button>
                             )}
                         </div>
@@ -437,6 +437,31 @@ export function TasksPage() {
 
                 {mode === "super-admin" && task.status === "under_super_admin_review" && (
                     <div className="border-t border-border pt-4 space-y-3">
+                        <p className="text-xs text-muted-foreground">
+                            One attachment is required for contract/documents review. Either manager or employee upload is enough.
+                        </p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                            <div className="rounded-lg border border-border p-3 bg-background/70">
+                                <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Manager Attachment</p>
+                                {task.manager_attachment_url ? (
+                                    <a href={task.manager_attachment_url} target="_blank" rel="noreferrer" className="text-primary underline">
+                                        Open manager file
+                                    </a>
+                                ) : (
+                                    <p className="text-muted-foreground">Not uploaded</p>
+                                )}
+                            </div>
+                            <div className="rounded-lg border border-border p-3 bg-background/70">
+                                <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Employee Attachment</p>
+                                {task.employee_attachment_url ? (
+                                    <a href={task.employee_attachment_url} target="_blank" rel="noreferrer" className="text-primary underline">
+                                        Open employee file
+                                    </a>
+                                ) : (
+                                    <p className="text-muted-foreground">Not uploaded</p>
+                                )}
+                            </div>
+                        </div>
                         <p className="text-sm font-semibold text-foreground"><ShieldCheck className="w-4 h-4 inline mr-1" /> Super Admin Decision</p>
                         <textarea
                             rows={2}
