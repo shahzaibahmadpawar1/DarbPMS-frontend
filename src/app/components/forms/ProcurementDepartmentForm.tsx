@@ -46,6 +46,7 @@ export function ProcurementDepartmentForm() {
     const isReadOnly = accessMode === 'view-only';
 
     const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
+    const [requestFiles, setRequestFiles] = useState<File[]>([]);
     const [formData, setFormData] = useState<ProcurementFormData>({
         requestType: isReadOnly ? "product-supply" : "",
         requestNumber: isReadOnly ? "PR-N101-882" : "",
@@ -84,6 +85,12 @@ export function ProcurementDepartmentForm() {
         e.preventDefault();
         console.log("Procurement Request:", formData);
         alert("Procurement request saved successfully!");
+    };
+
+    const openPreview = (file: File) => {
+        const previewUrl = URL.createObjectURL(file);
+        window.open(previewUrl, '_blank', 'noopener,noreferrer');
+        setTimeout(() => URL.revokeObjectURL(previewUrl), 60000);
     };
 
     const renderRequestTypeFields = () => {
@@ -252,6 +259,7 @@ export function ProcurementDepartmentForm() {
                                                 accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png"
                                                 multiple
                                                 disabled={isReadOnly}
+                                                onChange={(e) => setRequestFiles(Array.from(e.target.files || []))}
                                             />
                                             <span className="inline-flex items-center gap-2 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all">
                                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -265,6 +273,22 @@ export function ProcurementDepartmentForm() {
                                 <p className="text-xs text-gray-400">
                                     {isReadOnly ? "File upload disabled in view-only mode" : "Supported formats: PDF, DOC, DOCX, XLS, XLSX, JPG, PNG (Max 10MB)"}
                                 </p>
+                                {requestFiles.length > 0 && (
+                                    <div className="w-full max-w-lg space-y-2">
+                                        {requestFiles.map((file, idx) => (
+                                            <div key={`${file.name}-${idx}`} className="flex items-center justify-between gap-2 bg-muted/40 rounded px-3 py-2">
+                                                <span className="text-xs text-foreground truncate">{file.name}</span>
+                                                <button
+                                                    type="button"
+                                                    className="px-2 py-1 text-xs border border-border rounded-md hover:bg-muted"
+                                                    onClick={() => openPreview(file)}
+                                                >
+                                                    View
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <div className="mt-4">

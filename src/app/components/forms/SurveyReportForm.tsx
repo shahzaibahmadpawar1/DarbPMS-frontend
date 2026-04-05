@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { Save, List, PlusCircle, Eye, Trash2, Upload, X } from "lucide-react";
-import { FormRecordsList } from "../FormRecordsList";
+import { useEffect } from "react";
+import { Save, PlusCircle, Eye, Trash2, Upload, X } from "lucide-react";
 import { useStation } from "../../context/StationContext";
 import { useResolvedStationCode } from "../../hooks/useResolvedStationCode";
 
@@ -40,19 +40,78 @@ interface CompletionStage {
     completionRate: string;
     remarks: string;
     attachment: File | null;
+    attachmentUrl?: string | null;
+    attachmentName?: string | null;
 }
 
 interface DocumentUpload {
     name: string;
     file: File | null;
+    fileUrl?: string | null;
+    fileName?: string | null;
 }
+
+interface StoredAttachment {
+    file: File | null;
+    fileUrl?: string | null;
+    fileName?: string | null;
+    previewUrl?: string | null;
+}
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+
+const normalizeStoredAttachment = (value: any): StoredAttachment | null => {
+    if (!value) {
+        return null;
+    }
+
+    if (typeof value === 'string') {
+        return { file: null, fileUrl: value, fileName: null };
+    }
+
+    const fileUrl = value.fileUrl || value.url || null;
+    const fileName = value.fileName || value.name || null;
+
+    if (!fileUrl && !fileName) {
+        return null;
+    }
+
+    return {
+        file: null,
+        fileUrl,
+        fileName,
+        previewUrl: value.previewUrl || fileUrl || null,
+    };
+};
+
+const uploadSurveyFile = async (token: string, file: File): Promise<{ fileName: string; fileUrl: string }> => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await fetch(`${API_BASE_URL}/files/upload`, {
+        method: 'POST',
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+        throw new Error(result?.error || 'Failed to upload file');
+    }
+
+    return {
+        fileName: result?.data?.fileName || file.name,
+        fileUrl: result?.data?.url || result?.data?.publicUrl || '',
+    };
+};
 
 export function SurveyReportForm() {
     const { accessMode, selectedStation } = useStation();
     const resolvedStationCode = useResolvedStationCode();
     const isReadOnly = accessMode === 'view-only';
-
-    const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
+    const [isSaving, setIsSaving] = useState(false);
 
     // Project Completion Rate Report
     const [projectStartDate, setProjectStartDate] = useState(isReadOnly ? "2024-01-15" : "");
@@ -69,7 +128,7 @@ export function SurveyReportForm() {
     const [stationStatusCustomStage, setStationStatusCustomStage] = useState("");
     const [stationStatusCondition, setStationStatusCondition] = useState(isReadOnly ? "Operational readiness verified" : "");
     const [stationStatusCompletionRate, setStationStatusCompletionRate] = useState(isReadOnly ? "100.00%" : "");
-    const [stationStatusAttachment, setStationStatusAttachment] = useState<File | null>(null);
+    const [stationStatusAttachment, setStationStatusAttachment] = useState<StoredAttachment | null>(null);
 
     // Project Components
     const [projectComponents, setProjectComponents] = useState<ProjectComponent[]>(
@@ -140,40 +199,161 @@ export function SurveyReportForm() {
     // New sections
     const [projectObstacles, setProjectObstacles] = useState(isReadOnly ? "Sample obstacles text..." : "");
     const [visitNote, setVisitNote] = useState(isReadOnly ? "Sample visit notes..." : "");
-    const [projectPhotos, setProjectPhotos] = useState<File[]>([]);
+    const [projectPhotos, setProjectPhotos] = useState<StoredAttachment[]>([]);
 
-    const mockRecords = [
-        { no: "SR-001", projectName: "Jeddah Station", location: "Jeddah", startDate: "2024-01-15", status: "In Progress" },
-        { no: "SR-002", projectName: "Riyadh Station", location: "Riyadh", startDate: "2024-02-01", status: "Completed" },
-        { no: "SR-003", projectName: "Dammam Station", location: "Dammam", startDate: "2024-03-10", status: "In Progress" },
-    ];
+    const applyPayload = (payload: any) => {
+        if (!payload || typeof payload !== 'object') return;
 
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        const stationCode = resolvedStationCode || selectedStation?.station_code;
+        setProjectStartDate(payload.projectStartDate || "");
+        setProjectDeliveryDate(payload.projectDeliveryDate || "");
+        setTypeOfContract(payload.typeOfContract || "");
+        setReportNumber(payload.reportNumber || "");
+        setProjectName(payload.projectName || "");
+        setCity(payload.city || "");
+        setLocation(payload.location || "");
+        setTheDate(payload.theDate || "");
+        setStationStatusCode(payload.stationStatusCode || "");
+        setStationStatusRemarks(payload.stationStatusRemarks || "");
+        setStationStatusStage(payload.stationStatusStage || "");
+        setStationStatusCustomStage(payload.stationStatusCustomStage || "");
+        setStationStatusCondition(payload.stationStatusCondition || "");
+        setStationStatusCompletionRate(payload.stationStatusCompletionRate || "");
+        setProjectComponents(Array.isArray(payload.projectComponents) ? payload.projectComponents : []);
+        setMosqueAreas(Array.isArray(payload.mosqueAreas) ? payload.mosqueAreas : []);
+        setFuelPumps(Array.isArray(payload.fuelPumps) ? payload.fuelPumps : []);
+        setFuelTanks(Array.isArray(payload.fuelTanks) ? payload.fuelTanks : []);
+        setProjectObstacles(payload.projectObstacles || "");
+        setVisitNote(payload.visitNote || "");
+        setCompletionStages(Array.isArray(payload.completionStages)
+            ? payload.completionStages.map((stage: any) => ({
+                ...stage,
+                attachment: null,
+                attachmentUrl: stage.attachmentUrl || stage.attachment || null,
+                attachmentName: stage.attachmentName || null,
+            }))
+            : []);
 
-        if (stationCode) {
-            localStorage.setItem(`stationFormCompleted:${stationCode}:survey-report`, "true");
-            localStorage.setItem(`surveyReport:${stationCode}`, JSON.stringify({
-                projectStartDate,
-                projectDeliveryDate,
-                typeOfContract,
-                reportNumber,
-                projectName,
-                city,
-                location,
-                theDate,
-                stationStatusCode,
-                stationStatusStage,
-                stationStatusCustomStage,
-                stationStatusCondition,
-                stationStatusCompletionRate,
-                stationStatusRemarks,
-                stationStatusAttachmentName: stationStatusAttachment?.name || "",
-            }));
+        setStationStatusAttachment(normalizeStoredAttachment({
+            fileUrl: payload.stationStatusAttachmentUrl || null,
+            fileName: payload.stationStatusAttachmentName || null,
+        }));
+
+        if (Array.isArray(payload.projectDocuments) && payload.projectDocuments.length) {
+            setProjectDocuments(payload.projectDocuments.map((doc: any) => ({
+                name: doc.name || "Document",
+                file: null,
+                fileUrl: doc.fileUrl || null,
+                fileName: doc.fileName || null,
+            })));
         }
 
-        console.log("Survey Report:", {
+        if (Array.isArray(payload.licenseAuthorities) && payload.licenseAuthorities.length) {
+            setLicenseAuthorities(payload.licenseAuthorities.map((doc: any) => ({
+                name: doc.name || "Authority Document",
+                file: null,
+                fileUrl: doc.fileUrl || null,
+                fileName: doc.fileName || null,
+            })));
+        }
+
+        if (Array.isArray(payload.projectPhotos) && payload.projectPhotos.length) {
+            setProjectPhotos(payload.projectPhotos.map((photo: any) => ({
+                file: null,
+                fileUrl: photo.fileUrl || photo.url || null,
+                fileName: photo.fileName || photo.name || null,
+                previewUrl: photo.fileUrl || photo.url || null,
+            })));
+        }
+    };
+
+    useEffect(() => {
+        const stationCode = resolvedStationCode || selectedStation?.station_code;
+        if (!stationCode) return;
+
+        const token = localStorage.getItem('auth_token');
+        if (!token) return;
+
+        const loadSurvey = async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/survey-reports/station/${encodeURIComponent(stationCode)}`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (!response.ok) return;
+                const result = await response.json();
+                const payload = result?.data?.payload;
+                if (payload) {
+                    applyPayload(payload);
+                }
+            } catch (error) {
+                console.error('Failed to load survey report:', error);
+            }
+        };
+
+        loadSurvey();
+    }, [resolvedStationCode, selectedStation?.station_code]);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const stationCode = resolvedStationCode || selectedStation?.station_code;
+        if (!stationCode) {
+            alert('Station code is required to save survey report.');
+            return;
+        }
+
+        setIsSaving(true);
+
+        const token = localStorage.getItem('auth_token');
+        if (!token) {
+            alert('Authentication token is missing. Please log in again.');
+            setIsSaving(false);
+            return;
+        }
+
+        const uploadedStationStatusAttachment = stationStatusAttachment?.file
+            ? await uploadSurveyFile(token, stationStatusAttachment.file)
+            : null;
+
+        const uploadedProjectDocuments = await Promise.all(projectDocuments.map(async (doc) => {
+            const uploaded = doc.file ? await uploadSurveyFile(token, doc.file) : null;
+            return {
+                name: doc.name,
+                fileName: uploaded?.fileName || doc.fileName || null,
+                fileUrl: uploaded?.fileUrl || doc.fileUrl || null,
+            };
+        }));
+
+        const uploadedLicenseAuthorities = await Promise.all(licenseAuthorities.map(async (doc) => {
+            const uploaded = doc.file ? await uploadSurveyFile(token, doc.file) : null;
+            return {
+                name: doc.name,
+                fileName: uploaded?.fileName || doc.fileName || null,
+                fileUrl: uploaded?.fileUrl || doc.fileUrl || null,
+            };
+        }));
+
+        const uploadedCompletionStages = await Promise.all(completionStages.map(async (stage) => {
+            const uploaded = stage.attachment ? await uploadSurveyFile(token, stage.attachment) : null;
+            return {
+                ...stage,
+                attachment: null,
+                attachmentName: uploaded?.fileName || stage.attachmentName || null,
+                attachmentUrl: uploaded?.fileUrl || stage.attachmentUrl || null,
+            };
+        }));
+
+        const uploadedProjectPhotos = await Promise.all(projectPhotos.map(async (photo) => {
+            const uploaded = photo.file ? await uploadSurveyFile(token, photo.file) : null;
+            return {
+                fileName: uploaded?.fileName || photo.fileName || null,
+                fileUrl: uploaded?.fileUrl || photo.fileUrl || null,
+            };
+        }));
+
+        const payload = {
             projectStartDate,
             projectDeliveryDate,
             typeOfContract,
@@ -188,19 +368,43 @@ export function SurveyReportForm() {
             stationStatusCondition,
             stationStatusCompletionRate,
             stationStatusRemarks,
-            stationStatusAttachment,
+            stationStatusAttachmentName: uploadedStationStatusAttachment?.fileName || stationStatusAttachment?.fileName || "",
+            stationStatusAttachmentUrl: uploadedStationStatusAttachment?.fileUrl || stationStatusAttachment?.fileUrl || null,
             projectComponents,
             mosqueAreas,
             fuelPumps,
             fuelTanks,
-            projectDocuments,
-            licenseAuthorities,
-            completionStages,
+            projectDocuments: uploadedProjectDocuments,
+            licenseAuthorities: uploadedLicenseAuthorities,
+            completionStages: uploadedCompletionStages,
             projectObstacles,
             visitNote,
-            projectPhotos,
-        });
-        alert("Survey Report saved successfully!");
+            projectPhotos: uploadedProjectPhotos,
+        };
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/survey-reports/station/${encodeURIComponent(stationCode)}`, {
+                method: 'PUT',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ payload }),
+            });
+
+            const result = await response.json();
+            if (!response.ok) {
+                alert(result?.error || 'Failed to save survey report');
+                return;
+            }
+
+            alert('Survey Report saved successfully!');
+        } catch (error) {
+            console.error('Error saving survey report:', error);
+            alert('Failed to save survey report');
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     // Helper functions for dynamic rows
@@ -296,6 +500,18 @@ export function SurveyReportForm() {
         setCompletionStages(completionStages.filter(stage => stage.id !== id));
     };
 
+    const openPreview = (file?: File | null, fileUrl?: string | null) => {
+        if (file) {
+            const previewUrl = URL.createObjectURL(file);
+            window.open(previewUrl, '_blank', 'noopener,noreferrer');
+            setTimeout(() => URL.revokeObjectURL(previewUrl), 60000);
+            return;
+        }
+        if (fileUrl) {
+            window.open(fileUrl, '_blank', 'noopener,noreferrer');
+        }
+    };
+
     const updateCompletionStage = (id: string, field: keyof CompletionStage, value: string) => {
         setCompletionStages(completionStages.map(stage =>
             stage.id === id ? { ...stage, [field]: value } : stage
@@ -312,22 +528,43 @@ export function SurveyReportForm() {
         if (type === 'project') {
             const updated = [...projectDocuments];
             updated[index].file = file;
+            if (file) {
+                updated[index].fileName = file.name;
+                updated[index].fileUrl = null;
+            }
             setProjectDocuments(updated);
         } else {
             const updated = [...licenseAuthorities];
             updated[index].file = file;
+            if (file) {
+                updated[index].fileName = file.name;
+                updated[index].fileUrl = null;
+            }
             setLicenseAuthorities(updated);
         }
     };
 
     const handlePhotoUpload = (files: FileList | null) => {
         if (files) {
-            setProjectPhotos([...projectPhotos, ...Array.from(files)]);
+            const nextPhotos = Array.from(files).map((file) => ({
+                file,
+                fileName: file.name,
+                previewUrl: URL.createObjectURL(file),
+            }));
+            setProjectPhotos([...projectPhotos, ...nextPhotos]);
         }
     };
 
     const removePhoto = (index: number) => {
-        setProjectPhotos(projectPhotos.filter((_, i) => i !== index));
+        setProjectPhotos((prev) => {
+            const next = [...prev];
+            const removed = next[index];
+            if (removed?.previewUrl?.startsWith('blob:')) {
+                URL.revokeObjectURL(removed.previewUrl);
+            }
+            next.splice(index, 1);
+            return next;
+        });
     };
 
     return (
@@ -339,31 +576,6 @@ export function SurveyReportForm() {
                         <p className="text-muted-foreground mt-2 text-sm sm:text-base">Comprehensive project completion rate and survey documentation</p>
                     </div>
 
-                    {!isReadOnly && (
-                        <div className="flex bg-muted p-1 rounded-xl w-fit">
-                            <button
-                                onClick={() => setViewMode('form')}
-                                className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'form'
-                                    ? 'bg-card text-primary shadow-sm'
-                                    : 'text-muted-foreground hover:text-foreground'
-                                    }`}
-                            >
-                                <PlusCircle className="w-4 h-4" />
-                                <span>New Entry</span>
-                            </button>
-                            <button
-                                onClick={() => setViewMode('records')}
-                                className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'records'
-                                    ? 'bg-card text-primary shadow-sm'
-                                    : 'text-muted-foreground hover:text-foreground'
-                                    }`}
-                            >
-                                <List className="w-4 h-4" />
-                                <span>View Records</span>
-                            </button>
-                        </div>
-                    )}
-
                     {isReadOnly && (
                         <div className="flex items-center gap-2 px-4 py-2 bg-info/5 text-info rounded-lg border border-info/20">
                             <Eye className="w-4 h-4" />
@@ -372,8 +584,7 @@ export function SurveyReportForm() {
                     )}
                 </div>
 
-                {viewMode === 'form' ? (
-                    <form onSubmit={handleSubmit} className="bg-card rounded-xl shadow-xl p-4 sm:p-6 md:p-8 card-glow border-t-4 border-primary relative animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <form onSubmit={handleSubmit} className="bg-card rounded-xl shadow-xl p-4 sm:p-6 md:p-8 card-glow border-t-4 border-primary relative animate-in fade-in slide-in-from-bottom-4 duration-500">
 
                         {/* Project Completion Rate Report */}
                         <div className="mb-8">
@@ -798,20 +1009,31 @@ export function SurveyReportForm() {
                                 {projectDocuments.map((doc, index) => (
                                     <div key={index} className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 border border-border rounded-lg bg-muted/20">
                                         <span className="text-sm font-medium text-foreground flex-1 break-words">{doc.name}</span>
-                                        {doc.file && (
-                                            <span className="text-xs text-success flex-shrink-0">{doc.file.name}</span>
+                                        {(doc.file || doc.fileName || doc.fileUrl) && (
+                                            <span className="text-xs text-success flex-shrink-0">{doc.file?.name || doc.fileName || doc.fileUrl}</span>
                                         )}
-                                        <label className="cursor-pointer flex-shrink-0">
-                                            <input
-                                                type="file"
-                                                className="hidden"
-                                                onChange={(e) => handleDocumentUpload(index, e.target.files?.[0] || null, 'project')}
-                                                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                                            />
-                                            <div className="p-2 hover:bg-primary/10 rounded-lg transition-colors">
-                                                <Upload className="w-5 h-5 text-primary" />
-                                            </div>
-                                        </label>
+                                        {(doc.file || doc.fileUrl) && (
+                                            <button
+                                                type="button"
+                                                onClick={() => openPreview(doc.file, doc.fileUrl || null)}
+                                                className="px-2 py-1 text-xs border border-border rounded-md hover:bg-muted"
+                                            >
+                                                View
+                                            </button>
+                                        )}
+                                        {!isReadOnly && (
+                                            <label className="cursor-pointer flex-shrink-0">
+                                                <input
+                                                    type="file"
+                                                    className="hidden"
+                                                    onChange={(e) => handleDocumentUpload(index, e.target.files?.[0] || null, 'project')}
+                                                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                                />
+                                                <div className="p-2 hover:bg-primary/10 rounded-lg transition-colors">
+                                                    <Upload className="w-5 h-5 text-primary" />
+                                                </div>
+                                            </label>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -826,20 +1048,31 @@ export function SurveyReportForm() {
                                 {licenseAuthorities.map((auth, index) => (
                                     <div key={index} className="flex flex-col sm:flex-row sm:items-center gap-3 p-3 border border-border rounded-lg bg-muted/20">
                                         <span className="text-sm font-medium text-foreground flex-1 break-words">{auth.name}</span>
-                                        {auth.file && (
-                                            <span className="text-xs text-success flex-shrink-0">{auth.file.name}</span>
+                                        {(auth.file || auth.fileName || auth.fileUrl) && (
+                                            <span className="text-xs text-success flex-shrink-0">{auth.file?.name || auth.fileName || auth.fileUrl}</span>
                                         )}
-                                        <label className="cursor-pointer flex-shrink-0">
-                                            <input
-                                                type="file"
-                                                className="hidden"
-                                                onChange={(e) => handleDocumentUpload(index, e.target.files?.[0] || null, 'license')}
-                                                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                                            />
-                                            <div className="p-2 hover:bg-primary/10 rounded-lg transition-colors">
-                                                <Upload className="w-5 h-5 text-primary" />
-                                            </div>
-                                        </label>
+                                        {(auth.file || auth.fileUrl) && (
+                                            <button
+                                                type="button"
+                                                onClick={() => openPreview(auth.file, auth.fileUrl || null)}
+                                                className="px-2 py-1 text-xs border border-border rounded-md hover:bg-muted"
+                                            >
+                                                View
+                                            </button>
+                                        )}
+                                        {!isReadOnly && (
+                                            <label className="cursor-pointer flex-shrink-0">
+                                                <input
+                                                    type="file"
+                                                    className="hidden"
+                                                    onChange={(e) => handleDocumentUpload(index, e.target.files?.[0] || null, 'license')}
+                                                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                                />
+                                                <div className="p-2 hover:bg-primary/10 rounded-lg transition-colors">
+                                                    <Upload className="w-5 h-5 text-primary" />
+                                                </div>
+                                            </label>
+                                        )}
                                     </div>
                                 ))}
                             </div>
@@ -951,6 +1184,18 @@ export function SurveyReportForm() {
                                                         {stage.attachment && (
                                                             <span className="text-xs text-muted-foreground truncate">{stage.attachment.name}</span>
                                                         )}
+                                                        {!stage.attachment && (stage as any).attachmentUrl && (
+                                                            <button
+                                                                type="button"
+                                                                className="px-2 py-1 text-xs border border-border rounded-md hover:bg-muted"
+                                                                onClick={() => openPreview(null, (stage as any).attachmentUrl)}
+                                                            >
+                                                                View
+                                                            </button>
+                                                        )}
+                                                        {!stage.attachment && (stage as any).attachmentName && (
+                                                            <span className="text-xs text-muted-foreground truncate">{(stage as any).attachmentName}</span>
+                                                        )}
                                                         {!stage.attachment && isReadOnly && (
                                                             <span className="text-xs text-muted-foreground">No attachment</span>
                                                         )}
@@ -1056,15 +1301,24 @@ export function SurveyReportForm() {
                                                 <input
                                                     type="file"
                                                     className="hidden"
-                                                    onChange={(e) => setStationStatusAttachment(e.target.files?.[0] || null)}
+                                                    onChange={(e) => {
+                                                        const file = e.target.files?.[0] || null;
+                                                        setStationStatusAttachment(file ? { file, fileName: file.name, fileUrl: null, previewUrl: URL.createObjectURL(file) } : null);
+                                                    }}
                                                 />
                                                 <div className="p-2 hover:bg-primary/10 rounded-lg transition-colors">
                                                     <Upload className="w-5 h-5 text-primary" />
                                                 </div>
                                             </label>
                                         )}
-                                        {stationStatusAttachment ? (
-                                            <span className="text-xs text-muted-foreground truncate">{stationStatusAttachment.name}</span>
+                                            {stationStatusAttachment ? (
+                                            <button
+                                                type="button"
+                                                className="px-2 py-1 text-xs border border-border rounded-md hover:bg-muted"
+                                                    onClick={() => openPreview(stationStatusAttachment.file, stationStatusAttachment.fileUrl || stationStatusAttachment.previewUrl || null)}
+                                            >
+                                                    View {stationStatusAttachment.file?.name || stationStatusAttachment.fileName || 'Attachment'}
+                                            </button>
                                         ) : (
                                             <span className="text-xs text-muted-foreground">No attachment</span>
                                         )}
@@ -1117,6 +1371,23 @@ export function SurveyReportForm() {
                                 <h2 className="text-xl font-semibold text-foreground border-b border-border pb-2 bg-primary/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3 flex-1">
                                     Project Photos
                                 </h2>
+                                {!isReadOnly && (
+                                    <label className="cursor-pointer">
+                                        <input
+                                            type="file"
+                                            multiple
+                                            accept="image/*"
+                                            className="hidden"
+                                            onChange={(e) => handlePhotoUpload(e.target.files)}
+                                        />
+                                        <div className="w-fit flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
+                                            <Upload className="w-4 h-4" />
+                                            Upload Photos
+                                        </div>
+                                    </label>
+                                )}
+                            </div>
+                            {!isReadOnly && (
                                 <label className="cursor-pointer">
                                     <input
                                         type="file"
@@ -1125,62 +1396,69 @@ export function SurveyReportForm() {
                                         className="hidden"
                                         onChange={(e) => handlePhotoUpload(e.target.files)}
                                     />
-                                    <div className="w-fit flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors">
-                                        <Upload className="w-4 h-4" />
-                                        Upload Photos
+                                    <div className="flex items-center justify-center gap-2 px-6 py-4 border-2 border-dashed border-border rounded-lg hover:border-primary transition-colors bg-muted/20">
+                                        <Upload className="w-5 h-5 text-muted-foreground" />
+                                        <span className="text-sm font-medium text-muted-foreground">Click to upload photos</span>
                                     </div>
                                 </label>
-                            </div>
-                            <label className="cursor-pointer">
-                                <input
-                                    type="file"
-                                    multiple
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={(e) => handlePhotoUpload(e.target.files)}
-                                />
-                                <div className="flex items-center justify-center gap-2 px-6 py-4 border-2 border-dashed border-border rounded-lg hover:border-primary transition-colors bg-muted/20">
-                                    <Upload className="w-5 h-5 text-muted-foreground" />
-                                    <span className="text-sm font-medium text-muted-foreground">Click to upload photos</span>
-                                </div>
-                            </label>
+                            )}
                             {
                                 projectPhotos.length > 0 && (
                                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mt-4">
                                         {projectPhotos.map((photo, index) => (
                                             <div key={index} className="relative group">
                                                 <img
-                                                    src={URL.createObjectURL(photo)}
-                                                    alt={`Project photo ${index + 1}`}
+                                                    src={photo.previewUrl || photo.fileUrl || ''}
+                                                    alt={photo.fileName || `Project photo ${index + 1}`}
                                                     className="w-full h-32 object-cover rounded-lg border border-border"
                                                 />
                                                 <>
+                                                    {!isReadOnly && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => removePhoto(index)}
+                                                            className="absolute top-2 right-2 p-1 bg-error text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        >
+                                                            <X className="w-4 h-4" />
+                                                        </button>
+                                                    )}
+                                                    {!isReadOnly && (
+                                                        <label className="absolute bottom-2 right-2 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <input
+                                                                type="file"
+                                                                accept="image/*"
+                                                                className="hidden"
+                                                                onChange={(e) => {
+                                                                    if (e.target.files && e.target.files.length > 0) {
+                                                                        const file = e.target.files[0];
+                                                                        setProjectPhotos((prev) => {
+                                                                            const next = [...prev];
+                                                                            const previous = next[index];
+                                                                            if (previous?.previewUrl?.startsWith('blob:')) {
+                                                                                URL.revokeObjectURL(previous.previewUrl);
+                                                                            }
+                                                                            next[index] = { file, fileName: file.name, previewUrl: URL.createObjectURL(file) };
+                                                                            return next;
+                                                                        });
+                                                                    }
+                                                                }}
+                                                            />
+                                                            <div className="p-1.5 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors shadow-lg">
+                                                                <Upload className="w-4 h-4" />
+                                                            </div>
+                                                        </label>
+                                                    )}
+                                                </>
+                                                <p className="text-xs text-muted-foreground mt-1 truncate">{photo.fileName || photo.file?.name || photo.fileUrl}</p>
+                                                {(photo.file || photo.fileUrl) && (
                                                     <button
                                                         type="button"
-                                                        onClick={() => removePhoto(index)}
-                                                        className="absolute top-2 right-2 p-1 bg-error text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        className="mt-1 text-xs border border-border rounded-md px-2 py-1 hover:bg-muted"
+                                                        onClick={() => openPreview(photo.file, photo.fileUrl || photo.previewUrl || null)}
                                                     >
-                                                        <X className="w-4 h-4" />
+                                                        View
                                                     </button>
-                                                    <label className="absolute bottom-2 right-2 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
-                                                        <input
-                                                            type="file"
-                                                            accept="image/*"
-                                                            className="hidden"
-                                                            onChange={(e) => {
-                                                                if (e.target.files && e.target.files.length > 0) {
-                                                                    const newPhotos = [...projectPhotos];
-                                                                    newPhotos[index] = e.target.files[0];
-                                                                    setProjectPhotos(newPhotos);
-                                                                }
-                                                            }}
-                                                        />
-                                                        <div className="p-1.5 bg-primary text-white rounded-full hover:bg-primary/90 transition-colors shadow-lg">
-                                                            <Upload className="w-4 h-4" />
-                                                        </div>
-                                                    </label>
-                                                </>
-                                                <p className="text-xs text-muted-foreground mt-1 truncate">{photo.name}</p>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
@@ -1191,21 +1469,15 @@ export function SurveyReportForm() {
                             <div className="flex justify-end mt-8">
                                 <button
                                     type="submit"
+                                    disabled={isSaving}
                                     className="px-6 py-3 bg-primary text-primary-foreground rounded-lg flex items-center gap-2 transition-all shadow-lg hover:shadow-primary/20"
                                 >
                                     <Save className="w-5 h-5" />
-                                    Save Survey Report
+                                    {isSaving ? 'Saving...' : 'Save Survey Report'}
                                 </button>
                             </div>
                         )}
-                    </form>
-                ) : (
-                    <FormRecordsList
-                        title="Survey Reports"
-                        columns={["Report No", "Project Name", "Location", "Start Date", "Status"]}
-                        records={mockRecords}
-                    />
-                )}
+                </form>
             </div>
         </div>
     );

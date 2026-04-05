@@ -35,6 +35,7 @@ export function ComplaintContactForm() {
         description: "",
         status: "pending",
     });
+    const [attachmentFiles, setAttachmentFiles] = useState<File[]>([]);
 
     const mockRecords = [
         { id: "COMP-001", sender: "Ahmed Ali", subject: "Equipment Issue", priority: "High", status: "In Review", date: "2024-01-15" },
@@ -60,6 +61,13 @@ export function ComplaintContactForm() {
             description: "",
             status: "pending",
         });
+        setAttachmentFiles([]);
+    };
+
+    const openAttachmentPreview = (file: File) => {
+        const previewUrl = URL.createObjectURL(file);
+        window.open(previewUrl, '_blank', 'noopener,noreferrer');
+        setTimeout(() => URL.revokeObjectURL(previewUrl), 60000);
     };
 
     return (
@@ -258,6 +266,7 @@ export function ComplaintContactForm() {
                                     className="hidden"
                                     accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                                     multiple
+                                    onChange={(e) => setAttachmentFiles(Array.from(e.target.files || []))}
                                 />
                                 <div className="flex flex-col items-center gap-2">
                                     <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
@@ -269,6 +278,22 @@ export function ComplaintContactForm() {
                                     <span className="text-xs text-gray-500">PDF, DOC, DOCX, JPG, PNG (Max 10MB)</span>
                                 </div>
                             </label>
+                            {attachmentFiles.length > 0 && (
+                                <div className="mt-4 space-y-2 text-left">
+                                    {attachmentFiles.map((file, idx) => (
+                                        <div key={`${file.name}-${idx}`} className="flex items-center justify-between gap-2 bg-muted/40 rounded px-3 py-2">
+                                            <span className="text-xs text-foreground truncate">{file.name}</span>
+                                            <button
+                                                type="button"
+                                                className="px-2 py-1 text-xs border border-border rounded-md hover:bg-muted"
+                                                onClick={() => openAttachmentPreview(file)}
+                                            >
+                                                View
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
 

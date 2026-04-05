@@ -1,20 +1,19 @@
 import { useState, useEffect } from "react";
-import { Save, List, PlusCircle, Eye, Zap, X } from "lucide-react";
-import { FormRecordsList } from "../FormRecordsList";
+import { Save, Eye } from "lucide-react";
 import { useStation } from "../../context/StationContext";
 import { useAutoPopulate } from "../../hooks/useAutoPopulate";
+import { useResolvedStationCode } from "../../hooks/useResolvedStationCode";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 export function StationInformationForm() {
   const { accessMode } = useStation();
-  const { investmentProjectData, getPartialPopulationData, hasAutoPopulateData, clearInvestmentProjectData } = useAutoPopulate();
+  const { getPartialPopulationData, hasAutoPopulateData, clearInvestmentProjectData } = useAutoPopulate();
+  const resolvedStationCode = useResolvedStationCode();
   const isReadOnly = accessMode === 'view-only';
   const stationTypes = ["operation", "rent", "franchise", "investment", "ownership"];
 
-  const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
-  const [records, setRecords] = useState<any[]>([]);
-  const [showAutoPopulateNotice, setShowAutoPopulateNotice] = useState(false);
+  const [existingStationCode, setExistingStationCode] = useState<string | null>(null);
 
   // Empty form data ready for user input
   const [formData, setFormData] = useState({
@@ -28,27 +27,19 @@ export function StationInformationForm() {
     stationTypeCode: "",
   });
 
-  // Fetch existing records
-  useEffect(() => {
-    fetchRecords();
-  }, []);
-
-  // Check for auto-populate data
-  useEffect(() => {
-    if (hasAutoPopulateData()) {
-      setShowAutoPopulateNotice(true);
-    }
-  }, [hasAutoPopulateData]);
-
-  const fetchRecords = async () => {
+  const fetchExistingStation = async () => {
     try {
       const token = localStorage.getItem('auth_token');
       if (!token) {
-        console.warn("No auth token found, please log in.");
         return;
       }
 
-      const response = await fetch(`${API_BASE_URL}/stations`, {
+      const code = String(resolvedStationCode || '').trim();
+      if (!code) {
+        return;
+      }
+
+      const response = await fetch(`${API_BASE_URL}/stations/${encodeURIComponent(code)}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -57,22 +48,63 @@ export function StationInformationForm() {
 
       if (response.ok) {
         const data = await response.json();
-        setRecords(data.data || []);
-      } else if (response.status === 401 || response.status === 403) {
-        console.error("Authentication failed. Please log out and log in again to sync with the Vercel backend.");
+        const row = data?.data;
+        if (row) {
+          setExistingStationCode(row.station_code);
+          setFormData((prev) => ({
+            ...prev,
+            stationCode: row.station_code || prev.stationCode,
+            stationName: row.station_name || prev.stationName,
+            areaRegion: row.area_region || prev.areaRegion,
+            city: row.city || prev.city,
+            district: row.district || prev.district,
+            street: row.street || prev.street,
+            geographicLocation: row.geographic_location || prev.geographicLocation,
+            stationTypeCode: row.station_type_code || prev.stationTypeCode,
+          }));
+        }
       }
     } catch (error) {
-      console.error("Error fetching stations:", error);
+      console.error("Error fetching station:", error);
     }
   };
+
+  useEffect(() => {
+    fetchExistingStation();
+  }, [resolvedStationCode]);
+
+  useEffect(() => {
+    if (!hasAutoPopulateData()) {
+      return;
+    }
+
+    setFormData((prev) => {
+      const partialData = getPartialPopulationData('station', { includeCode: true, includeName: true });
+      return {
+        ...prev,
+        stationCode: prev.stationCode || partialData.stationCode || prev.stationCode,
+        stationName: prev.stationName || partialData.stationName || prev.stationName,
+        areaRegion: prev.areaRegion || partialData.areaRegion || prev.areaRegion,
+        city: prev.city || partialData.city || prev.city,
+        district: prev.district || partialData.district || prev.district,
+        geographicLocation: prev.geographicLocation || partialData.geographicLocation || prev.geographicLocation,
+      };
+    });
+  }, [hasAutoPopulateData, getPartialPopulationData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     try {
       const token = localStorage.getItem('auth_token');
-      const response = await fetch(`${API_BASE_URL}/stations`, {
-        method: 'POST',
+      const updateKey = existingStationCode || formData.stationCode;
+      const method = existingStationCode ? 'PUT' : 'POST';
+      const endpoint = existingStationCode
+        ? `${API_BASE_URL}/stations/${encodeURIComponent(updateKey)}`
+        : `${API_BASE_URL}/stations`;
+
+      const response = await fetch(endpoint, {
+        method,
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -83,27 +115,30 @@ export function StationInformationForm() {
       const data = await response.json();
 
       if (response.ok) {
-        alert("Station Information saved successfully!");
-        // Reset form
-        setFormData({
-          stationCode: "",
-          stationName: "",
-          areaRegion: "",
-          city: "",
-          district: "",
-          street: "",
-          geographicLocation: "",
-          stationTypeCode: "",
-        });
-        // Clear auto-populate data after successful submission
+        alert(existingStationCode ? "Station Information updated successfully!" : "Station Information saved successfully!");
+        setExistingStationCode(formData.stationCode || existingStationCode);
         clearInvestmentProjectData();
-        setShowAutoPopulateNotice(false);
-        // Refresh records
-        fetchRecords();
-        // Optionally navigate to the stations list
-        // navigate('/all-stations-list');
       } else if (response.status === 401 || response.status === 403) {
         alert("Authentication failed. Please log out and then log in again to sync with the Vercel backend. Your token might be from a different session (localhost).");
+      } else if (response.status === 409 && !existingStationCode) {
+        const fallbackUpdate = await fetch(`${API_BASE_URL}/stations/${encodeURIComponent(formData.stationCode)}`, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData),
+        });
+
+        if (fallbackUpdate.ok) {
+          setExistingStationCode(formData.stationCode);
+          alert("Station Information updated successfully!");
+          clearInvestmentProjectData();
+          return;
+        }
+
+        const fallbackData = await fallbackUpdate.json();
+        alert(`Error: ${fallbackData.error || 'Failed to update station information'}`);
       } else {
         alert(`Error: ${data.error || 'Failed to save station information'}`);
       }
@@ -111,17 +146,6 @@ export function StationInformationForm() {
       console.error("Error saving station:", error);
       alert("Failed to save station information. Please make sure the backend server is running.");
     }
-  };
-
-  const handleApplyAutoPopulate = () => {
-    const partialData = getPartialPopulationData('station', { includeCode: false, includeName: false });
-    setFormData(prev => ({ ...prev, ...partialData }));
-    setShowAutoPopulateNotice(false);
-  };
-
-  const handleDismissAutoPopulate = () => {
-    setShowAutoPopulateNotice(false);
-    clearInvestmentProjectData();
   };
 
   return (
@@ -134,31 +158,6 @@ export function StationInformationForm() {
           </p>
         </div>
 
-        {!isReadOnly && (
-          <div className="flex bg-muted p-1 rounded-xl w-fit">
-            <button
-              onClick={() => setViewMode('form')}
-              className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'form'
-                ? 'bg-card text-primary shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-                }`}
-            >
-              <PlusCircle className="w-4 h-4" />
-              <span>New Entry</span>
-            </button>
-            <button
-              onClick={() => setViewMode('records')}
-              className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'records'
-                ? 'bg-card text-primary shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
-                }`}
-            >
-              <List className="w-4 h-4" />
-              <span>View Records</span>
-            </button>
-          </div>
-        )}
-
         {isReadOnly && (
           <div className="flex items-center gap-2 px-4 py-2 bg-info/5 text-info rounded-lg border border-info/20">
             <Eye className="w-4 h-4" />
@@ -167,56 +166,7 @@ export function StationInformationForm() {
         )}
       </div>
 
-      {viewMode === 'form' ? (
-        <>
-          {/* Auto-Populate Notice */}
-          {showAutoPopulateNotice && investmentProjectData && (
-            <div className="mb-6 p-4 bg-primary/5 border border-primary/20 rounded-lg animate-in fade-in slide-in-from-top-2 duration-300">
-              <div className="flex items-start justify-between">
-                <div className="flex items-start gap-3 flex-1">
-                  <Zap className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                  <div className="flex-1">
-                    <h3 className="font-semibold text-foreground mb-2">Auto-Fill Available</h3>
-                    <p className="text-sm text-muted-foreground mb-3">
-                      We found matching location information from your Investment/Franchise project. Would you like to automatically fill the location fields?
-                    </p>
-                    <div className="text-sm text-muted-foreground bg-background/50 p-2 rounded mb-3 max-h-24 overflow-y-auto">
-                      {investmentProjectData.city && <div>• City: <span className="text-foreground font-medium">{investmentProjectData.city}</span></div>}
-                      {investmentProjectData.district && <div>• District: <span className="text-foreground font-medium">{investmentProjectData.district}</span></div>}
-                      {investmentProjectData.area && <div>• Area/Region: <span className="text-foreground font-medium">{investmentProjectData.area}</span></div>}
-                      {investmentProjectData.googleLocation && <div>• Location: <span className="text-foreground font-medium">{investmentProjectData.googleLocation.substring(0, 40)}...</span></div>}
-                    </div>
-                  </div>
-                </div>
-                <button
-                  onClick={handleDismissAutoPopulate}
-                  className="text-muted-foreground hover:text-foreground transition-colors flex-shrink-0"
-                  type="button"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-              <div className="flex gap-3 mt-4">
-                <button
-                  type="button"
-                  onClick={handleApplyAutoPopulate}
-                  className="flex-1 px-4 py-2 bg-primary text-primary-foreground rounded-lg font-medium transition-all hover:bg-primary/90 flex items-center justify-center gap-2"
-                >
-                  <Zap className="w-4 h-4" />
-                  Auto-Fill Location Fields
-                </button>
-                <button
-                  type="button"
-                  onClick={handleDismissAutoPopulate}
-                  className="flex-1 px-4 py-2 bg-muted text-muted-foreground rounded-lg font-medium transition-all hover:bg-muted/80"
-                >
-                  Skip
-                </button>
-              </div>
-            </div>
-          )}
-
-          <form onSubmit={handleSubmit} className="bg-card rounded-xl shadow-xl p-8 card-glow border-t-4 border-primary relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+      <form onSubmit={handleSubmit} className="bg-card rounded-xl shadow-xl p-8 card-glow border-t-4 border-primary relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
           {/* Basic Information */}
           <div className="mb-6">
             <h2 className="text-xl font-semibold text-foreground mb-4 border-b border-border pb-2">
@@ -354,24 +304,6 @@ export function StationInformationForm() {
             </div>
           )}
           </form>
-        </>
-      ) : (
-        <FormRecordsList
-          title="Station Information"
-          columns={["Code", "Name", "Region", "City", "District", "Street", "Type", "Status"]}
-          records={records.map(r => ({
-            "Code": r.station_code,
-            "Name": r.station_name,
-            "Region": r.area_region || "N/A",
-            "City": r.city || "N/A",
-            "District": r.district || "N/A",
-            "Street": r.street || "N/A",
-            "Type": r.station_type_code || "N/A",
-            "Status": r.station_status_code || "N/A"
-          }))}
-        />
-      )
-      }
     </div >
   );
 }

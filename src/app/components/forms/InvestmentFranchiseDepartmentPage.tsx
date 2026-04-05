@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { useStation } from "../../context/StationContext";
 import { getDepartmentLabel, getRoleLabel } from "@/services/api";
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 import {
@@ -87,6 +88,13 @@ function FileUpload({ label, file, onLabelChange, onChange, onRemoveFile, onRemo
     onRemoveFile: () => void;
     onRemoveSlot?: () => void;
 }) {
+    const openPreview = () => {
+        if (!file) return;
+        const previewUrl = URL.createObjectURL(file);
+        window.open(previewUrl, '_blank', 'noopener,noreferrer');
+        setTimeout(() => URL.revokeObjectURL(previewUrl), 60000);
+    };
+
     return (
         <div className="border-2 border-dashed border-border rounded-xl p-4 hover:border-primary/50 transition-colors">
             <div className="flex items-start gap-2 mb-2">
@@ -113,6 +121,7 @@ function FileUpload({ label, file, onLabelChange, onChange, onRemoveFile, onRemo
                         <FileCheck className="w-4 h-4 text-emerald-500 flex-shrink-0" />
                         <span className="text-xs text-emerald-700 truncate">{file.name}</span>
                     </div>
+                    <button type="button" onClick={openPreview} className="ml-1 px-2 py-1 text-[10px] border border-border rounded">View</button>
                     <button type="button" onClick={onRemoveFile} className="ml-1 p-1 hover:bg-destructive/10 rounded flex-shrink-0">
                         <Trash2 className="w-3.5 h-3.5 text-destructive" />
                     </button>
@@ -160,6 +169,7 @@ function StatCard({ label, value, icon, color, bg }: {
 // â”€â”€â”€ New Project Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function NewProjectTab() {
     const { user } = useAuth();
+    const { setInvestmentProjectData } = useStation();
     const canCreateRole = !!user && ['super_admin', 'department_manager', 'supervisor'].includes(user.role);
     const canCreateDepartment = user?.role === 'super_admin' || user?.department === 'investment' || user?.department === 'franchise';
     const canCreateProject = canCreateRole && canCreateDepartment;
@@ -362,6 +372,19 @@ function NewProjectTab() {
             });
 
             if (response.ok) {
+                setInvestmentProjectData({
+                    projectName: form.projectName,
+                    projectCode: form.projectCode,
+                    city: form.city,
+                    district: form.district,
+                    area: form.area,
+                    googleLocation: form.googleLocation,
+                    ownerName: form.ownerName,
+                    ownerContactNo: form.ownerContactNo,
+                    idNo: form.idNo,
+                    nationalAddress: form.nationalAddress,
+                    email: form.email,
+                });
                 alert("Project submitted successfully for review!");
                 setForm({
                     requestType: "", city: "", projectName: "", projectCode: "",

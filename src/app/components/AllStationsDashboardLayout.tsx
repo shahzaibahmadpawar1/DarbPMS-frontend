@@ -59,6 +59,12 @@ export function AllStationsDashboardLayout() {
     const isInvestmentUser = isDepartmentScopedUser && canCreateDepartmentProject && user?.department === 'investment';
     const isFranchiseUser = isDepartmentScopedUser && canCreateDepartmentProject && user?.department === 'franchise';
     const isDeptUser = isDepartmentScopedUser;
+    const canShowDepartmentAddButton = !!user
+        && ['department_manager', 'supervisor'].includes(user.role)
+        && (user.department === 'investment' || user.department === 'franchise');
+    const addProjectPath = user?.department === 'franchise'
+        ? '/station/new-station/form/franchise-department'
+        : '/station/new-station/form/investment-department';
     useStationFormAutofill({
         pathname: location.pathname,
         stationCode: selectedStation?.station_code,
@@ -224,8 +230,6 @@ export function AllStationsDashboardLayout() {
         : [
             { titleKey: "dashboard", path: "/all-stations-dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
             { titleKey: "analytics", path: "/all-stations-analytics", icon: <Activity className="w-5 h-5" /> },
-            ...(user?.role === 'super_admin' ? [{ titleKey: "investmentDept" as const, path: "/station/new-station/form/investment-department", icon: <FileText className="w-5 h-5" /> }] : []),
-            ...(user?.role === 'super_admin' ? [{ titleKey: "franchiseDept" as const, path: "/station/new-station/form/franchise-department", icon: <FileText className="w-5 h-5" /> }] : []),
             { titleKey: "stations", path: "/all-stations-list", icon: <img src={logo} alt="" className="w-5 h-5 object-contain brightness-0 invert" /> },
             { titleKey: "departments", path: "/all-stations-departments", icon: <Building2 className="w-5 h-5" /> },
             { titleKey: "requests", path: "/all-stations-requests", icon: <Inbox className="w-5 h-5" /> },
@@ -413,6 +417,16 @@ export function AllStationsDashboardLayout() {
                             {!isDeptUser && (
                                 <Link
                                     to="/station/new-station/form/investment-department"
+                                    className="flex items-center gap-2 px-3 md:px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-xs md:text-sm"
+                                >
+                                    <PlusCircle className="w-4 h-4" />
+                                    <span className="hidden sm:inline">{t("addNewProject")}</span>
+                                    <span className="sm:hidden">{t("addNewProject").split(" ")[0]}</span>
+                                </Link>
+                            )}
+                            {canShowDepartmentAddButton && (
+                                <Link
+                                    to={addProjectPath}
                                     className="flex items-center gap-2 px-3 md:px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-xs md:text-sm"
                                 >
                                     <PlusCircle className="w-4 h-4" />

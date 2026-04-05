@@ -142,6 +142,12 @@ function FileUploadZone({
         onFilesChange(files.filter((_, i) => i !== index));
     };
 
+    const openPreview = (file: File) => {
+        const previewUrl = URL.createObjectURL(file);
+        window.open(previewUrl, '_blank', 'noopener,noreferrer');
+        setTimeout(() => URL.revokeObjectURL(previewUrl), 60000);
+    };
+
     return (
         <div className="space-y-2">
             {label && <p className="text-sm font-medium text-foreground">{label}</p>}
@@ -176,6 +182,13 @@ function FileUploadZone({
                         <div key={i} className="flex items-center gap-2 bg-muted/50 rounded-lg px-3 py-1.5">
                             <Paperclip className="w-3.5 h-3.5 text-primary flex-shrink-0" />
                             <span className="text-xs text-foreground flex-1 truncate">{file.name}</span>
+                            <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); openPreview(file); }}
+                                className="text-xs px-2 py-0.5 border border-border rounded-md hover:bg-muted"
+                            >
+                                View
+                            </button>
                             <button
                                 type="button"
                                 onClick={(e) => { e.stopPropagation(); removeFile(i); }}

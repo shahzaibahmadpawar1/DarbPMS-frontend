@@ -8,6 +8,7 @@ export function ArchitecturalDesignForm() {
   const isReadOnly = accessMode === 'view-only';
 
   const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
+  const [attachedDocument, setAttachedDocument] = useState<File | null>(null);
   const [formData, setFormData] = useState({
     designCode: isReadOnly ? "DSGN-N101-001" : "",
     stationSpace: isReadOnly ? "5250" : "",
@@ -34,6 +35,13 @@ export function ArchitecturalDesignForm() {
   ];
 
   const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); alert("Architectural Design saved!"); };
+
+  const openAttachmentPreview = () => {
+    if (!attachedDocument) return;
+    const previewUrl = URL.createObjectURL(attachedDocument);
+    window.open(previewUrl, "_blank", "noopener,noreferrer");
+    setTimeout(() => URL.revokeObjectURL(previewUrl), 60000);
+  };
 
   return (
     <div className="p-8">
@@ -117,8 +125,18 @@ export function ArchitecturalDesignForm() {
                 className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground" disabled={isReadOnly} /></div>
             <div><label className="block text-sm font-medium text-muted-foreground mb-1">Attached Document</label>
               <div className="flex items-center gap-2">
-                <input type="file" className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground" disabled={isReadOnly} />
+                <input
+                  type="file"
+                  className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
+                  disabled={isReadOnly}
+                  onChange={(e) => setAttachedDocument(e.target.files?.[0] || null)}
+                />
                 <Upload className="w-5 h-5 text-muted-foreground" />
+                {attachedDocument && (
+                  <button type="button" onClick={openAttachmentPreview} className="px-2 py-1 text-xs border border-border rounded-md hover:bg-muted">
+                    View
+                  </button>
+                )}
               </div>
             </div>
             <div><label className="block text-sm font-medium text-muted-foreground mb-1">Diagram Code</label>
