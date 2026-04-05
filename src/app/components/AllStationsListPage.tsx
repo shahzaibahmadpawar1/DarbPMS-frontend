@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import {
     Activity,
     ChevronDown,
@@ -12,9 +12,30 @@ import { useAuth } from "@/context/AuthContext";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
+const bucketLabels: Record<string, string> = {
+    'total-projects': 'Total Projects',
+    'pending-review': 'Pending Review',
+    'validated': 'Validated',
+    'approved': 'Approved',
+    'new-projects': 'New Projects',
+    'contracted': 'Contracted',
+    'documented': 'Documented',
+};
+
+const getStatusBadgeClass = (status: string) => {
+    const value = String(status || '').toLowerCase();
+    if (value.includes('active') || value.includes('approved')) return 'bg-success/10 text-success border-success/20';
+    if (value.includes('pending') || value.includes('review')) return 'bg-warning/10 text-warning border-warning/20';
+    if (value.includes('validated')) return 'bg-info/10 text-info border-info/20';
+    return 'bg-muted text-muted-foreground border-border';
+};
+
 export function AllStationsListPage() {
     const navigate = useNavigate();
     const { user, token } = useAuth();
+    const [searchParams] = useSearchParams();
+    const activeBucket = searchParams.get('bucket') || '';
+    const bucketLabel = activeBucket ? bucketLabels[activeBucket] || 'Station Drilldown' : '';
     const [stations, setStations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
@@ -28,7 +49,7 @@ export function AllStationsListPage() {
 
     useEffect(() => {
         fetchStations();
-    }, []);
+    }, [activeBucket]);
 
     const fetchStations = async () => {
         const token = localStorage.getItem('auth_token');
@@ -39,7 +60,11 @@ export function AllStationsListPage() {
         }
 
         try {
-            const response = await fetch(`${API_BASE_URL}/stations`, {
+            const endpoint = activeBucket
+                ? `${API_BASE_URL}/dashboard/stations?bucket=${encodeURIComponent(activeBucket)}`
+                : `${API_BASE_URL}/stations`;
+
+            const response = await fetch(endpoint, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
@@ -48,20 +73,29 @@ export function AllStationsListPage() {
 
             if (response.ok) {
                 const result = await response.json();
-                // Map backend data to frontend model
-                const mappedStations = result.data.map((s: any) => ({
-                    id: s.id, // Use actual ID
-                    station_code: s.station_code,
-                    name: s.station_name,
-                    region: s.area_region || "N/A",
-                    city: s.city || "N/A",
-                    project: s.district || "N/A",
-                    customerName: s.street || "N/A",
-                    status: s.station_status_code || "Active",
-                    formsCompleted: 1,
-                    totalForms: 16,
-                    raw: s
-                }));
+                const mappedStations = activeBucket
+                    ? (result.data || []).map((s: any) => ({
+                        id: s.id || s.station_code,
+                        station_code: s.station_code,
+                        name: s.station_name,
+                        city: s.city || "N/A",
+                        stationType: s.station_type_code || "N/A",
+                        status: s.station_status_code || "Active",
+                        raw: s,
+                    }))
+                    : (result.data || []).map((s: any) => ({
+                        id: s.id,
+                        station_code: s.station_code,
+                        name: s.station_name,
+                        region: s.area_region || "N/A",
+                        city: s.city || "N/A",
+                        project: s.district || "N/A",
+                        customerName: s.street || "N/A",
+                        status: s.station_status_code || "Active",
+                        formsCompleted: 1,
+                        totalForms: 16,
+                        raw: s
+                    }));
                 setStations(mappedStations);
             } else if (response.status === 401 || response.status === 403) {
                 console.error("Authentication failed. Please log in again.");
@@ -128,12 +162,89 @@ export function AllStationsListPage() {
         return matchesSearch && matchesRegion && matchesCity && matchesCustomer;
     });
 
+    const filteredBucketStations = stations.filter((station) => {
+        const combined = [station.name, station.station_code, station.city, station.stationType, station.status]
+            .filter(Boolean)
+            .join(' ')
+            .toLowerCase();
+        return combined.includes(searchQuery.toLowerCase());
+    });
+
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-[400px]">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
                     <p className="text-muted-foreground font-medium">Loading stations...</p>
+                </div>
+            </div>
+        );
+    }
+
+    if (activeBucket) {
+        return (
+            <div className="max-w-7xl mx-auto">
+                <div className="mb-4 sm:mb-6 md:mb-8 flex items-start justify-between gap-4">
+                    <div>
+                        <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground mb-2 tracking-tight">{bucketLabel}</h1>
+                        <p className="text-sm sm:text-base text-muted-foreground font-medium">Stations matching the selected dashboard bucket</p>
+                    </div>
+                    <button
+                        onClick={() => navigate(-1)}
+                        className="px-4 py-2 rounded-lg border border-border text-sm font-semibold hover:bg-muted transition-colors"
+                    >
+                        Back
+                    </button>
+                </div>
+
+                <div className="mb-4 sm:mb-6">
+                    <div className="relative">
+                        <Search className="absolute left-3 sm:left-4 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-muted-foreground" />
+                        <input
+                            type="text"
+                            placeholder="Search stations..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="w-full pl-10 sm:pl-12 pr-3 sm:pr-4 py-2.5 sm:py-3 text-sm sm:text-base border border-border rounded-lg sm:rounded-xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent bg-background shadow-sm"
+                        />
+                    </div>
+                </div>
+
+                <div className="bg-card rounded-xl shadow-md overflow-hidden border border-border">
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="bg-muted border-b border-border">
+                                    <th className="px-6 py-4 text-sm font-semibold text-muted-foreground">Station Name</th>
+                                    <th className="px-6 py-4 text-sm font-semibold text-muted-foreground">Station Code</th>
+                                    <th className="px-6 py-4 text-sm font-semibold text-muted-foreground">City</th>
+                                    <th className="px-6 py-4 text-sm font-semibold text-muted-foreground">Station Type</th>
+                                    <th className="px-6 py-4 text-sm font-semibold text-muted-foreground">Station Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-border">
+                                {filteredBucketStations.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={5} className="px-6 py-20 text-center text-muted-foreground">
+                                            No stations found for this bucket.
+                                        </td>
+                                    </tr>
+                                ) : filteredBucketStations.map((station) => (
+                                    <tr key={station.id} className="hover:bg-muted/50 transition-colors">
+                                        <td className="px-6 py-4 font-semibold text-foreground">{station.name}</td>
+                                        <td className="px-6 py-4 font-mono text-sm text-muted-foreground uppercase">{station.station_code}</td>
+                                        <td className="px-6 py-4 text-foreground">{station.city}</td>
+                                        <td className="px-6 py-4 text-muted-foreground">{station.stationType}</td>
+                                        <td className="px-6 py-4">
+                                            <span className={`inline-flex px-2 py-1 rounded-full text-xs font-semibold border ${getStatusBadgeClass(station.status)}`}>
+                                                {station.status}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         );

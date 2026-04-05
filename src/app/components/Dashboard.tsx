@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Clock, AlertCircle, CheckCircle, Calendar, ChevronDown, PlusCircle } from "lucide-react";
+import { CheckCircle, ClipboardList, Clock, FileText, PlusCircle, AlertCircle } from "lucide-react";
 import { BrandName } from "./BrandName";
 import { Link } from "react-router-dom";
 import logo from "../../assets/logo.png";
@@ -8,26 +8,36 @@ import { useAuth } from "@/context/AuthContext";
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
 export function Dashboard() {
-  const { token, user } = useAuth();
-  const [stationType, setStationType] = useState<string>("All");
-  const stationTypes = ["operation", "rent", "franchise", "investment", "ownership"];
+  const { token } = useAuth();
   const [dashStats, setDashStats] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!token) return;
     const fetchStats = async () => {
       setIsLoading(true);
+      setLoadError(null);
       try {
-        const response = await fetch(`${API_URL}/dashboard/stats`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-        if (response.ok) {
-          const data = await response.json();
-          setDashStats(data);
+        for (let attempt = 0; attempt < 2; attempt += 1) {
+          const response = await fetch(`${API_URL}/dashboard/stats`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            setDashStats(data);
+            return;
+          }
+
+          if (attempt === 0) {
+            await new Promise((resolve) => setTimeout(resolve, 250));
+          }
         }
+        setLoadError('Dashboard data is temporarily unavailable.');
       } catch (err) {
         console.error('Failed to fetch dashboard stats:', err);
+        setLoadError('Dashboard data is temporarily unavailable.');
       } finally {
         setIsLoading(false);
       }
@@ -40,56 +50,55 @@ export function Dashboard() {
   const workflow = dashStats?.workflow || {};
   const recentActivities: any[] = dashStats?.recentActivities || [];
   const stationsList: any[] = dashStats?.stationsList || [];
-  const isDeptWorkflowUser = user?.role === 'department_manager' && (user?.department === 'investment' || user?.department === 'franchise');
-
-  const stats = [
+  const projectCards = [
     {
-      title: "Total Stations",
-      value: isLoading ? "..." : (s.total || "0"),
-      icon: <img src={logo} alt="" className="w-8 h-8 object-contain brightness-0 invert" />,
-      change: `${projects.approved || 0} approved`,
-      color: "bg-primary",
-      path: "/total-stations",
-    },
-    {
-      title: "Under Execution",
-      value: isLoading ? "..." : (s.under_execution || "0"),
-      icon: <Clock className="w-8 h-8" />,
-      change: `${projects.pending_review || 0} pending`,
-      color: "bg-info",
-      path: "/all-stations-under-review",
-    },
-    {
-      title: "Not Started",
-      value: isLoading ? "..." : (s.not_started || "0"),
-      icon: <AlertCircle className="w-8 h-8" />,
-      change: `${projects.validated || 0} validated`,
-      color: "bg-error",
-      path: "/all-stations-under-review",
-    },
-    {
-      title: "Operational Stations",
-      value: isLoading ? "..." : (s.operational || "0"),
+      title: "Total Projects",
+      value: isLoading ? "..." : (workflow.total_projects ?? projects.total ?? 0),
       icon: <CheckCircle className="w-8 h-8" />,
-      change: `${projects.total || 0} projects`,
+      color: "bg-primary",
+      bucket: 'total-projects',
+    },
+    {
+      title: "Pending Review",
+      value: isLoading ? "..." : (projects.pending_review || 0),
+      icon: <Clock className="w-8 h-8" />,
+      color: "bg-info",
+      bucket: 'pending-review',
+    },
+    {
+      title: "Validated",
+      value: isLoading ? "..." : (projects.validated || 0),
+      icon: <AlertCircle className="w-8 h-8" />,
+      color: "bg-error",
+      bucket: 'validated',
+    },
+    {
+      title: "Approved",
+      value: isLoading ? "..." : (projects.approved || 0),
+      icon: <CheckCircle className="w-8 h-8" />,
       color: "bg-success",
-      path: "/total-stations",
+      bucket: 'approved',
     },
     {
-      title: "Opening Soon",
-      value: isLoading ? "..." : (s.opening_soon || "0"),
-      icon: <Calendar className="w-8 h-8" />,
-      change: "",
-      color: "bg-primary",
-      path: "/total-stations",
-    },
-    {
-      title: "New stations during the month",
-      value: isLoading ? "..." : (s.new_this_month || "0"),
+      title: "New Projects",
+      value: isLoading ? "..." : (workflow.new_project ?? projects.pending_review ?? 0),
       icon: <PlusCircle className="w-8 h-8" />,
-      change: "",
       color: "bg-primary",
-      path: "/total-stations",
+      bucket: 'new-projects',
+    },
+    {
+      title: "Contracted",
+      value: isLoading ? "..." : (workflow.contracted || 0),
+      icon: <FileText className="w-8 h-8" />,
+      color: "bg-primary",
+      bucket: 'contracted',
+    },
+    {
+      title: "Documented",
+      value: isLoading ? "..." : (workflow.documented || 0),
+      icon: <ClipboardList className="w-8 h-8" />,
+      color: "bg-primary",
+      bucket: 'documented',
     },
   ];
 
@@ -102,34 +111,20 @@ export function Dashboard() {
           <h1 className="text-4xl font-black text-foreground mb-2 tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground"><BrandName /> Project Management & Tracking System</p>
         </div>
-
-        {/* Station Type Filter */}
-        <div className="relative">
-          <label className="block text-sm font-medium text-muted-foreground mb-2">Station Type</label>
-          <div className="relative">
-            <select
-              value={stationType}
-              onChange={(e) => setStationType(e.target.value)}
-              className="appearance-none bg-card border border-border rounded-lg px-4 py-2.5 pr-10 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent cursor-pointer hover:border-primary/50 transition-colors min-w-[160px]"
-            >
-              <option value="All">All</option>
-              {stationTypes.map((type) => (
-                <option key={type} value={type}>
-                  {type.charAt(0).toUpperCase() + type.slice(1)}
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
-          </div>
-        </div>
       </div>
 
-      {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
-        {stats.map((stat, index) => (
+      {loadError && (
+        <div className="mb-6 rounded-xl border border-warning/30 bg-warning/10 px-4 py-3 text-sm text-foreground">
+          {loadError}
+        </div>
+      )}
+
+      {/* Project Overview Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-7 gap-4 mb-8">
+        {projectCards.map((stat) => (
           <Link
-            key={index}
-            to={stat.path}
+            key={stat.title}
+            to={`/all-stations-list?bucket=${stat.bucket}`}
             className="bg-card rounded-xl shadow-md p-6 card-glow transition-all block group relative overflow-hidden"
           >
             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-transparent via-primary to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -137,53 +132,12 @@ export function Dashboard() {
               <div className={`${stat.color} text-white p-3 rounded-xl shadow-lg shadow-primary/20`}>
                 {stat.icon}
               </div>
-              {stat.change && (
-                <span className="text-xs font-semibold text-muted-foreground bg-muted px-2 py-1 rounded-full">
-                  {stat.change}
-                </span>
-              )}
             </div>
             <h3 className="text-muted-foreground text-sm font-medium mb-1">{stat.title}</h3>
             <p className="text-3xl font-bold text-foreground">{stat.value}</p>
           </Link>
         ))}
       </div>
-
-      {/* Projects Overview */}
-      {isDeptWorkflowUser ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-4 mb-8">
-          {[
-            { label: 'New Project', value: workflow.new_project || 0, color: 'bg-warning/10 text-warning border-warning/20' },
-            { label: 'Total Projects', value: workflow.total_projects || 0, color: 'bg-primary/10 text-primary border-primary/20' },
-            { label: 'Under Review', value: workflow.under_review || 0, color: 'bg-info/10 text-info border-info/20' },
-            { label: 'Contracted', value: workflow.contracted || 0, color: 'bg-primary/10 text-primary border-primary/20' },
-            { label: 'Documented', value: workflow.documented || 0, color: 'bg-info/10 text-info border-info/20' },
-            { label: 'Approved', value: workflow.approved || 0, color: 'bg-success/10 text-success border-success/20' },
-            { label: 'Rejected', value: workflow.rejected || 0, color: 'bg-error/10 text-error border-error/20' },
-          ].map(item => (
-            <Link key={item.label} to="/all-stations-under-review"
-              className={`bg-card rounded-xl border p-4 flex flex-col gap-1 hover:shadow-md transition-all ${item.color}`}>
-              <p className="text-xs font-bold uppercase tracking-wide opacity-70">{item.label}</p>
-              <p className="text-3xl font-black">{isLoading ? '...' : item.value}</p>
-            </Link>
-          ))}
-        </div>
-      ) : (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-          {[
-            { label: 'Total Projects', value: projects.total || 0, color: 'bg-primary/10 text-primary border-primary/20' },
-            { label: 'Pending Review', value: projects.pending_review || 0, color: 'bg-warning/10 text-warning border-warning/20' },
-            { label: 'Validated', value: projects.validated || 0, color: 'bg-info/10 text-info border-info/20' },
-            { label: 'Approved', value: projects.approved || 0, color: 'bg-success/10 text-success border-success/20' },
-          ].map(item => (
-            <Link key={item.label} to="/all-stations-under-review"
-              className={`bg-card rounded-xl border p-4 flex flex-col gap-1 hover:shadow-md transition-all ${item.color}`}>
-              <p className="text-xs font-bold uppercase tracking-wide opacity-70">{item.label}</p>
-              <p className="text-3xl font-black">{isLoading ? '...' : item.value}</p>
-            </Link>
-          ))}
-        </div>
-      )}
 
       {/* Total Stations Progress Widget */}
       <div className="bg-card rounded-xl shadow-xl p-8 mb-8 card-glow relative overflow-hidden">
