@@ -13,6 +13,12 @@ import { useAuth } from "@/context/AuthContext";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 const bucketLabels: Record<string, string> = {
+    'total-stations': 'Total Stations',
+    'under-execution': 'Under Execution',
+    'not-started': 'Not Started',
+    'operational-stations': 'Operational Stations',
+    'opening-soon': 'Opening Soon',
+    'new-stations': 'New Stations During the Month',
     'total-projects': 'Total Projects',
     'pending-review': 'Pending Review',
     'validated': 'Validated',
@@ -20,6 +26,7 @@ const bucketLabels: Record<string, string> = {
     'new-projects': 'New Projects',
     'contracted': 'Contracted',
     'documented': 'Documented',
+    'rejected': 'Rejected',
 };
 
 const getStatusBadgeClass = (status: string) => {

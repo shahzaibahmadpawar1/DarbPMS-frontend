@@ -1,8 +1,14 @@
 import { useState, useEffect } from "react";
-import { CheckCircle, ClipboardList, Clock, FileText, PlusCircle, AlertCircle } from "lucide-react";
+import {
+  AlertCircle,
+  Building2,
+  FileClock,
+  PlayCircle,
+  PlusCircle,
+  Rocket,
+} from "lucide-react";
 import { BrandName } from "./BrandName";
 import { Link } from "react-router-dom";
-import logo from "../../assets/logo.png";
 import { useAuth } from "@/context/AuthContext";
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
@@ -50,55 +56,93 @@ export function Dashboard() {
   const workflow = dashStats?.workflow || {};
   const recentActivities: any[] = dashStats?.recentActivities || [];
   const stationsList: any[] = dashStats?.stationsList || [];
+  const stationCards = [
+    {
+      title: "Total Stations",
+      value: isLoading ? "..." : (s.total ?? 0),
+      icon: <Building2 className="w-5 h-5" />,
+      tone: "from-primary to-primary/70",
+      bucket: "total-stations",
+    },
+    {
+      title: "Under Execution",
+      value: isLoading ? "..." : (s.under_execution ?? 0),
+      icon: <FileClock className="w-5 h-5" />,
+      tone: "from-info to-info/70",
+      bucket: "under-execution",
+    },
+    {
+      title: "Not Started",
+      value: isLoading ? "..." : (s.not_started ?? 0),
+      icon: <AlertCircle className="w-5 h-5" />,
+      tone: "from-error to-error/70",
+      bucket: "not-started",
+    },
+    {
+      title: "Operational Stations",
+      value: isLoading ? "..." : (s.operational ?? 0),
+      icon: <PlayCircle className="w-5 h-5" />,
+      tone: "from-success to-success/70",
+      bucket: "operational-stations",
+    },
+    {
+      title: "Opening Soon",
+      value: isLoading ? "..." : (s.opening_soon ?? 0),
+      icon: <Rocket className="w-5 h-5" />,
+      tone: "from-warning to-warning/70",
+      bucket: "opening-soon",
+    },
+    {
+      title: "New Stations",
+      value: isLoading ? "..." : (s.new_this_month ?? 0),
+      icon: <PlusCircle className="w-5 h-5" />,
+      tone: "from-secondary to-secondary/70",
+      bucket: "new-stations",
+    },
+  ];
+
   const projectCards = [
     {
       title: "Total Projects",
       value: isLoading ? "..." : (workflow.total_projects ?? projects.total ?? 0),
-      icon: <CheckCircle className="w-8 h-8" />,
-      color: "bg-primary",
-      bucket: 'total-projects',
+      color: "bg-primary/10 text-primary",
+      bucket: "total-projects",
     },
     {
-      title: "Pending Review",
+      title: "Pending",
       value: isLoading ? "..." : (projects.pending_review || 0),
-      icon: <Clock className="w-8 h-8" />,
-      color: "bg-info",
-      bucket: 'pending-review',
+      color: "bg-warning/10 text-warning",
+      bucket: "pending-review",
     },
     {
       title: "Validated",
       value: isLoading ? "..." : (projects.validated || 0),
-      icon: <AlertCircle className="w-8 h-8" />,
-      color: "bg-error",
-      bucket: 'validated',
+      color: "bg-info/10 text-info",
+      bucket: "validated",
     },
     {
       title: "Approved",
       value: isLoading ? "..." : (projects.approved || 0),
-      icon: <CheckCircle className="w-8 h-8" />,
-      color: "bg-success",
-      bucket: 'approved',
-    },
-    {
-      title: "New Projects",
-      value: isLoading ? "..." : (workflow.new_project ?? projects.pending_review ?? 0),
-      icon: <PlusCircle className="w-8 h-8" />,
-      color: "bg-primary",
-      bucket: 'new-projects',
+      color: "bg-success/10 text-success",
+      bucket: "approved",
     },
     {
       title: "Contracted",
       value: isLoading ? "..." : (workflow.contracted || 0),
-      icon: <FileText className="w-8 h-8" />,
-      color: "bg-primary",
-      bucket: 'contracted',
+      color: "bg-primary/10 text-primary",
+      bucket: "contracted",
     },
     {
-      title: "Documented",
+      title: "Document",
       value: isLoading ? "..." : (workflow.documented || 0),
-      icon: <ClipboardList className="w-8 h-8" />,
-      color: "bg-primary",
-      bucket: 'documented',
+      color: "bg-secondary/10 text-secondary",
+      bucket: "documented",
+    },
+    {
+      title: "Rejected",
+      value: isLoading ? "..." : (projects.rejected ?? workflow.rejected ?? 0),
+      color: "bg-error/10 text-error",
+      bucket: "rejected",
     },
   ];
 
@@ -119,22 +163,38 @@ export function Dashboard() {
         </div>
       )}
 
-      {/* Project Overview Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-7 gap-4 mb-8">
+      {/* Stations Overview */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-6 gap-4 mb-6">
+        {stationCards.map((stat) => (
+          <Link
+            key={stat.title}
+            to={`/all-stations-list?bucket=${stat.bucket}`}
+            className="bg-card rounded-xl shadow-md p-5 card-glow transition-all block group relative overflow-hidden border border-border"
+          >
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div className={`text-white p-2.5 rounded-xl bg-gradient-to-br ${stat.tone} shadow-lg`}>
+                {stat.icon}
+              </div>
+            </div>
+            <h3 className="text-muted-foreground text-sm font-semibold mb-1">{stat.title}</h3>
+            <p className="text-4xl leading-none font-black text-foreground">{stat.value}</p>
+          </Link>
+        ))}
+      </div>
+
+      {/* Projects Overview */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7 gap-3 mb-8">
         {projectCards.map((stat) => (
           <Link
             key={stat.title}
             to={`/all-stations-list?bucket=${stat.bucket}`}
-            className="bg-card rounded-xl shadow-md p-6 card-glow transition-all block group relative overflow-hidden"
+            className="rounded-xl shadow-md px-4 py-4 card-glow transition-all block group relative overflow-hidden border border-border bg-card"
           >
-            <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-transparent via-primary to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            <div className="flex items-center justify-between mb-4">
-              <div className={`${stat.color} text-white p-3 rounded-xl shadow-lg shadow-primary/20`}>
-                {stat.icon}
-              </div>
+            <div className={`absolute inset-0 opacity-60 ${stat.color}`}></div>
+            <div className="relative">
+              <h3 className="text-[11px] uppercase tracking-wide text-muted-foreground font-bold mb-2">{stat.title}</h3>
+              <p className="text-4xl leading-none font-black text-foreground">{stat.value}</p>
             </div>
-            <h3 className="text-muted-foreground text-sm font-medium mb-1">{stat.title}</h3>
-            <p className="text-3xl font-bold text-foreground">{stat.value}</p>
           </Link>
         ))}
       </div>
