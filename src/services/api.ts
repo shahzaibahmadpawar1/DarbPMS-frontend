@@ -2,6 +2,8 @@
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
 export type Department = 'investment' | 'franchise';
+export type UserType = 'internal' | 'external';
+export type UserStatus = 'active' | 'inactive';
 
 // User roles
 export type UserRole = 'super_admin' | 'department_manager' | 'supervisor' | 'employee';
@@ -51,6 +53,12 @@ export interface ApiResponse<T = any> {
         role: UserRole;
         department: Department | null;
         station_id: string | null;
+        full_name: string | null;
+        email: string | null;
+        phone: string | null;
+        user_type: UserType;
+        status: UserStatus;
+        station_codes?: string[];
         created_at: string;
         updated_at: string;
     };
@@ -127,8 +135,19 @@ export interface UserRecord {
     role: UserRole;
     department: Department | null;
     station_id: string | null;
+    full_name: string | null;
+    email: string | null;
+    phone: string | null;
+    user_type: UserType;
+    status: UserStatus;
+    station_codes?: string[];
     created_at: string;
     updated_at: string;
+}
+
+export interface StationOption {
+    station_code: string;
+    station_name: string;
 }
 
 // Users API (admin only)
@@ -146,7 +165,18 @@ export const usersAPI = {
         return data.data;
     },
 
-    async create(username: string, password: string, role: UserRole, department: Department | null): Promise<void> {
+    async create(payload: {
+        username: string;
+        password: string;
+        role?: UserRole;
+        department?: Department | null;
+        full_name?: string;
+        email?: string;
+        phone?: string;
+        user_type: UserType;
+        status?: UserStatus;
+        station_codes?: string[];
+    }): Promise<void> {
         const token = localStorage.getItem('auth_token');
         const response = await fetch(`${API_URL}/auth/users`, {
             method: 'POST',
@@ -154,11 +184,27 @@ export const usersAPI = {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ username, password, role, department }),
+            body: JSON.stringify(payload),
         });
         if (!response.ok) {
             const error = await response.json();
             throw new Error(error.message || 'Failed to create user');
+        }
+    },
+
+    async updateStatus(id: string, status: UserStatus): Promise<void> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_URL}/auth/users/${id}/status`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ status }),
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to update user status');
         }
     },
 
@@ -172,5 +218,27 @@ export const usersAPI = {
             const error = await response.json();
             throw new Error(error.message || 'Failed to delete user');
         }
+    },
+
+    async getStations(): Promise<StationOption[]> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_URL}/station-information`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || error.message || 'Failed to fetch stations');
+        }
+
+        const result = await response.json();
+        const data = Array.isArray(result?.data) ? result.data : [];
+
+        return data
+            .map((station: any) => ({
+                station_code: String(station.station_code || ''),
+                station_name: String(station.station_name || station.station_code || ''),
+            }))
+            .filter((station: StationOption) => station.station_code.length > 0);
     },
 };

@@ -78,6 +78,15 @@ interface InvestmentProject {
 export function UnderReviewProjectsPage() {
     const { user, token } = useAuth();
     const [projects, setProjects] = useState<InvestmentProject[]>([]);
+    const [workflowSummary, setWorkflowSummary] = useState({
+        totalProjects: 0,
+        pending: 0,
+        validated: 0,
+        approved: 0,
+        contracted: 0,
+        documented: 0,
+        rejected: 0,
+    });
     const [isLoading, setIsLoading] = useState(true);
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [comment, setComment] = useState("");
@@ -106,7 +115,41 @@ export function UnderReviewProjectsPage() {
         fetchProjects();
     }, []);
 
-    const handleWorkflowAction = async (projectId: string, action: 'Approve' | 'Contract' | 'Documents') => {
+    useEffect(() => {
+        const fetchSummary = async () => {
+            try {
+                const response = await fetch(`${API_URL}/dashboard/stats`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    return;
+                }
+
+                const data = await response.json();
+                const projectsData = data?.projects || {};
+                const workflowData = data?.workflow || {};
+
+                setWorkflowSummary({
+                    totalProjects: workflowData.total_projects ?? projectsData.total ?? 0,
+                    pending: projectsData.pending_review ?? 0,
+                    validated: projectsData.validated ?? 0,
+                    approved: projectsData.approved ?? 0,
+                    contracted: workflowData.contracted ?? 0,
+                    documented: workflowData.documented ?? 0,
+                    rejected: projectsData.rejected ?? workflowData.rejected ?? 0,
+                });
+            } catch (err) {
+                console.error("Failed to fetch workflow summary:", err);
+            }
+        };
+
+        if (token) {
+            fetchSummary();
+        }
+    }, [token]);
+
+    const handleWorkflowAction = async (projectId: string, action: 'Approve' | 'Reject' | 'Contract' | 'Documents') => {
         if (!comment.trim()) {
             alert("Please provide a comment.");
             return;
@@ -157,9 +200,35 @@ export function UnderReviewProjectsPage() {
     const canTakeDecision = isSuperAdmin;
 
     const filteredProjects = projects;
+    const fallbackPending = filteredProjects.filter((project) => project.review_status === 'Pending Review').length;
+    const fallbackValidated = filteredProjects.filter((project) => project.review_status === 'Validated').length;
+    const fallbackApproved = filteredProjects.filter((project) => project.review_status === 'Approved').length;
+    const fallbackRejected = filteredProjects.filter((project) => project.review_status === 'Rejected').length;
+
+    const topCards = [
+        { title: 'Total Projects', value: isLoading ? '...' : (workflowSummary.totalProjects || filteredProjects.length) },
+        { title: 'Pending', value: isLoading ? '...' : (workflowSummary.pending || fallbackPending) },
+        { title: 'Validated', value: isLoading ? '...' : (workflowSummary.validated || fallbackValidated) },
+        { title: 'Approved', value: isLoading ? '...' : (workflowSummary.approved || fallbackApproved) },
+        { title: 'Contracted', value: isLoading ? '...' : workflowSummary.contracted },
+        { title: 'Document', value: isLoading ? '...' : workflowSummary.documented },
+        { title: 'Rejected', value: isLoading ? '...' : (workflowSummary.rejected || fallbackRejected) },
+    ];
 
     return (
         <div className="p-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7 gap-3 mb-8">
+                {topCards.map((card) => (
+                    <div
+                        key={card.title}
+                        className="rounded-xl shadow-md px-5 py-5 card-glow transition-all block relative overflow-hidden border border-border bg-card"
+                    >
+                        <h3 className="text-[11px] uppercase tracking-wide text-muted-foreground font-bold mb-3">{card.title}</h3>
+                        <p className="text-5xl leading-none font-black text-foreground">{card.value}</p>
+                    </div>
+                ))}
+            </div>
+
             <div className="mb-8">
                 <h1 className="text-3xl font-bold text-foreground">Under-Review Projects</h1>
                 <p className="text-muted-foreground mt-2">Review-only view for validated projects and final executive decisions</p>

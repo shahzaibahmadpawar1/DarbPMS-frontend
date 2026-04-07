@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { authAPI, ApiResponse, Department, UserRole, normalizeUserRole } from '@/services/api';
+import { authAPI, ApiResponse, Department, UserRole, UserStatus, UserType, normalizeUserRole } from '@/services/api';
 
 interface User {
     id: string;
@@ -7,6 +7,12 @@ interface User {
     role: UserRole;
     department: Department | null;
     station_id: string | null;
+    full_name: string | null;
+    email: string | null;
+    phone: string | null;
+    user_type: UserType;
+    status: UserStatus;
+    station_codes?: string[];
     created_at: string;
     updated_at: string;
 }
