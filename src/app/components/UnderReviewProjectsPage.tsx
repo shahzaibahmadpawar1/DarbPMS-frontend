@@ -154,8 +154,7 @@ export function UnderReviewProjectsPage() {
     };
 
     const isSuperAdmin = user?.role === 'super_admin';
-    const isDepartmentManager = user?.role === 'department_manager';
-    const canTakeDecision = isSuperAdmin || isDepartmentManager;
+    const canTakeDecision = isSuperAdmin;
 
     const filteredProjects = projects;
 
@@ -163,7 +162,7 @@ export function UnderReviewProjectsPage() {
         <div className="p-8">
             <div className="mb-8">
                 <h1 className="text-3xl font-bold text-foreground">Under-Review Projects</h1>
-                <p className="text-muted-foreground mt-2">Manage project validations and executive approvals</p>
+                <p className="text-muted-foreground mt-2">Review-only view for validated projects and final executive decisions</p>
             </div>
 
             {isLoading ? (
@@ -368,12 +367,12 @@ export function UnderReviewProjectsPage() {
                                         <div className="mb-4">
                                             <label className="flex items-center gap-2 text-sm font-bold text-muted-foreground mb-2">
                                                 <MessageSquare className="w-4 h-4" />
-                                                Add Comment / Decision Notes
+                                                Add Decision Notes
                                             </label>
                                             <textarea
                                                 className="w-full bg-background border border-border rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary outline-none"
                                                 rows={3}
-                                                placeholder="Enter your validation notes or reasons for approval/rejection..."
+                                                placeholder="Enter final approval or rejection notes..."
                                                 value={comment}
                                                 onChange={(e) => setComment(e.target.value)}
                                             />
@@ -392,25 +391,21 @@ export function UnderReviewProjectsPage() {
                                                     </button>
                                                     <button
                                                         disabled={isSubmitting}
-                                                        onClick={() => handleWorkflowAction(project.id, 'Contract')}
-                                                        className="px-6 py-2.5 bg-primary text-white rounded-lg flex items-center gap-2 hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all disabled:opacity-50"
+                                                        onClick={() => handleWorkflowAction(project.id, 'Reject')}
+                                                        className="px-6 py-2.5 bg-error text-white rounded-lg flex items-center gap-2 hover:bg-error/90 shadow-lg shadow-error/20 transition-all disabled:opacity-50"
                                                     >
-                                                        <FileText className="w-4 h-4" />
-                                                        Contract
-                                                    </button>
-                                                    <button
-                                                        disabled={isSubmitting}
-                                                        onClick={() => handleWorkflowAction(project.id, 'Documents')}
-                                                        className="px-6 py-2.5 bg-info text-white rounded-lg flex items-center gap-2 hover:bg-info/90 shadow-lg shadow-info/20 transition-all disabled:opacity-50"
-                                                    >
-                                                        <Download className="w-4 h-4" />
-                                                        Documents
+                                                        <AlertCircle className="w-4 h-4" />
+                                                        Reject
                                                     </button>
                                                 </>
                                             )}
 
-                                            {project.review_status === 'Validated' && (
-                                                <p className="text-sm text-muted-foreground">Workflow started. Continue from Tasks.</p>
+                                            {!canTakeDecision && (
+                                                <p className="text-sm text-muted-foreground">Final approval is handled in the Tasks workflow for your role.</p>
+                                            )}
+
+                                            {project.review_status === 'Validated' && canTakeDecision && (
+                                                <p className="text-sm text-muted-foreground">Validated projects are finalized from the Tasks workflow.</p>
                                             )}
                                         </div>
                                     </div>

@@ -4,6 +4,7 @@ import {
     AlertCircle,
     CheckCircle,
     Clock,
+    FileText,
     Search,
     ShieldCheck,
     Upload,
@@ -14,6 +15,7 @@ type WorkflowTaskStatus =
     | "manager_queue"
     | "assigned"
     | "employee_submitted"
+    | "manager_submitted"
     | "under_super_admin_review"
     | "approved"
     | "rejected";
@@ -42,9 +44,23 @@ interface WorkflowTask {
     project_name: string;
     project_code: string;
     review_status: string;
+    workflow_path: WorkflowTaskFlow | null;
     city: string | null;
     assigned_to_username: string | null;
     assigned_by_username: string | null;
+}
+
+interface WorkflowHistoryEntry {
+    id: string;
+    entity_type: string;
+    entity_id: string;
+    old_state: string | null;
+    new_state: string;
+    note: string | null;
+    metadata: Record<string, unknown> | null;
+    created_at: string;
+    changed_by_username: string | null;
+    changed_by_role: string | null;
 }
 
 interface AssignableUser {
@@ -60,6 +76,7 @@ const statusLabel: Record<WorkflowTaskStatus, string> = {
     manager_queue: "Manager Queue",
     assigned: "Assigned",
     employee_submitted: "Employee Submitted",
+    manager_submitted: "Manager Submitted",
     under_super_admin_review: "Under Super Admin Review",
     approved: "Approved",
     rejected: "Rejected",
@@ -69,9 +86,25 @@ const statusClass: Record<WorkflowTaskStatus, string> = {
     manager_queue: "bg-warning/10 text-warning border-warning/20",
     assigned: "bg-info/10 text-info border-info/20",
     employee_submitted: "bg-info/10 text-info border-info/20",
+    manager_submitted: "bg-primary/10 text-primary border-primary/20",
     under_super_admin_review: "bg-primary/10 text-primary border-primary/20",
     approved: "bg-success/10 text-success border-success/20",
     rejected: "bg-error/10 text-error border-error/20",
+};
+
+const stageLabel: Record<WorkflowTaskStatus, string> = {
+    manager_queue: "Manager queue",
+    assigned: "Assigned to user",
+    employee_submitted: "Employee submitted",
+    manager_submitted: "Manager submitted",
+    under_super_admin_review: "Super admin review",
+    approved: "Approved",
+    rejected: "Rejected",
+};
+
+const branchLabel: Record<WorkflowTaskFlow, string> = {
+    contract: "Contract",
+    documents: "Document",
 };
 
 export function TasksPage() {
@@ -86,8 +119,14 @@ export function TasksPage() {
     const [managerFiles, setManagerFiles] = useState<Record<string, File | null>>({});
     const [employeeFiles, setEmployeeFiles] = useState<Record<string, File | null>>({});
     const [reviewComment, setReviewComment] = useState<Record<string, string>>({});
+    const [managerComment, setManagerComment] = useState<Record<string, string>>({});
+    const [branchDepartment, setBranchDepartment] = useState<Record<string, "investment" | "franchise">>({});
+    const [branchAssignee, setBranchAssignee] = useState<Record<string, string>>({});
+    const [taskHistory, setTaskHistory] = useState<Record<string, { task: WorkflowTask; history: WorkflowHistoryEntry[] }>>({});
+    const [expandedHistoryTaskId, setExpandedHistoryTaskId] = useState<string | null>(null);
 
     const canAssign = user?.role === "department_manager" || user?.role === "super_admin" || user?.role === "supervisor";
+    const canValidateAsManager = user?.role === "department_manager" || user?.role === "super_admin";
     const isSuperAdmin = user?.role === "super_admin";
 
     const [activeTab, setActiveTab] = useState<RoleViewTab>(() => {
@@ -180,7 +219,7 @@ export function TasksPage() {
         total: tasks.length,
         managerQueue: tasks.filter((t) => t.status === "manager_queue").length,
         employeeWork: tasks.filter((t) => t.status === "assigned" || t.status === "employee_submitted").length,
-        superAdminReview: tasks.filter((t) => t.status === "under_super_admin_review").length,
+        superAdminReview: tasks.filter((t) => t.status === "manager_submitted" || t.status === "under_super_admin_review").length,
         approved: tasks.filter((t) => t.status === "approved").length,
         rejected: tasks.filter((t) => t.status === "rejected").length,
     }), [tasks]);
@@ -324,6 +363,111 @@ export function TasksPage() {
         await loadData();
     };
 
+    const handleSuperAdminBranch = async (taskId: string, decision: "contract" | "document") => {
+        if (!token) return;
+
+        const assignedToUserId = branchAssignee[taskId];
+        const targetDepartment = branchDepartment[taskId] || tasks.find((task) => task.id === taskId)?.target_department;
+
+        if (!assignedToUserId || !targetDepartment) {
+            alert("Select department and manager first.");
+            return;
+        }
+
+        const response = await fetch(`${API_URL}/tasks/${taskId}/review`, {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ decision, comment: reviewComment[taskId] || "", assignedToUserId, targetDepartment }),
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            alert(error?.error || "Failed to route task");
+            return;
+        }
+
+        await loadData();
+    };
+
+    const handleManagerValidate = async (taskId: string) => {
+        if (!token) return;
+
+        const response = await fetch(`${API_URL}/tasks/${taskId}/manager-validate`, {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ comment: managerComment[taskId] || "" }),
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            alert(error?.error || "Failed to validate task");
+            return;
+        }
+
+        await loadData();
+    };
+
+    const handleManagerSubmit = async (taskId: string) => {
+        const file = managerFiles[taskId];
+        if (!file) {
+            alert("Select a file first.");
+            return;
+        }
+
+        const attachmentUrl = await uploadFile(file);
+        if (!attachmentUrl || !token) {
+            return;
+        }
+
+        const response = await fetch(`${API_URL}/tasks/${taskId}/manager-submit`, {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ attachmentUrl, note: managerComment[taskId] || "" }),
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            alert(error?.error || "Failed to submit branch attachment");
+            return;
+        }
+
+        await loadData();
+    };
+
+    const loadTaskHistory = async (taskId: string) => {
+        if (!token) return;
+
+        const response = await fetch(`${API_URL}/tasks/${taskId}/history`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            alert(error?.error || "Failed to load workflow history");
+            return;
+        }
+
+        const result = await response.json();
+        if (result?.data?.task && Array.isArray(result?.data?.history)) {
+            setTaskHistory((prev) => ({
+                ...prev,
+                [taskId]: {
+                    task: result.data.task,
+                    history: result.data.history,
+                },
+            }));
+        }
+    };
+
     const onManagerFileChange = (taskId: string, event: ChangeEvent<HTMLInputElement>) => {
         const selected = event.target.files?.[0] || null;
         setManagerFiles((prev) => ({ ...prev, [taskId]: selected }));
@@ -350,11 +494,72 @@ export function TasksPage() {
                         <p className="text-xs text-muted-foreground">
                             {task.project_code} | {task.flow_type.toUpperCase()} | {task.origin_department} {"->"} {task.target_department}
                         </p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-muted text-muted-foreground border border-border">
+                                Stage: {stageLabel[task.status]}
+                            </span>
+                            {task.workflow_path && (
+                                <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20">
+                                    Branch: {branchLabel[task.workflow_path]}
+                                </span>
+                            )}
+                        </div>
                     </div>
                     <span className={`px-3 py-1 rounded-full border text-xs font-bold ${statusClass[task.status]}`}>
                         {statusLabel[task.status]}
                     </span>
                 </div>
+
+                <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                    <p>
+                        Current assignee: <span className="font-semibold text-foreground">{task.assigned_to_username || "Unassigned"}</span>
+                    </p>
+                    <button
+                        type="button"
+                        onClick={async () => {
+                            const nextOpen = expandedHistoryTaskId === task.id ? null : task.id;
+                            setExpandedHistoryTaskId(nextOpen);
+                            if (nextOpen && !taskHistory[task.id]) {
+                                await loadTaskHistory(task.id);
+                            }
+                        }}
+                        className="px-3 py-1.5 rounded-lg border border-border bg-background text-foreground font-semibold hover:bg-muted/50"
+                    >
+                        {expandedHistoryTaskId === task.id ? "Hide history" : "View history"}
+                    </button>
+                </div>
+
+                {expandedHistoryTaskId === task.id && taskHistory[task.id] && (
+                    <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <p className="text-sm font-bold text-foreground">Workflow History</p>
+                                <p className="text-xs text-muted-foreground">Project {taskHistory[task.id].task.project_code} · {taskHistory[task.id].task.project_name}</p>
+                            </div>
+                            <span className="text-xs text-muted-foreground">{taskHistory[task.id].history.length} events</span>
+                        </div>
+
+                        <div className="space-y-3">
+                            {taskHistory[task.id].history.map((entry) => (
+                                <div key={entry.id} className="flex gap-3 rounded-lg border border-border bg-background p-3">
+                                    <div className="w-2.5 h-2.5 rounded-full bg-primary mt-1.5 flex-shrink-0" />
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center justify-between gap-2">
+                                            <p className="text-sm font-semibold text-foreground">
+                                                {entry.entity_type === 'workflow_task' ? 'Task' : 'Project'} transition: {entry.old_state || 'created'} → {entry.new_state}
+                                            </p>
+                                            <p className="text-xs text-muted-foreground">{new Date(entry.created_at).toLocaleString()}</p>
+                                        </div>
+                                        <p className="text-xs text-muted-foreground mt-1">
+                                            By {entry.changed_by_username || 'System'}{entry.changed_by_role ? ` (${entry.changed_by_role})` : ''}
+                                        </p>
+                                        {entry.note && <p className="text-sm text-foreground mt-2">{entry.note}</p>}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                     <p className="text-muted-foreground"><Clock className="w-4 h-4 inline mr-1" /> Created: {new Date(task.created_at).toLocaleDateString()}</p>
@@ -362,9 +567,9 @@ export function TasksPage() {
                     <p className="text-muted-foreground">Project Status: {task.review_status}</p>
                 </div>
 
-                {(canManagerAct || canEmployeeAct) && (
+                {((canManagerAct && canValidateAsManager) || canEmployeeAct || (mode === "manager" && task.review_status === "Validated" && task.status === "assigned")) && (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                        {canManagerAct && (
+                        {canManagerAct && canValidateAsManager && task.review_status !== "Validated" && (
                             <div className="space-y-2">
                                 <p className="text-xs font-bold text-muted-foreground uppercase">Manager Attachment</p>
                                 <input
@@ -383,6 +588,31 @@ export function TasksPage() {
                                     className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90"
                                 >
                                     <Upload className="w-4 h-4 inline mr-1" /> Upload Manager Attachment
+                                </button>
+                            </div>
+                        )}
+
+                        {mode === "manager" && task.review_status === "Validated" && task.status === "assigned" && (
+                            <div className="space-y-2 lg:col-span-2">
+                                <p className="text-xs font-bold text-muted-foreground uppercase">Branch Attachment For Super Admin</p>
+                                <input
+                                    type="file"
+                                    onChange={(e) => onManagerFileChange(task.id, e)}
+                                    className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                />
+                                <textarea
+                                    rows={2}
+                                    value={managerComment[task.id] || ""}
+                                    onChange={(e) => setManagerComment((prev) => ({ ...prev, [task.id]: e.target.value }))}
+                                    className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                    placeholder="Add attachment note"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => handleManagerSubmit(task.id)}
+                                    className="px-4 py-2 bg-success text-white rounded-lg text-sm font-semibold"
+                                >
+                                    <Upload className="w-4 h-4 inline mr-1" /> Upload And Submit To Super Admin
                                 </button>
                             </div>
                         )}
@@ -409,6 +639,26 @@ export function TasksPage() {
                                 </button>
                             )}
                         </div>
+                    </div>
+                )}
+
+                {mode === "manager" && canValidateAsManager && (task.status === "manager_queue" || task.status === "employee_submitted") && (
+                    <div className="border-t border-border pt-4 space-y-3">
+                        <p className="text-xs font-bold text-muted-foreground uppercase">Manager Validation Comment</p>
+                        <textarea
+                            rows={2}
+                            value={managerComment[task.id] || ""}
+                            onChange={(e) => setManagerComment((prev) => ({ ...prev, [task.id]: e.target.value }))}
+                            className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                            placeholder="Add validation notes before sending to super admin"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => handleManagerValidate(task.id)}
+                            className="px-4 py-2 bg-success text-white rounded-lg text-sm font-semibold"
+                        >
+                            <CheckCircle className="w-4 h-4 inline mr-1" /> Validate And Send To Super Admin
+                        </button>
                     </div>
                 )}
 
@@ -465,7 +715,7 @@ export function TasksPage() {
                     );
                 })()}
 
-                {mode === "super-admin" && task.status === "under_super_admin_review" && (
+                {mode === "super-admin" && (task.status === "manager_submitted" || task.status === "under_super_admin_review") && (
                     <div className="border-t border-border pt-4 space-y-3">
                         <p className="text-xs text-muted-foreground">
                             One attachment is required for contract/documents review. Either manager or employee upload is enough.
@@ -500,7 +750,49 @@ export function TasksPage() {
                             className="w-full px-3 py-2 border border-border rounded-lg bg-background"
                             placeholder="Decision comment"
                         />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <select
+                                value={branchDepartment[task.id] || task.target_department}
+                                onChange={(e) => {
+                                    const nextDepartment = e.target.value as "investment" | "franchise";
+                                    setBranchDepartment((prev) => ({ ...prev, [task.id]: nextDepartment }));
+                                    setBranchAssignee((prev) => ({ ...prev, [task.id]: "" }));
+                                }}
+                                className="px-3 py-2 border border-border rounded-lg bg-background"
+                            >
+                                <option value="investment">investment</option>
+                                <option value="franchise">franchise</option>
+                            </select>
+                            <select
+                                value={branchAssignee[task.id] || ""}
+                                onChange={(e) => setBranchAssignee((prev) => ({ ...prev, [task.id]: e.target.value }))}
+                                className="px-3 py-2 border border-border rounded-lg bg-background"
+                            >
+                                <option value="">Select department manager</option>
+                                {assignableUsers
+                                    .filter((u) => u.role === "department_manager" && u.department === (branchDepartment[task.id] || task.target_department))
+                                    .map((u) => (
+                                        <option key={u.id} value={u.id}>
+                                            {u.username} ({u.department || "none"})
+                                        </option>
+                                    ))}
+                            </select>
+                        </div>
                         <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={() => handleSuperAdminBranch(task.id, "contract")}
+                                className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold"
+                            >
+                                <FileText className="w-4 h-4 inline mr-1" /> Contract Path
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleSuperAdminBranch(task.id, "document")}
+                                className="px-4 py-2 bg-info text-white rounded-lg text-sm font-semibold"
+                            >
+                                <FileText className="w-4 h-4 inline mr-1" /> Document Path
+                            </button>
                             <button
                                 type="button"
                                 onClick={() => handleSuperAdminReview(task.id, "approved")}
