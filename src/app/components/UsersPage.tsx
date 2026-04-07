@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Users, UserPlus, Trash2, Eye, EyeOff, X, Loader2, Shield } from "lucide-react";
+import { Users, UserPlus, Trash2, Eye, EyeOff, X, Loader2, Shield, Pencil, FileText } from "lucide-react";
 import { Department, getDepartmentLabel, getRoleLabel, usersAPI, UserRecord, UserRole, UserType, UserStatus, StationOption } from "@/services/api";
 
 export function UsersPage() {
@@ -9,9 +9,13 @@ export function UsersPage() {
     const [error, setError] = useState<string | null>(null);
     const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({});
     const [showAddModal, setShowAddModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [showDetailsDrawer, setShowDetailsDrawer] = useState(false);
     const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
     const [actionLoading, setActionLoading] = useState(false);
     const [statusLoadingId, setStatusLoadingId] = useState<string | null>(null);
+    const [editingUserId, setEditingUserId] = useState<string | null>(null);
+    const [selectedUser, setSelectedUser] = useState<UserRecord | null>(null);
 
     // New user form state
     const [newFullName, setNewFullName] = useState("");
@@ -26,14 +30,32 @@ export function UsersPage() {
     const [newStationCodes, setNewStationCodes] = useState<string[]>([]);
     const [formError, setFormError] = useState<string | null>(null);
     const [showNewPassword, setShowNewPassword] = useState(false);
+    const [editFullName, setEditFullName] = useState("");
+    const [editEmail, setEditEmail] = useState("");
+    const [editPhone, setEditPhone] = useState("");
+    const [editUsername, setEditUsername] = useState("");
+    const [editPassword, setEditPassword] = useState("");
+    const [editUserType, setEditUserType] = useState<UserType>("internal");
+    const [editRole, setEditRole] = useState<UserRole>("employee");
+    const [editDepartment, setEditDepartment] = useState<Department>("investment");
+    const [editStatus, setEditStatus] = useState<UserStatus>("active");
+    const [editStationCodes, setEditStationCodes] = useState<string[]>([]);
+    const [editFormError, setEditFormError] = useState<string | null>(null);
+    const [showEditPassword, setShowEditPassword] = useState(false);
 
     const fetchUsers = async () => {
         try {
             setLoading(true);
             setError(null);
-            const [usersData, stationsData] = await Promise.all([usersAPI.getAll(), usersAPI.getStations()]);
+            const usersData = await usersAPI.getAll();
             setUsers(usersData);
-            setStations(stationsData);
+
+            try {
+                const stationsData = await usersAPI.getStations();
+                setStations(stationsData);
+            } catch {
+                setStations([]);
+            }
         } catch (err: any) {
             setError(err.message || "Failed to load users");
         } finally {
@@ -95,6 +117,10 @@ export function UsersPage() {
     };
 
     const handleStatusChange = async (id: string, status: UserStatus) => {
+        if (!window.confirm(`Apply status change to ${status === "active" ? "Active" : "Non-Active"}?`)) {
+            return;
+        }
+
         setStatusLoadingId(id);
         setError(null);
         try {
@@ -114,6 +140,103 @@ export function UsersPage() {
                 ? prev.filter((code) => code !== stationCode)
                 : [...prev, stationCode]
         ));
+    };
+
+    const toggleEditStationSelection = (stationCode: string) => {
+        setEditStationCodes((prev) => (
+            prev.includes(stationCode)
+                ? prev.filter((code) => code !== stationCode)
+                : [...prev, stationCode]
+        ));
+    };
+
+    const openEditModal = (user: UserRecord) => {
+        setEditingUserId(user.id);
+        setEditFullName(user.full_name || "");
+        setEditEmail(user.email || "");
+        setEditPhone(user.phone || "");
+        setEditUsername(user.username);
+        setEditPassword(user.password);
+        setEditUserType(user.user_type || "internal");
+        setEditRole(user.role);
+        setEditDepartment(user.department || "investment");
+        setEditStatus(user.status || "active");
+        setEditStationCodes(user.station_codes || []);
+        setEditFormError(null);
+        setShowEditPassword(false);
+        setShowEditModal(true);
+    };
+
+    const openDetailsDrawer = (user: UserRecord) => {
+        setSelectedUser(user);
+        setShowDetailsDrawer(true);
+    };
+
+    const handleDrawerEdit = () => {
+        if (!selectedUser) {
+            return;
+        }
+
+        setShowDetailsDrawer(false);
+        openEditModal(selectedUser);
+    };
+
+    const handleDrawerDelete = async () => {
+        if (!selectedUser) {
+            return;
+        }
+
+        if (!window.confirm("Are you sure you want to delete this user?")) {
+            return;
+        }
+
+        setShowDetailsDrawer(false);
+        await handleDeleteUser(selectedUser.id);
+    };
+
+    const handleEditUser = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setEditFormError(null);
+
+        if (!editingUserId) {
+            setEditFormError("No user selected for edit.");
+            return;
+        }
+
+        if (editUserType === "external" && editStationCodes.length === 0) {
+            setEditFormError("Please select at least one station for external users.");
+            return;
+        }
+
+        if (!window.confirm("Apply these changes to the user?")) {
+            return;
+        }
+
+        setActionLoading(true);
+        try {
+            const department = editUserType === "internal" && editRole !== "super_admin" ? editDepartment : null;
+
+            await usersAPI.update(editingUserId, {
+                username: editUsername,
+                password: editPassword,
+                role: editUserType === "internal" ? editRole : "employee",
+                department,
+                full_name: editFullName.trim() || undefined,
+                email: editEmail.trim() || undefined,
+                phone: editPhone.trim() || undefined,
+                user_type: editUserType,
+                status: editStatus,
+                station_codes: editUserType === "external" ? editStationCodes : [],
+            });
+
+            setShowEditModal(false);
+            setEditingUserId(null);
+            await fetchUsers();
+        } catch (err: any) {
+            setEditFormError(err.message || "Failed to update user");
+        } finally {
+            setActionLoading(false);
+        }
     };
 
     const handleDeleteUser = async (id: string) => {
@@ -307,13 +430,29 @@ export function UsersPage() {
                                                     </button>
                                                 </div>
                                             ) : (
-                                                <button
-                                                    onClick={() => setDeleteConfirmId(user.id)}
-                                                    className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                                    title="Delete user"
-                                                >
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <button
+                                                        onClick={() => openDetailsDrawer(user)}
+                                                        className="p-2 text-info hover:bg-info/10 rounded-lg transition-colors"
+                                                        title="View details"
+                                                    >
+                                                        <FileText className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => openEditModal(user)}
+                                                        className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                                                        title="Edit user"
+                                                    >
+                                                        <Pencil className="w-4 h-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => setDeleteConfirmId(user.id)}
+                                                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                        title="Delete user"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                </div>
                                             )}
                                         </td>
                                     </tr>
@@ -327,7 +466,7 @@ export function UsersPage() {
             {/* Add User Modal */}
             {showAddModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-md">
+                    <div className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
                         <div className="flex items-center justify-between p-6 border-b border-border">
                             <h2 className="text-lg font-bold text-foreground">Add New User</h2>
                             <button
@@ -343,94 +482,96 @@ export function UsersPage() {
                                     {formError}
                                 </div>
                             )}
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-foreground">Full Name</label>
-                                <input
-                                    type="text"
-                                    value={newFullName}
-                                    onChange={(e) => setNewFullName(e.target.value)}
-                                    placeholder="Enter full name"
-                                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-foreground">Email</label>
-                                <input
-                                    type="email"
-                                    value={newEmail}
-                                    onChange={(e) => setNewEmail(e.target.value)}
-                                    placeholder="Enter email"
-                                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-foreground">Phone #</label>
-                                <input
-                                    type="text"
-                                    value={newPhone}
-                                    onChange={(e) => setNewPhone(e.target.value)}
-                                    placeholder="Enter phone number"
-                                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-foreground">Username</label>
-                                <input
-                                    type="text"
-                                    value={newUsername}
-                                    onChange={(e) => setNewUsername(e.target.value)}
-                                    placeholder="Enter username"
-                                    required
-                                    minLength={3}
-                                    maxLength={50}
-                                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-foreground">Password</label>
-                                <div className="relative">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-foreground">Full Name</label>
                                     <input
-                                        type={showNewPassword ? "text" : "password"}
-                                        value={newPassword}
-                                        onChange={(e) => setNewPassword(e.target.value)}
-                                        placeholder="Enter password (min. 6 characters)"
-                                        required
-                                        minLength={6}
-                                        className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                                        type="text"
+                                        value={newFullName}
+                                        onChange={(e) => setNewFullName(e.target.value)}
+                                        placeholder="Enter full name"
+                                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
                                     />
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowNewPassword(!showNewPassword)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-foreground">Email</label>
+                                    <input
+                                        type="email"
+                                        value={newEmail}
+                                        onChange={(e) => setNewEmail(e.target.value)}
+                                        placeholder="Enter email"
+                                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-foreground">Phone #</label>
+                                    <input
+                                        type="text"
+                                        value={newPhone}
+                                        onChange={(e) => setNewPhone(e.target.value)}
+                                        placeholder="Enter phone number"
+                                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-foreground">Username</label>
+                                    <input
+                                        type="text"
+                                        value={newUsername}
+                                        onChange={(e) => setNewUsername(e.target.value)}
+                                        placeholder="Enter username"
+                                        required
+                                        minLength={3}
+                                        maxLength={50}
+                                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-foreground">Password</label>
+                                    <div className="relative">
+                                        <input
+                                            type={showNewPassword ? "text" : "password"}
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                            placeholder="Enter password (min. 6 characters)"
+                                            required
+                                            minLength={6}
+                                            className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowNewPassword(!showNewPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                        >
+                                            {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-foreground">User Type</label>
+                                    <select
+                                        value={newUserType}
+                                        onChange={(e) => setNewUserType(e.target.value as UserType)}
+                                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
                                     >
-                                        {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                                    </button>
+                                        <option value="internal">Internal</option>
+                                        <option value="external">External</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-foreground">Status</label>
+                                    <select
+                                        value={newStatus}
+                                        onChange={(e) => setNewStatus(e.target.value as UserStatus)}
+                                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                                    >
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Non-Active</option>
+                                    </select>
                                 </div>
                             </div>
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-foreground">User Type</label>
-                                <select
-                                    value={newUserType}
-                                    onChange={(e) => setNewUserType(e.target.value as UserType)}
-                                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
-                                >
-                                    <option value="internal">Internal</option>
-                                    <option value="external">External</option>
-                                </select>
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-sm font-medium text-foreground">Status</label>
-                                <select
-                                    value={newStatus}
-                                    onChange={(e) => setNewStatus(e.target.value as UserStatus)}
-                                    className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
-                                >
-                                    <option value="active">Active</option>
-                                    <option value="inactive">Non-Active</option>
-                                </select>
-                            </div>
                             {newUserType === "internal" && (
-                                <>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                     <div className="space-y-1.5">
                                         <label className="text-sm font-medium text-foreground">Role</label>
                                         <select
@@ -457,11 +598,11 @@ export function UsersPage() {
                                             </select>
                                         </div>
                                     )}
-                                </>
+                                </div>
                             )}
 
                             {newUserType === "external" && (
-                                <div className="space-y-2">
+                                <div className="space-y-2 md:col-span-2">
                                     <label className="text-sm font-medium text-foreground">Stations (Select one or more)</label>
                                     <div className="max-h-40 overflow-y-auto border border-border rounded-lg bg-background p-2 space-y-1.5">
                                         {stations.length === 0 ? (
@@ -500,6 +641,313 @@ export function UsersPage() {
                                         <><Loader2 className="w-4 h-4 animate-spin" /> Creating...</>
                                     ) : (
                                         <><UserPlus className="w-4 h-4" /> Create User</>
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* View Details Drawer */}
+            {showDetailsDrawer && selectedUser && (
+                <>
+                    <div
+                        className="fixed inset-0 bg-black/30 z-40"
+                        onClick={() => setShowDetailsDrawer(false)}
+                    />
+                    <aside className="fixed top-0 right-0 h-full w-full max-w-md bg-card border-l border-border shadow-2xl z-50 overflow-y-auto">
+                        <div className="flex items-center justify-between px-5 py-4 border-b border-border sticky top-0 bg-card">
+                            <h3 className="text-lg font-bold text-foreground">User Details</h3>
+                            <button
+                                onClick={() => setShowDetailsDrawer(false)}
+                                className="p-2 hover:bg-muted rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="p-5 space-y-5">
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                                <div>
+                                    <p className="text-xs text-muted-foreground uppercase font-semibold">Full Name</p>
+                                    <p className="text-foreground font-medium mt-1">{selectedUser.full_name || "N/A"}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground uppercase font-semibold">Username</p>
+                                    <p className="text-foreground font-medium mt-1">{selectedUser.username}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground uppercase font-semibold">Email</p>
+                                    <p className="text-foreground font-medium mt-1 break-all">{selectedUser.email || "N/A"}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground uppercase font-semibold">Phone</p>
+                                    <p className="text-foreground font-medium mt-1">{selectedUser.phone || "N/A"}</p>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3 text-sm">
+                                <div>
+                                    <p className="text-xs text-muted-foreground uppercase font-semibold">User Type</p>
+                                    <p className="text-foreground font-medium mt-1 capitalize">{selectedUser.user_type}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground uppercase font-semibold">Status</p>
+                                    <p className="text-foreground font-medium mt-1 capitalize">{selectedUser.status === "inactive" ? "Non-Active" : "Active"}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground uppercase font-semibold">Role</p>
+                                    <p className="text-foreground font-medium mt-1">{getRoleLabel(selectedUser.role)}</p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground uppercase font-semibold">Department</p>
+                                    <p className="text-foreground font-medium mt-1">{getDepartmentLabel(selectedUser.department)}</p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <p className="text-xs text-muted-foreground uppercase font-semibold">Assigned Stations</p>
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                    {(selectedUser.station_codes || []).length > 0 ? (
+                                        selectedUser.station_codes?.map((code) => (
+                                            <span key={code} className="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+                                                {code}
+                                            </span>
+                                        ))
+                                    ) : (
+                                        <span className="text-sm text-muted-foreground">No station assignments</span>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 gap-3 text-sm">
+                                <div>
+                                    <p className="text-xs text-muted-foreground uppercase font-semibold">Created At</p>
+                                    <p className="text-foreground font-medium mt-1">
+                                        {new Date(selectedUser.created_at).toLocaleString("en-US", {
+                                            year: "numeric",
+                                            month: "short",
+                                            day: "numeric",
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                        })}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p className="text-xs text-muted-foreground uppercase font-semibold">Updated At</p>
+                                    <p className="text-foreground font-medium mt-1">
+                                        {new Date(selectedUser.updated_at).toLocaleString("en-US", {
+                                            year: "numeric",
+                                            month: "short",
+                                            day: "numeric",
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                        })}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div className="pt-2 border-t border-border flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={handleDrawerEdit}
+                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:shadow-lg transition-all"
+                                >
+                                    <Pencil className="w-4 h-4" /> Edit User
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleDrawerDelete}
+                                    disabled={actionLoading}
+                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-semibold hover:bg-red-600 transition-colors disabled:opacity-50"
+                                >
+                                    {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Delete User
+                                </button>
+                            </div>
+                        </div>
+                    </aside>
+                </>
+            )}
+
+            {/* Edit User Modal */}
+            {showEditModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-card rounded-2xl border border-border shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+                        <div className="flex items-center justify-between p-6 border-b border-border">
+                            <h2 className="text-lg font-bold text-foreground">Edit User</h2>
+                            <button
+                                onClick={() => setShowEditModal(false)}
+                                className="p-2 hover:bg-muted rounded-lg transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <form onSubmit={handleEditUser} className="p-6 space-y-4">
+                            {editFormError && (
+                                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                                    {editFormError}
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-foreground">Full Name</label>
+                                    <input
+                                        type="text"
+                                        value={editFullName}
+                                        onChange={(e) => setEditFullName(e.target.value)}
+                                        placeholder="Enter full name"
+                                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-foreground">Email</label>
+                                    <input
+                                        type="email"
+                                        value={editEmail}
+                                        onChange={(e) => setEditEmail(e.target.value)}
+                                        placeholder="Enter email"
+                                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-foreground">Phone #</label>
+                                    <input
+                                        type="text"
+                                        value={editPhone}
+                                        onChange={(e) => setEditPhone(e.target.value)}
+                                        placeholder="Enter phone number"
+                                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-foreground">Username</label>
+                                    <input
+                                        type="text"
+                                        value={editUsername}
+                                        onChange={(e) => setEditUsername(e.target.value)}
+                                        required
+                                        minLength={3}
+                                        maxLength={50}
+                                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                                    />
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-foreground">Password</label>
+                                    <div className="relative">
+                                        <input
+                                            type={showEditPassword ? "text" : "password"}
+                                            value={editPassword}
+                                            onChange={(e) => setEditPassword(e.target.value)}
+                                            required
+                                            minLength={6}
+                                            className="w-full px-3 py-2 pr-10 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowEditPassword(!showEditPassword)}
+                                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                                        >
+                                            {showEditPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-foreground">User Type</label>
+                                    <select
+                                        value={editUserType}
+                                        onChange={(e) => setEditUserType(e.target.value as UserType)}
+                                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                                    >
+                                        <option value="internal">Internal</option>
+                                        <option value="external">External</option>
+                                    </select>
+                                </div>
+                                <div className="space-y-1.5">
+                                    <label className="text-sm font-medium text-foreground">Status</label>
+                                    <select
+                                        value={editStatus}
+                                        onChange={(e) => setEditStatus(e.target.value as UserStatus)}
+                                        className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                                    >
+                                        <option value="active">Active</option>
+                                        <option value="inactive">Non-Active</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {editUserType === "internal" && (
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-1.5">
+                                        <label className="text-sm font-medium text-foreground">Role</label>
+                                        <select
+                                            value={editRole}
+                                            onChange={(e) => setEditRole(e.target.value as UserRole)}
+                                            className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                                        >
+                                            <option value="employee">Employee</option>
+                                            <option value="supervisor">Supervisor</option>
+                                            <option value="department_manager">Department Manager</option>
+                                            <option value="super_admin">Super Admin</option>
+                                        </select>
+                                    </div>
+                                    {editRole !== "super_admin" && (
+                                        <div className="space-y-1.5">
+                                            <label className="text-sm font-medium text-foreground">Department</label>
+                                            <select
+                                                value={editDepartment}
+                                                onChange={(e) => setEditDepartment(e.target.value as Department)}
+                                                className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
+                                            >
+                                                <option value="investment">Investment</option>
+                                                <option value="franchise">Franchise</option>
+                                            </select>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+
+                            {editUserType === "external" && (
+                                <div className="space-y-2 md:col-span-2">
+                                    <label className="text-sm font-medium text-foreground">Stations (Select one or more)</label>
+                                    <div className="max-h-40 overflow-y-auto border border-border rounded-lg bg-background p-2 space-y-1.5">
+                                        {stations.length === 0 ? (
+                                            <p className="text-xs text-muted-foreground px-1 py-2">No stations available</p>
+                                        ) : (
+                                            stations.map((station) => (
+                                                <label key={station.station_code} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted/50 cursor-pointer text-sm">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={editStationCodes.includes(station.station_code)}
+                                                        onChange={() => toggleEditStationSelection(station.station_code)}
+                                                    />
+                                                    <span className="text-foreground">{station.station_name}</span>
+                                                    <span className="text-xs text-muted-foreground">({station.station_code})</span>
+                                                </label>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowEditModal(false)}
+                                    className="flex-1 px-4 py-2 border border-border text-foreground rounded-lg text-sm font-semibold hover:bg-muted transition-colors"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={actionLoading}
+                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:shadow-lg transition-all disabled:opacity-50"
+                                >
+                                    {actionLoading ? (
+                                        <><Loader2 className="w-4 h-4 animate-spin" /> Saving...</>
+                                    ) : (
+                                        <><Pencil className="w-4 h-4" /> Save Changes</>
                                     )}
                                 </button>
                             </div>

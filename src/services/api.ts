@@ -150,6 +150,19 @@ export interface StationOption {
     station_name: string;
 }
 
+export interface AdminUserPayload {
+    username: string;
+    password: string;
+    role?: UserRole;
+    department?: Department | null;
+    full_name?: string;
+    email?: string;
+    phone?: string;
+    user_type: UserType;
+    status?: UserStatus;
+    station_codes?: string[];
+}
+
 // Users API (admin only)
 export const usersAPI = {
     async getAll(): Promise<UserRecord[]> {
@@ -165,18 +178,7 @@ export const usersAPI = {
         return data.data;
     },
 
-    async create(payload: {
-        username: string;
-        password: string;
-        role?: UserRole;
-        department?: Department | null;
-        full_name?: string;
-        email?: string;
-        phone?: string;
-        user_type: UserType;
-        status?: UserStatus;
-        station_codes?: string[];
-    }): Promise<void> {
+    async create(payload: AdminUserPayload): Promise<void> {
         const token = localStorage.getItem('auth_token');
         const response = await fetch(`${API_URL}/auth/users`, {
             method: 'POST',
@@ -189,6 +191,22 @@ export const usersAPI = {
         if (!response.ok) {
             const error = await response.json();
             throw new Error(error.message || 'Failed to create user');
+        }
+    },
+
+    async update(id: string, payload: AdminUserPayload): Promise<void> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_URL}/auth/users/${id}`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to update user');
         }
     },
 
@@ -222,7 +240,7 @@ export const usersAPI = {
 
     async getStations(): Promise<StationOption[]> {
         const token = localStorage.getItem('auth_token');
-        const response = await fetch(`${API_URL}/station-information`, {
+        const response = await fetch(`${API_URL}/stations`, {
             headers: { 'Authorization': `Bearer ${token}` },
         });
 
