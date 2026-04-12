@@ -8,7 +8,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000
 
 export function StationInformationForm() {
   const { accessMode } = useStation();
-  const { getPartialPopulationData, hasAutoPopulateData, clearInvestmentProjectData } = useAutoPopulate();
+  const { investmentProjectData, clearInvestmentProjectData } = useAutoPopulate();
   const resolvedStationCode = useResolvedStationCode();
   const isReadOnly = accessMode === 'view-only';
   const stationTypes = ["operation", "rent", "franchise", "investment", "ownership"];
@@ -74,23 +74,32 @@ export function StationInformationForm() {
   }, [resolvedStationCode]);
 
   useEffect(() => {
-    if (!hasAutoPopulateData()) {
+    if (!investmentProjectData) {
       return;
     }
 
     setFormData((prev) => {
-      const partialData = getPartialPopulationData('station', { includeCode: true, includeName: true });
-      return {
+      const next = {
         ...prev,
-        stationCode: prev.stationCode || partialData.stationCode || prev.stationCode,
-        stationName: prev.stationName || partialData.stationName || prev.stationName,
-        areaRegion: prev.areaRegion || partialData.areaRegion || prev.areaRegion,
-        city: prev.city || partialData.city || prev.city,
-        district: prev.district || partialData.district || prev.district,
-        geographicLocation: prev.geographicLocation || partialData.geographicLocation || prev.geographicLocation,
+        stationCode: prev.stationCode || investmentProjectData.projectCode || prev.stationCode,
+        stationName: prev.stationName || investmentProjectData.projectName || prev.stationName,
+        areaRegion: prev.areaRegion || investmentProjectData.area || prev.areaRegion,
+        city: prev.city || investmentProjectData.city || prev.city,
+        district: prev.district || investmentProjectData.district || prev.district,
+        geographicLocation: prev.geographicLocation || investmentProjectData.googleLocation || prev.geographicLocation,
       };
+
+      const changed =
+        next.stationCode !== prev.stationCode ||
+        next.stationName !== prev.stationName ||
+        next.areaRegion !== prev.areaRegion ||
+        next.city !== prev.city ||
+        next.district !== prev.district ||
+        next.geographicLocation !== prev.geographicLocation;
+
+      return changed ? next : prev;
     });
-  }, [hasAutoPopulateData, getPartialPopulationData]);
+  }, [investmentProjectData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
