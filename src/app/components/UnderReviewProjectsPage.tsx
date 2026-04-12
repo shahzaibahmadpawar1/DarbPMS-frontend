@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import {
     Clock, CheckCircle, MessageSquare,
     ChevronDown, ChevronUp, ExternalLink, MapPin,
@@ -105,6 +106,7 @@ interface InvestmentProject {
 
 export function UnderReviewProjectsPage() {
     const { user, token } = useAuth();
+    const [searchParams] = useSearchParams();
     const [projects, setProjects] = useState<InvestmentProject[]>([]);
     const [workflowSummary, setWorkflowSummary] = useState({
         totalProjects: 0,
@@ -119,6 +121,8 @@ export function UnderReviewProjectsPage() {
     const [expandedId, setExpandedId] = useState<string | null>(null);
     const [comment, setComment] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const projectCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
+    const selectedProjectId = searchParams.get("projectId");
 
     const fetchProjects = async () => {
         if (!token) {
@@ -143,6 +147,22 @@ export function UnderReviewProjectsPage() {
     useEffect(() => {
         fetchProjects();
     }, [token]);
+
+    useEffect(() => {
+        if (!selectedProjectId || projects.length === 0) {
+            return;
+        }
+
+        const targetProject = projects.find((project) => project.id === selectedProjectId);
+        if (!targetProject) {
+            return;
+        }
+
+        setExpandedId(targetProject.id);
+        window.requestAnimationFrame(() => {
+            projectCardRefs.current[targetProject.id]?.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+    }, [projects, selectedProjectId]);
 
     useEffect(() => {
         const fetchSummary = async () => {
@@ -278,6 +298,9 @@ export function UnderReviewProjectsPage() {
                     {filteredProjects.map((project) => (
                         <div
                             key={project.id}
+                            ref={(element) => {
+                                projectCardRefs.current[project.id] = element;
+                            }}
                             className={`bg-card rounded-2xl border transition-all duration-300 overflow-hidden ${expandedId === project.id ? "ring-2 ring-primary border-transparent shadow-xl" : "border-border shadow-sm hover:shadow-md"
                                 }`}
                         >

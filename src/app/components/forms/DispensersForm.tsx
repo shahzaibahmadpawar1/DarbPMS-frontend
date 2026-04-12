@@ -105,18 +105,18 @@ export function DispensersForm() {
             const response = await fetch(
                 draftSerialNumber ? `${API_BASE_URL}/dispensers/${draftSerialNumber}` : `${API_BASE_URL}/dispensers`,
                 {
-                method: draftSerialNumber ? 'PUT' : 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    ...formData,
-                    dispenserSerialNumber: draftSerialNumber || undefined,
-                    submit: mode === 'submit',
-                }),
-            }
-            });
+                    method: draftSerialNumber ? 'PUT' : 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        ...formData,
+                        dispenserSerialNumber: draftSerialNumber || undefined,
+                        submit: mode === 'submit',
+                    }),
+                }
+            );
 
             const data = await response.json();
 

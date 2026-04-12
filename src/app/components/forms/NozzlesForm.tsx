@@ -130,18 +130,18 @@ export function NozzlesForm() {
             const response = await fetch(
                 draftNozzleSerialNumber ? `${API_BASE_URL}/nozzles/${draftNozzleSerialNumber}` : `${API_BASE_URL}/nozzles`,
                 {
-                method: draftNozzleSerialNumber ? 'PUT' : 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    ...formData,
-                    nozzleSerialNumber: draftNozzleSerialNumber || formData.nozzleSerialNumber,
-                    submit: mode === 'submit',
-                }),
-            }
-            });
+                    method: draftNozzleSerialNumber ? 'PUT' : 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        ...formData,
+                        nozzleSerialNumber: draftNozzleSerialNumber || formData.nozzleSerialNumber,
+                        submit: mode === 'submit',
+                    }),
+                }
+            );
 
             const data = await response.json();
 

@@ -108,18 +108,18 @@ export function CamerasForm() {
             const response = await fetch(
                 draftSerialNumber ? `${API_BASE_URL}/cameras/${draftSerialNumber}` : `${API_BASE_URL}/cameras`,
                 {
-                method: draftSerialNumber ? 'PUT' : 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    ...formData,
-                    serialNumber: draftSerialNumber || undefined,
-                    submit: mode === 'submit',
-                }),
-            }
-            });
+                    method: draftSerialNumber ? 'PUT' : 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        ...formData,
+                        serialNumber: draftSerialNumber || undefined,
+                        submit: mode === 'submit',
+                    }),
+                }
+            );
 
             const data = await response.json();
 

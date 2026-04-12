@@ -60,6 +60,7 @@ const GovernmentLicenseAttachmentsPage = lazy(() => import("@/app/components/for
 const RequestPage = lazy(() => import("@/app/components/RequestPage").then((m) => ({ default: m.RequestPage })));
 const UnderReviewProjectsPage = lazy(() => import("@/app/components/UnderReviewProjectsPage").then((m) => ({ default: m.UnderReviewProjectsPage })));
 const UsersPage = lazy(() => import("@/app/components/UsersPage").then((m) => ({ default: m.UsersPage })));
+const ActivityHistoryPage = lazy(() => import("@/app/components/ActivityHistoryPage").then((m) => ({ default: m.ActivityHistoryPage })));
 
 const RouteFallback = () => (
   <div className="min-h-screen flex items-center justify-center">
@@ -95,6 +96,7 @@ function App() {
               <Route path="/all-stations-under-review" element={<UnderReviewProjectsPage />} />
               <Route path="/all-stations-contact-ceo" element={<ComplaintContactForm />} />
               <Route path="/all-stations-users" element={<UsersPage />} />
+              <Route path="/all-stations-activity-history" element={<ActivityHistoryPage />} />
               <Route path="/station/:stationId" element={<StationFormsPage />} />
 
               {/* Station-specific forms nested under the same layout */}

@@ -1,4 +1,5 @@
 import { ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import {
     AlertCircle,
@@ -21,12 +22,12 @@ type WorkflowTaskStatus =
     | "approved"
     | "rejected";
 
-type WorkflowTaskFlow = "contract" | "documents";
+type WorkflowTaskFlow = "contract" | "documents" | "request" | "ceo_contact";
 type RoleViewTab = "manager" | "employee" | "super-admin";
 
 interface WorkflowTask {
     id: string;
-    investment_project_id: string;
+    investment_project_id: string | null;
     title: string;
     description: string | null;
     flow_type: WorkflowTaskFlow;
@@ -46,11 +47,14 @@ interface WorkflowTask {
     employee_note: string | null;
     assignee_note: string | null;
     super_admin_comment: string | null;
+    metadata: Record<string, unknown> | null;
+    created_by: string | null;
+    created_by_username: string | null;
     created_at: string;
     updated_at: string;
-    project_name: string;
-    project_code: string;
-    review_status: string;
+    project_name: string | null;
+    project_code: string | null;
+    review_status: string | null;
     workflow_path: WorkflowTaskFlow | null;
     city: string | null;
     assigned_to_username: string | null;
@@ -145,10 +149,13 @@ const stageLabel: Record<WorkflowTaskStatus, string> = {
 const branchLabel: Record<WorkflowTaskFlow, string> = {
     contract: "Contract",
     documents: "Document",
+    request: "Request",
+    ceo_contact: "CEO Contact",
 };
 
 export function TasksPage() {
     const { token, user } = useAuth();
+    const navigate = useNavigate();
     const [tasks, setTasks] = useState<WorkflowTask[]>([]);
     const [assignableUsersByDepartment, setAssignableUsersByDepartment] = useState<Record<string, AssignableUser[]>>({});
     const [loadingDepartmentUsers, setLoadingDepartmentUsers] = useState<Record<string, boolean>>({});
@@ -165,6 +172,7 @@ export function TasksPage() {
     const [branchAssignee, setBranchAssignee] = useState<Record<string, string>>({});
     const [taskHistory, setTaskHistory] = useState<Record<string, { task: WorkflowTask; history: WorkflowHistoryEntry[] }>>({});
     const [expandedHistoryTaskId, setExpandedHistoryTaskId] = useState<string | null>(null);
+    const [showOnlyMySubmittedForms, setShowOnlyMySubmittedForms] = useState(false);
 
     const canAssign = user?.role === "department_manager" || user?.role === "super_admin" || user?.role === "supervisor";
     const canValidateAsManager = user?.role === "department_manager" || user?.role === "super_admin";
@@ -261,12 +269,14 @@ export function TasksPage() {
 
     const matchesSearch = (task: WorkflowTask, query: string): boolean => {
         const q = query.toLowerCase();
+        const metadataText = JSON.stringify(task.metadata || {}).toLowerCase();
         return (
-            task.project_name.toLowerCase().includes(q)
-            || task.project_code.toLowerCase().includes(q)
+            (task.project_name || task.title || "").toLowerCase().includes(q)
+            || (task.project_code || task.id || "").toLowerCase().includes(q)
             || task.title.toLowerCase().includes(q)
             || task.origin_department.toLowerCase().includes(q)
             || task.target_department.toLowerCase().includes(q)
+            || metadataText.includes(q)
         );
     };
 
@@ -279,7 +289,8 @@ export function TasksPage() {
     const employeeTasks = useMemo(() => {
         return tasks.filter((task) => {
             const assignedToMe = task.assigned_to === user?.id;
-            return assignedToMe && matchesSearch(task, search);
+            const createdByMe = task.created_by === user?.id;
+            return (assignedToMe || createdByMe) && matchesSearch(task, search);
         });
     }, [tasks, user?.id, search]);
 
@@ -562,13 +573,18 @@ export function TasksPage() {
         const canEmployeeAct = mode === "employee"
             && task.assigned_to === user?.id
             && (task.status === "assigned" || task.status === "employee_submitted");
+        const isGenericTask = task.flow_type === "request" || task.flow_type === "ceo_contact";
+        const displayTitle = task.project_name || task.title;
+        const displayCode = task.project_code || task.id;
+        const meta = task.metadata && typeof task.metadata === "object" ? (task.metadata as Record<string, any>) : null;
+        const reviewerComment = task.super_admin_comment || task.manager_note || task.assignee_note;
         return (
             <div key={task.id} className="bg-card/80 rounded-2xl border border-border p-5 space-y-4">
                 <div className="flex flex-wrap items-start justify-between gap-4">
                     <div>
-                        <h3 className="text-lg font-bold text-foreground">{task.project_name}</h3>
+                        <h3 className="text-lg font-bold text-foreground">{displayTitle}</h3>
                         <p className="text-xs text-muted-foreground">
-                            {task.project_code} | {task.flow_type.toUpperCase()} | {task.origin_department} {"->"} {task.target_department}
+                            {displayCode} | {branchLabel[task.flow_type]} | {task.origin_department} {"->"} {task.target_department}
                         </p>
                         <div className="mt-2 flex flex-wrap gap-2">
                             <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-muted text-muted-foreground border border-border">
@@ -590,19 +606,30 @@ export function TasksPage() {
                     <p>
                         Current assignee: <span className="font-semibold text-foreground">{task.assigned_to_username || "Unassigned"}</span>
                     </p>
-                    <button
-                        type="button"
-                        onClick={async () => {
-                            const nextOpen = expandedHistoryTaskId === task.id ? null : task.id;
-                            setExpandedHistoryTaskId(nextOpen);
-                            if (nextOpen && !taskHistory[task.id]) {
-                                await loadTaskHistory(task.id);
-                            }
-                        }}
-                        className="px-3 py-1.5 rounded-lg border border-border bg-background text-foreground font-semibold hover:bg-muted/50"
-                    >
-                        {expandedHistoryTaskId === task.id ? "Hide history" : "View history"}
-                    </button>
+                    <div className="flex items-center gap-2">
+                        {task.investment_project_id && (
+                            <button
+                                type="button"
+                                onClick={() => navigate(`/dashboard/under-review?projectId=${task.investment_project_id}`)}
+                                className="px-3 py-1.5 rounded-lg border border-primary/20 bg-primary/10 text-primary font-semibold hover:bg-primary/20"
+                            >
+                                Details
+                            </button>
+                        )}
+                        <button
+                            type="button"
+                            onClick={async () => {
+                                const nextOpen = expandedHistoryTaskId === task.id ? null : task.id;
+                                setExpandedHistoryTaskId(nextOpen);
+                                if (nextOpen && !taskHistory[task.id]) {
+                                    await loadTaskHistory(task.id);
+                                }
+                            }}
+                            className="px-3 py-1.5 rounded-lg border border-border bg-background text-foreground font-semibold hover:bg-muted/50"
+                        >
+                            {expandedHistoryTaskId === task.id ? "Hide history" : "View history"}
+                        </button>
+                    </div>
                 </div>
 
                 {expandedHistoryTaskId === task.id && taskHistory[task.id] && (
@@ -640,8 +667,87 @@ export function TasksPage() {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
                     <p className="text-muted-foreground"><Clock className="w-4 h-4 inline mr-1" /> Created: {new Date(task.created_at).toLocaleDateString()}</p>
                     <p className="text-muted-foreground"><User className="w-4 h-4 inline mr-1" /> Assigned To: {task.assigned_to_username || "Unassigned"}</p>
-                    <p className="text-muted-foreground">Project Status: {task.review_status}</p>
+                    <p className="text-muted-foreground">Status: {task.review_status || task.status}</p>
                 </div>
+
+                {isGenericTask && meta && (
+                    <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <p className="text-sm font-bold text-foreground">Submitted Details</p>
+                            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20">
+                                {branchLabel[task.flow_type]}
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                            <p className="text-muted-foreground"><span className="font-semibold text-foreground">Requester:</span> {(meta.requester?.username as string) || task.created_by_username || "Unknown"}</p>
+                            <p className="text-muted-foreground"><span className="font-semibold text-foreground">Department:</span> {(meta.department as string) || task.origin_department}</p>
+                            <p className="text-muted-foreground"><span className="font-semibold text-foreground">Subject:</span> {(meta.subject as string) || task.title}</p>
+                            <p className="text-muted-foreground"><span className="font-semibold text-foreground">Priority:</span> {(meta.priority as string) || "Normal"}</p>
+                            <p className="text-muted-foreground md:col-span-2"><span className="font-semibold text-foreground">Message:</span> {(meta.description as string) || task.description || "-"}</p>
+                            {Array.isArray(meta.attachments) && meta.attachments.length > 0 && (
+                                <div className="md:col-span-2 space-y-2">
+                                    <p className="font-semibold text-foreground">Attachments</p>
+                                    <div className="space-y-2">
+                                        {meta.attachments.map((attachment: any, index: number) => (
+                                            <a key={`${task.id}-attachment-${index}`} href={attachment?.url || "#"} target="_blank" rel="noreferrer" className="block text-primary underline text-sm break-all">
+                                                {attachment?.name || `Attachment ${index + 1}`}
+                                            </a>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {reviewerComment && (
+                    <div className="rounded-xl border border-border bg-background/70 p-4">
+                        <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Reviewer Response</p>
+                        <p className="text-sm text-foreground">{reviewerComment}</p>
+                    </div>
+                )}
+
+                {mode === "manager" && task.flow_type === "request" && task.status === "assigned" && (
+                    <div className="border-t border-border pt-4 space-y-3">
+                        <p className="text-xs font-bold text-muted-foreground uppercase">Department Manager Decision</p>
+                        <textarea
+                            rows={2}
+                            value={reviewComment[task.id] || ""}
+                            onChange={(event) => setReviewComment((prev) => ({ ...prev, [task.id]: event.target.value }))}
+                            className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                            placeholder="Add approval or rejection notes"
+                        />
+                        <div className="flex flex-wrap gap-3">
+                            <button type="button" onClick={() => handleSuperAdminReview(task.id, "approved")} className="px-4 py-2 bg-success text-white rounded-lg text-sm font-semibold">
+                                <CheckCircle className="w-4 h-4 inline mr-1" /> Approve
+                            </button>
+                            <button type="button" onClick={() => handleSuperAdminReview(task.id, "rejected")} className="px-4 py-2 bg-error text-white rounded-lg text-sm font-semibold">
+                                <AlertCircle className="w-4 h-4 inline mr-1" /> Reject
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {mode === "super-admin" && task.flow_type === "ceo_contact" && task.status === "assigned" && (
+                    <div className="border-t border-border pt-4 space-y-3">
+                        <p className="text-xs font-bold text-muted-foreground uppercase">Super Admin Decision</p>
+                        <textarea
+                            rows={2}
+                            value={reviewComment[task.id] || ""}
+                            onChange={(event) => setReviewComment((prev) => ({ ...prev, [task.id]: event.target.value }))}
+                            className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                            placeholder="Add response to the sender"
+                        />
+                        <div className="flex flex-wrap gap-3">
+                            <button type="button" onClick={() => handleSuperAdminReview(task.id, "approved")} className="px-4 py-2 bg-success text-white rounded-lg text-sm font-semibold">
+                                <CheckCircle className="w-4 h-4 inline mr-1" /> Approve
+                            </button>
+                            <button type="button" onClick={() => handleSuperAdminReview(task.id, "rejected")} className="px-4 py-2 bg-error text-white rounded-lg text-sm font-semibold">
+                                <AlertCircle className="w-4 h-4 inline mr-1" /> Reject
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {task.assignee_note && (
                     <div className="rounded-lg border border-border p-3 bg-background/70">
@@ -665,7 +771,7 @@ export function TasksPage() {
                     </div>
                 )}
 
-                {((canManagerAct && canValidateAsManager) || canEmployeeAct || (mode === "manager" && task.review_status === "Validated" && task.status === "assigned")) && (
+                {!isGenericTask && ((canManagerAct && canValidateAsManager) || canEmployeeAct || (mode === "manager" && task.review_status === "Validated" && task.status === "assigned")) && (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         {canManagerAct && canValidateAsManager && task.review_status !== "Validated" && (
                             <div className="space-y-2">
@@ -826,7 +932,7 @@ export function TasksPage() {
                     );
                 })()}
 
-                {mode === "manager" && canValidateAsManager && (task.status === "manager_queue" || task.status === "employee_submitted") && (
+                {!isGenericTask && mode === "manager" && canValidateAsManager && (task.status === "manager_queue" || task.status === "employee_submitted") && (
                     <div className="border-t border-border pt-4 space-y-3">
                         <p className="text-xs font-bold text-muted-foreground uppercase">Manager Validation Comment</p>
                         <textarea
@@ -846,7 +952,7 @@ export function TasksPage() {
                     </div>
                 )}
 
-                {mode === "super-admin" && (task.status === "manager_submitted" || task.status === "under_super_admin_review") && (
+                {!isGenericTask && mode === "super-admin" && (task.status === "manager_submitted" || task.status === "under_super_admin_review") && (
                     <div className="border-t border-border pt-4 space-y-3">
                         <p className="text-xs text-muted-foreground">
                             Attachments uploaded at validation and branch routing stages are shown below.
@@ -959,9 +1065,20 @@ export function TasksPage() {
             ? employeeTasks
             : superAdminTasks;
 
+    const filteredVisibleTasks = useMemo(() => {
+        if (!showOnlyMySubmittedForms || !user?.id) {
+            return visibleTasks;
+        }
+
+        return visibleTasks.filter((task) => {
+            const isFormTask = task.flow_type === "request" || task.flow_type === "ceo_contact";
+            return isFormTask && task.created_by === user.id;
+        });
+    }, [showOnlyMySubmittedForms, visibleTasks, user?.id]);
+
     const completedStatuses: WorkflowTaskStatus[] = ["approved", "rejected"];
-    const pendingTasks = visibleTasks.filter((task) => !completedStatuses.includes(task.status));
-    const completedTasks = visibleTasks.filter((task) => completedStatuses.includes(task.status));
+    const pendingTasks = filteredVisibleTasks.filter((task) => !completedStatuses.includes(task.status));
+    const completedTasks = filteredVisibleTasks.filter((task) => completedStatuses.includes(task.status));
 
     return (
         <div className="max-w-7xl mx-auto">
@@ -1045,6 +1162,14 @@ export function TasksPage() {
                                     Super Admin Review
                                 </button>
                             )}
+
+                            <button
+                                type="button"
+                                onClick={() => setShowOnlyMySubmittedForms((prev) => !prev)}
+                                className={`px-4 py-2 rounded-lg border text-sm font-semibold ${showOnlyMySubmittedForms ? "bg-info text-white border-info" : "bg-background border-border text-foreground"}`}
+                            >
+                                My Submitted Forms
+                            </button>
                         </div>
                     </div>
 
