@@ -34,6 +34,34 @@ import { useAuth } from "@/context/AuthContext";
 
 // API endpoints
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const PROJECTS_PAGE_SIZE = 200;
+
+const fetchAllInvestmentProjects = async (token: string): Promise<InvestmentProject[]> => {
+    const allProjects: InvestmentProject[] = [];
+    let offset = 0;
+
+    while (true) {
+        const response = await fetch(`${API_URL}/investment-projects?limit=${PROJECTS_PAGE_SIZE}&offset=${offset}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch projects');
+        }
+
+        const result = await response.json();
+        const pageItems = Array.isArray(result?.data) ? result.data : [];
+        allProjects.push(...pageItems);
+
+        if (pageItems.length < PROJECTS_PAGE_SIZE) {
+            break;
+        }
+
+        offset += PROJECTS_PAGE_SIZE;
+    }
+
+    return allProjects;
+};
 
 interface InvestmentProject {
     id: string;
@@ -93,17 +121,18 @@ export function UnderReviewProjectsPage() {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     const fetchProjects = async () => {
+        if (!token) {
+            setProjects([]);
+            setIsLoading(false);
+            return;
+        }
+
         try {
             setIsLoading(true);
-            const response = await fetch(`${API_URL}/investment-projects`, {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const result = await response.json();
-            if (result.data) {
-                // Filter based on role logic
-                // For now, show all but UI elements change
-                setProjects(result.data);
-            }
+            const allProjects = await fetchAllInvestmentProjects(token);
+            // Filter based on role logic
+            // For now, show all but UI elements change
+            setProjects(allProjects);
         } catch (err) {
             console.error("Failed to fetch projects:", err);
         } finally {
@@ -113,7 +142,7 @@ export function UnderReviewProjectsPage() {
 
     useEffect(() => {
         fetchProjects();
-    }, []);
+    }, [token]);
 
     useEffect(() => {
         const fetchSummary = async () => {

@@ -3,6 +3,7 @@ import { useParams } from "react-router-dom";
 import { useStation } from "../context/StationContext";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+const stationCodeCache = new Map<string, string>();
 
 export function useResolvedStationCode() {
   const { stationId } = useParams();
@@ -11,7 +12,13 @@ export function useResolvedStationCode() {
 
   useEffect(() => {
     if (selectedStation?.station_code) {
-      setStationCode(selectedStation.station_code);
+      if (stationCode !== selectedStation.station_code) {
+        setStationCode(selectedStation.station_code);
+      }
+
+      if (stationId) {
+        stationCodeCache.set(stationId, selectedStation.station_code);
+      }
       return;
     }
 
@@ -25,6 +32,13 @@ export function useResolvedStationCode() {
     }
 
     let isMounted = true;
+    const cachedCode = stationCodeCache.get(stationId);
+    if (cachedCode) {
+      if (stationCode !== cachedCode) {
+        setStationCode(cachedCode);
+      }
+      return;
+    }
 
     const fetchStation = async () => {
       try {
@@ -43,7 +57,10 @@ export function useResolvedStationCode() {
         const code = result?.data?.station_code;
 
         if (isMounted && code) {
-          setStationCode(code);
+          stationCodeCache.set(stationId, code);
+          if (stationCode !== code) {
+            setStationCode(code);
+          }
         }
       } catch {
         // Ignore and keep existing resolved value.
@@ -55,7 +72,7 @@ export function useResolvedStationCode() {
     return () => {
       isMounted = false;
     };
-  }, [selectedStation?.station_code, stationId]);
+  }, [selectedStation?.station_code, stationId, stationCode]);
 
   return stationCode;
 }

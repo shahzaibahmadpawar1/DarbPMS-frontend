@@ -3,6 +3,38 @@ import { useAuth } from "@/context/AuthContext";
 import { useStation } from "../../context/StationContext";
 import { getDepartmentLabel, getRoleLabel } from "@/services/api";
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
+const DEPT_PROJECTS_PAGE_SIZE = 200;
+
+const fetchDepartmentProjects = async (
+    token: string,
+    dept: 'investment' | 'franchise'
+): Promise<any[]> => {
+    const allProjects: any[] = [];
+    let offset = 0;
+
+    while (true) {
+        const response = await fetch(
+            `${API_URL}/investment-projects?departmentType=${dept}&limit=${DEPT_PROJECTS_PAGE_SIZE}&offset=${offset}`,
+            { headers: { 'Authorization': `Bearer ${token}` } }
+        );
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch department projects');
+        }
+
+        const result = await response.json();
+        const pageItems = Array.isArray(result?.data) ? result.data : [];
+        allProjects.push(...pageItems);
+
+        if (pageItems.length < DEPT_PROJECTS_PAGE_SIZE) {
+            break;
+        }
+
+        offset += DEPT_PROJECTS_PAGE_SIZE;
+    }
+
+    return allProjects;
+};
 import {
     PlusCircle, BarChart2, FileText, BookOpen,
     TrendingUp, CheckCircle2, XCircle, Clock, Upload, FileCheck,
@@ -643,20 +675,24 @@ function NewProjectTab() {
 // â”€â”€â”€ Feasibility Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function FeasibilityTab({ deptLabel }: { deptLabel: string }) {
     const [stats, setStats] = useState({ total: 0, approved: 0, signed_contract: 0, rejected: 0 });
-    const [items, setItems] = useState([]);
+    const [items, setItems] = useState<any[]>([]);
     const { token } = useAuth();
 
     useEffect(() => {
         const fetchFeasibility = async () => {
+            if (!token) {
+                setItems([]);
+                return;
+            }
+
             const dept = window.location.pathname.includes('investment') ? 'investment' : 'franchise';
-            const [statsRes, itemsRes] = await Promise.all([
+            const [statsRes, departmentProjects] = await Promise.all([
                 fetch(`${API_URL}/investment-projects/feasibility-stats?departmentType=${dept}`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`${API_URL}/investment-projects?departmentType=${dept}`, { headers: { 'Authorization': `Bearer ${token}` } })
+                fetchDepartmentProjects(token, dept)
             ]);
             const statsData = await statsRes.json();
-            const itemsData = await itemsRes.json();
             if (statsData.data) setStats(statsData.data);
-            if (itemsData.data) setItems(itemsData.data.filter((p: any) => p.request_type === 'Feasibility Study'));
+            setItems(departmentProjects.filter((p: any) => p.request_type === 'Feasibility Study'));
         };
         fetchFeasibility();
     }, [token]);
@@ -765,20 +801,24 @@ function ReportsTab({ deptLabel }: { deptLabel: string }) {
 // â”€â”€â”€ Contracts Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ContractsTab({ deptLabel }: { deptLabel: string }) {
     const [stats, setStats] = useState({ total: 0, contracted: 0, need_contract: 0 });
-    const [items, setItems] = useState([]);
+    const [items, setItems] = useState<any[]>([]);
     const { token } = useAuth();
 
     useEffect(() => {
         const fetchContracts = async () => {
+            if (!token) {
+                setItems([]);
+                return;
+            }
+
             const dept = window.location.pathname.includes('investment') ? 'investment' : 'franchise';
-            const [statsRes, itemsRes] = await Promise.all([
+            const [statsRes, departmentProjects] = await Promise.all([
                 fetch(`${API_URL}/investment-projects/contract-stats?departmentType=${dept}`, { headers: { 'Authorization': `Bearer ${token}` } }),
-                fetch(`${API_URL}/investment-projects?departmentType=${dept}`, { headers: { 'Authorization': `Bearer ${token}` } })
+                fetchDepartmentProjects(token, dept)
             ]);
             const statsData = await statsRes.json();
-            const itemsData = await itemsRes.json();
             if (statsData.data) setStats(statsData.data);
-            if (itemsData.data) setItems(itemsData.data);
+            setItems(departmentProjects);
         };
         fetchContracts();
     }, [token]);

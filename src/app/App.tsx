@@ -1,69 +1,78 @@
+import { Suspense, lazy } from "react";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { DashboardLayout } from "@/app/components/DashboardLayout";
-import { Dashboard } from "@/app/components/Dashboard";
-import { ExecutiveDashboard } from "@/app/components/ExecutiveDashboard";
-import { StationInformationForm } from "@/app/components/forms/StationInformationForm";
-import { CamerasForm } from "@/app/components/forms/CamerasForm";
-import { DispensersForm } from "@/app/components/forms/DispensersForm";
-import { NozzlesForm } from "@/app/components/forms/NozzlesForm";
-import { TanksForm } from "@/app/components/forms/TanksForm";
-import { AreasForm } from "@/app/components/forms/AreasForm";
-import { OwnerInformationForm } from "@/app/components/forms/OwnerInformationForm";
-import { DeedInformationForm } from "@/app/components/forms/DeedInformationForm";
-import { ContractForm } from "@/app/components/forms/ContractForm";
-import { InvestmentForm } from "@/app/components/forms/InvestmentForm";
-import { ProjectsForm } from "@/app/components/forms/ProjectsForm";
-import { CertificatesForm } from "@/app/components/forms/CertificatesForm";
-import { ComplaintContactForm } from "@/app/components/forms/ComplaintContactForm";
-import { OperationsManagementPage } from "@/app/components/forms/OperationsManagementPage";
-import { HumanResourcePage } from "@/app/components/forms/HumanResourcePage";
-import { MarketingDepartmentPage } from "@/app/components/forms/MarketingDepartmentPage";
-import { GovernmentRelationsDepartmentPage } from "@/app/components/forms/GovernmentRelationsDepartmentPage";
-import { SafetyDepartmentPage } from "@/app/components/forms/SafetyDepartmentPage";
-import { CommercialLicenseForm } from "@/app/components/forms/CommercialLicenseForm";
-import { SalamahLicenseForm } from "@/app/components/forms/SalamahLicenseForm";
-import { TaqyeesLicenseForm } from "@/app/components/forms/TaqyeesLicenseForm";
-import { EnvironmentalLicenseForm } from "@/app/components/forms/EnvironmentalLicenseForm";
-import { EnergyLicenseForm } from "@/app/components/forms/EnergyLicenseForm";
-import { BuildingPermitForm } from "@/app/components/forms/BuildingPermitForm";
-import { FixedAssetsForm } from "@/app/components/forms/FixedAssetsForm";
-import { SurveyReportForm } from "@/app/components/forms/SurveyReportForm";
-import { StationsList } from "@/app/components/StationsList";
-import { StatItemsList } from "@/app/components/StatItemsList";
-import { LoginPage } from "@/app/components/LoginPage";
-import { StationSelectionPage } from "@/app/components/StationSelectionPage";
-import { ModeSelectionPage } from "@/app/components/ModeSelectionPage";
-import { AllStationsDashboardLayout } from "@/app/components/AllStationsDashboardLayout";
-import { DepartmentsPage } from "@/app/components/DepartmentsPage";
-import { AllStationsListPage } from "@/app/components/AllStationsListPage";
-import { StationAnalyticsPage } from "@/app/components/StationAnalyticsPage";
-import { StationFormsPage } from "@/app/components/StationFormsPage";
-import { SingleStationAnalytics } from "@/app/components/SingleStationAnalytics";
-import { SingleStationDashboard } from "@/app/components/SingleStationDashboard";
-import { ReportsPage } from "@/app/components/ReportsPage";
-import { TasksPage } from "@/app/components/TasksPage";
 import { StationProvider } from "@/app/context/StationContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
-import { InvestmentDepartmentPage } from "@/app/components/forms/InvestmentDepartmentPage";
-import { ProjectDepartmentPage } from "@/app/components/forms/ProjectDepartmentPage";
-import { PurchaseDepartmentPage } from "@/app/components/forms/PurchaseDepartmentPage";
-import { FinanceDepartmentPage } from "@/app/components/forms/FinanceDepartmentPage";
-import { ITDepartmentPage } from "@/app/components/forms/ITDepartmentPage";
-import { MaintenanceQualityDepartmentPage } from "@/app/components/forms/MaintenanceQualityDepartmentPage";
-import { LegalDepartmentPage } from "@/app/components/forms/LegalDepartmentPage";
-import { PropertyDepartmentPage } from "@/app/components/forms/PropertyDepartmentPage";
-import { FranchiseDepartmentPage } from "@/app/components/forms/FranchiseDepartmentPage";
-import { GovernmentLicenseAttachmentsPage } from "@/app/components/forms/GovernmentLicenseAttachmentsPage";
-import { RequestPage } from "@/app/components/RequestPage";
-import { UnderReviewProjectsPage } from "@/app/components/UnderReviewProjectsPage";
-import { UsersPage } from "@/app/components/UsersPage";
+
+const DashboardLayout = lazy(() => import("@/app/components/DashboardLayout").then((m) => ({ default: m.DashboardLayout })));
+const Dashboard = lazy(() => import("@/app/components/Dashboard").then((m) => ({ default: m.Dashboard })));
+const ExecutiveDashboard = lazy(() => import("@/app/components/ExecutiveDashboard").then((m) => ({ default: m.ExecutiveDashboard })));
+const StationInformationForm = lazy(() => import("@/app/components/forms/StationInformationForm").then((m) => ({ default: m.StationInformationForm })));
+const CamerasForm = lazy(() => import("@/app/components/forms/CamerasForm").then((m) => ({ default: m.CamerasForm })));
+const DispensersForm = lazy(() => import("@/app/components/forms/DispensersForm").then((m) => ({ default: m.DispensersForm })));
+const NozzlesForm = lazy(() => import("@/app/components/forms/NozzlesForm").then((m) => ({ default: m.NozzlesForm })));
+const TanksForm = lazy(() => import("@/app/components/forms/TanksForm").then((m) => ({ default: m.TanksForm })));
+const AreasForm = lazy(() => import("@/app/components/forms/AreasForm").then((m) => ({ default: m.AreasForm })));
+const OwnerInformationForm = lazy(() => import("@/app/components/forms/OwnerInformationForm").then((m) => ({ default: m.OwnerInformationForm })));
+const DeedInformationForm = lazy(() => import("@/app/components/forms/DeedInformationForm").then((m) => ({ default: m.DeedInformationForm })));
+const ContractForm = lazy(() => import("@/app/components/forms/ContractForm").then((m) => ({ default: m.ContractForm })));
+const InvestmentForm = lazy(() => import("@/app/components/forms/InvestmentForm").then((m) => ({ default: m.InvestmentForm })));
+const ProjectsForm = lazy(() => import("@/app/components/forms/ProjectsForm").then((m) => ({ default: m.ProjectsForm })));
+const CertificatesForm = lazy(() => import("@/app/components/forms/CertificatesForm").then((m) => ({ default: m.CertificatesForm })));
+const ComplaintContactForm = lazy(() => import("@/app/components/forms/ComplaintContactForm").then((m) => ({ default: m.ComplaintContactForm })));
+const OperationsManagementPage = lazy(() => import("@/app/components/forms/OperationsManagementPage").then((m) => ({ default: m.OperationsManagementPage })));
+const HumanResourcePage = lazy(() => import("@/app/components/forms/HumanResourcePage").then((m) => ({ default: m.HumanResourcePage })));
+const MarketingDepartmentPage = lazy(() => import("@/app/components/forms/MarketingDepartmentPage").then((m) => ({ default: m.MarketingDepartmentPage })));
+const GovernmentRelationsDepartmentPage = lazy(() => import("@/app/components/forms/GovernmentRelationsDepartmentPage").then((m) => ({ default: m.GovernmentRelationsDepartmentPage })));
+const SafetyDepartmentPage = lazy(() => import("@/app/components/forms/SafetyDepartmentPage").then((m) => ({ default: m.SafetyDepartmentPage })));
+const CommercialLicenseForm = lazy(() => import("@/app/components/forms/CommercialLicenseForm").then((m) => ({ default: m.CommercialLicenseForm })));
+const SalamahLicenseForm = lazy(() => import("@/app/components/forms/SalamahLicenseForm").then((m) => ({ default: m.SalamahLicenseForm })));
+const TaqyeesLicenseForm = lazy(() => import("@/app/components/forms/TaqyeesLicenseForm").then((m) => ({ default: m.TaqyeesLicenseForm })));
+const EnvironmentalLicenseForm = lazy(() => import("@/app/components/forms/EnvironmentalLicenseForm").then((m) => ({ default: m.EnvironmentalLicenseForm })));
+const EnergyLicenseForm = lazy(() => import("@/app/components/forms/EnergyLicenseForm").then((m) => ({ default: m.EnergyLicenseForm })));
+const BuildingPermitForm = lazy(() => import("@/app/components/forms/BuildingPermitForm").then((m) => ({ default: m.BuildingPermitForm })));
+const FixedAssetsForm = lazy(() => import("@/app/components/forms/FixedAssetsForm").then((m) => ({ default: m.FixedAssetsForm })));
+const SurveyReportForm = lazy(() => import("@/app/components/forms/SurveyReportForm").then((m) => ({ default: m.SurveyReportForm })));
+const StationsList = lazy(() => import("@/app/components/StationsList").then((m) => ({ default: m.StationsList })));
+const StatItemsList = lazy(() => import("@/app/components/StatItemsList").then((m) => ({ default: m.StatItemsList })));
+const LoginPage = lazy(() => import("@/app/components/LoginPage").then((m) => ({ default: m.LoginPage })));
+const StationSelectionPage = lazy(() => import("@/app/components/StationSelectionPage").then((m) => ({ default: m.StationSelectionPage })));
+const ModeSelectionPage = lazy(() => import("@/app/components/ModeSelectionPage").then((m) => ({ default: m.ModeSelectionPage })));
+const AllStationsDashboardLayout = lazy(() => import("@/app/components/AllStationsDashboardLayout").then((m) => ({ default: m.AllStationsDashboardLayout })));
+const DepartmentsPage = lazy(() => import("@/app/components/DepartmentsPage").then((m) => ({ default: m.DepartmentsPage })));
+const AllStationsListPage = lazy(() => import("@/app/components/AllStationsListPage").then((m) => ({ default: m.AllStationsListPage })));
+const StationAnalyticsPage = lazy(() => import("@/app/components/StationAnalyticsPage").then((m) => ({ default: m.StationAnalyticsPage })));
+const StationFormsPage = lazy(() => import("@/app/components/StationFormsPage").then((m) => ({ default: m.StationFormsPage })));
+const SingleStationAnalytics = lazy(() => import("@/app/components/SingleStationAnalytics").then((m) => ({ default: m.SingleStationAnalytics })));
+const SingleStationDashboard = lazy(() => import("@/app/components/SingleStationDashboard").then((m) => ({ default: m.SingleStationDashboard })));
+const ReportsPage = lazy(() => import("@/app/components/ReportsPage").then((m) => ({ default: m.ReportsPage })));
+const TasksPage = lazy(() => import("@/app/components/TasksPage").then((m) => ({ default: m.TasksPage })));
+const InvestmentDepartmentPage = lazy(() => import("@/app/components/forms/InvestmentDepartmentPage").then((m) => ({ default: m.InvestmentDepartmentPage })));
+const ProjectDepartmentPage = lazy(() => import("@/app/components/forms/ProjectDepartmentPage").then((m) => ({ default: m.ProjectDepartmentPage })));
+const PurchaseDepartmentPage = lazy(() => import("@/app/components/forms/PurchaseDepartmentPage").then((m) => ({ default: m.PurchaseDepartmentPage })));
+const FinanceDepartmentPage = lazy(() => import("@/app/components/forms/FinanceDepartmentPage").then((m) => ({ default: m.FinanceDepartmentPage })));
+const ITDepartmentPage = lazy(() => import("@/app/components/forms/ITDepartmentPage").then((m) => ({ default: m.ITDepartmentPage })));
+const MaintenanceQualityDepartmentPage = lazy(() => import("@/app/components/forms/MaintenanceQualityDepartmentPage").then((m) => ({ default: m.MaintenanceQualityDepartmentPage })));
+const LegalDepartmentPage = lazy(() => import("@/app/components/forms/LegalDepartmentPage").then((m) => ({ default: m.LegalDepartmentPage })));
+const PropertyDepartmentPage = lazy(() => import("@/app/components/forms/PropertyDepartmentPage").then((m) => ({ default: m.PropertyDepartmentPage })));
+const FranchiseDepartmentPage = lazy(() => import("@/app/components/forms/FranchiseDepartmentPage").then((m) => ({ default: m.FranchiseDepartmentPage })));
+const GovernmentLicenseAttachmentsPage = lazy(() => import("@/app/components/forms/GovernmentLicenseAttachmentsPage").then((m) => ({ default: m.GovernmentLicenseAttachmentsPage })));
+const RequestPage = lazy(() => import("@/app/components/RequestPage").then((m) => ({ default: m.RequestPage })));
+const UnderReviewProjectsPage = lazy(() => import("@/app/components/UnderReviewProjectsPage").then((m) => ({ default: m.UnderReviewProjectsPage })));
+const UsersPage = lazy(() => import("@/app/components/UsersPage").then((m) => ({ default: m.UsersPage })));
+
+const RouteFallback = () => (
+  <div className="min-h-screen flex items-center justify-center">
+    <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+  </div>
+);
 
 function App() {
   return (
     <AuthProvider>
       <StationProvider>
         <BrowserRouter>
+          <Suspense fallback={<RouteFallback />}>
           <Routes>
             {/* Entry points */}
             <Route path="/" element={<LoginPage />} />
@@ -203,6 +212,7 @@ function App() {
               <Route path="contact-ceo" element={<ComplaintContactForm />} />
             </Route>
           </Routes>
+          </Suspense>
         </BrowserRouter>
       </StationProvider>
     </AuthProvider>

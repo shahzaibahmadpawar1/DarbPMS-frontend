@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from "react";
 
 export interface InvestmentProjectData {
     projectName?: string;
@@ -50,10 +50,10 @@ export function StationProvider({ children }: { children: ReactNode }) {
         return saved ? JSON.parse(saved) : null;
     });
 
-    const clearInvestmentProjectData = () => {
+    const clearInvestmentProjectData = useCallback(() => {
         setInvestmentProjectData(null);
         localStorage.removeItem("investmentProjectData");
-    };
+    }, []);
 
     useEffect(() => {
         if (selectedStation) {
@@ -79,16 +79,18 @@ export function StationProvider({ children }: { children: ReactNode }) {
         }
     }, [investmentProjectData]);
 
+    const value = useMemo(() => ({
+        selectedStation,
+        setSelectedStation,
+        accessMode,
+        setAccessMode,
+        investmentProjectData,
+        setInvestmentProjectData,
+        clearInvestmentProjectData,
+    }), [selectedStation, accessMode, investmentProjectData, clearInvestmentProjectData]);
+
     return (
-        <StationContext.Provider value={{ 
-            selectedStation, 
-            setSelectedStation, 
-            accessMode, 
-            setAccessMode,
-            investmentProjectData,
-            setInvestmentProjectData,
-            clearInvestmentProjectData,
-        }}>
+        <StationContext.Provider value={value}>
             {children}
         </StationContext.Provider>
     );

@@ -71,6 +71,34 @@ interface AssignableUser {
 }
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";
+const TASKS_PAGE_SIZE = 200;
+
+const fetchAllWorkflowTasks = async (token: string): Promise<WorkflowTask[]> => {
+    const allTasks: WorkflowTask[] = [];
+    let offset = 0;
+
+    while (true) {
+        const response = await fetch(`${API_URL}/tasks?limit=${TASKS_PAGE_SIZE}&offset=${offset}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!response.ok) {
+            throw new Error("Failed to fetch workflow tasks");
+        }
+
+        const result = await response.json();
+        const pageItems = Array.isArray(result?.data) ? result.data : [];
+        allTasks.push(...pageItems);
+
+        if (pageItems.length < TASKS_PAGE_SIZE) {
+            break;
+        }
+
+        offset += TASKS_PAGE_SIZE;
+    }
+
+    return allTasks;
+};
 
 const statusLabel: Record<WorkflowTaskStatus, string> = {
     manager_queue: "Manager Queue",
@@ -154,10 +182,8 @@ export function TasksPage() {
 
         setLoading(true);
         try {
-            const [tasksResponse, usersResponse] = await Promise.all([
-                fetch(`${API_URL}/tasks`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                }),
+            const [allTasks, usersResponse] = await Promise.all([
+                fetchAllWorkflowTasks(token),
                 canAssign
                     ? fetch(`${API_URL}/tasks/assignable-users`, {
                         headers: { Authorization: `Bearer ${token}` },
@@ -165,10 +191,7 @@ export function TasksPage() {
                     : Promise.resolve(null),
             ]);
 
-            if (tasksResponse.ok) {
-                const tasksResult = await tasksResponse.json();
-                setTasks(Array.isArray(tasksResult?.data) ? tasksResult.data : []);
-            }
+            setTasks(allTasks);
 
             if (usersResponse && usersResponse.ok) {
                 const usersResult = await usersResponse.json();

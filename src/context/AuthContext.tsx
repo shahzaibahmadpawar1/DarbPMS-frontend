@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { authAPI, ApiResponse, Department, UserRole, UserStatus, UserType, normalizeUserRole } from '@/services/api';
 
 interface User {
@@ -54,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
     }, []);
 
-    const login = async (username: string, password: string) => {
+    const login = useCallback(async (username: string, password: string) => {
         try {
             setIsLoading(true);
             setError(null);
@@ -80,9 +80,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         } finally {
             setIsLoading(false);
         }
-    };
+    }, []);
 
-    const logout = () => {
+    const logout = useCallback(() => {
         // Clear localStorage
         localStorage.removeItem('auth_token');
         localStorage.removeItem('auth_user');
@@ -91,9 +91,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setToken(null);
         setUser(null);
         setError(null);
-    };
+    }, []);
 
-    const value: AuthContextType = {
+    const value: AuthContextType = useMemo(() => ({
         user,
         token,
         isAuthenticated: !!token && !!user,
@@ -101,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         logout,
         error,
-    };
+    }), [user, token, isLoading, login, logout, error]);
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

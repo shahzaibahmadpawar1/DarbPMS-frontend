@@ -11,6 +11,7 @@ import logo from "../../assets/logo.png";
 import { useAuth } from "@/context/AuthContext";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+const STATIONS_PAGE_SIZE = 200;
 
 const bucketLabels: Record<string, string> = {
     'total-stations': 'Total Stations',
@@ -67,47 +68,73 @@ export function AllStationsListPage() {
         }
 
         try {
-            const endpoint = activeBucket
-                ? `${API_BASE_URL}/dashboard/stations?bucket=${encodeURIComponent(activeBucket)}`
-                : `${API_BASE_URL}/stations`;
+            if (activeBucket) {
+                const endpoint = `${API_BASE_URL}/dashboard/stations?bucket=${encodeURIComponent(activeBucket)}`;
+                const response = await fetch(endpoint, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
 
-            const response = await fetch(endpoint, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
+                if (!response.ok) {
+                    throw new Error(response.statusText || 'Failed to fetch bucket stations');
+                }
 
-            if (response.ok) {
                 const result = await response.json();
-                const mappedStations = activeBucket
-                    ? (result.data || []).map((s: any) => ({
-                        id: s.id || s.station_code,
-                        station_code: s.station_code,
-                        name: s.station_name,
-                        city: s.city || "N/A",
-                        stationType: s.station_type_code || "N/A",
-                        status: s.station_status_code || "Active",
-                        raw: s,
-                    }))
-                    : (result.data || []).map((s: any) => ({
-                        id: s.id,
-                        station_code: s.station_code,
-                        name: s.station_name,
-                        region: s.area_region || "N/A",
-                        city: s.city || "N/A",
-                        project: s.district || "N/A",
-                        customerName: s.street || "N/A",
-                        status: s.station_status_code || "Active",
-                        formsCompleted: 1,
-                        totalForms: 16,
-                        raw: s
-                    }));
+                const mappedStations = (result.data || []).map((s: any) => ({
+                    id: s.id || s.station_code,
+                    station_code: s.station_code,
+                    name: s.station_name,
+                    city: s.city || "N/A",
+                    stationType: s.station_type_code || "N/A",
+                    status: s.station_status_code || "Active",
+                    raw: s,
+                }));
                 setStations(mappedStations);
-            } else if (response.status === 401 || response.status === 403) {
-                console.error("Authentication failed. Please log in again.");
-            } else {
-                console.error("Failed to fetch stations:", response.statusText);
+            }
+
+            if (!activeBucket) {
+                const allStations: any[] = [];
+                let offset = 0;
+
+                while (true) {
+                    const response = await fetch(`${API_BASE_URL}/stations?limit=${STATIONS_PAGE_SIZE}&offset=${offset}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json',
+                        },
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(response.statusText || 'Failed to fetch stations');
+                    }
+
+                    const result = await response.json();
+                    const pageItems = Array.isArray(result?.data) ? result.data : [];
+                    allStations.push(...pageItems);
+
+                    if (pageItems.length < STATIONS_PAGE_SIZE) {
+                        break;
+                    }
+
+                    offset += STATIONS_PAGE_SIZE;
+                }
+
+                const mappedStations = allStations.map((s: any) => ({
+                    id: s.id,
+                    station_code: s.station_code,
+                    name: s.station_name,
+                    region: s.area_region || "N/A",
+                    city: s.city || "N/A",
+                    project: s.district || "N/A",
+                    customerName: s.street || "N/A",
+                    status: s.station_status_code || "Active",
+                    formsCompleted: 1,
+                    totalForms: 16,
+                    raw: s
+                }));
+                setStations(mappedStations);
             }
         } catch (error) {
             console.error("Error fetching stations:", error);
