@@ -9,7 +9,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000
 
 export function OwnerInformationForm() {
   const { accessMode, selectedStation } = useStation();
-  const { getPartialPopulationData, hasAutoPopulateData, clearInvestmentProjectData } = useAutoPopulate();
+  const { investmentProjectData, clearInvestmentProjectData } = useAutoPopulate();
   const resolvedStationCode = useResolvedStationCode();
   const isReadOnly = accessMode === 'view-only';
   const stationTypes = ["operation", "rent", "franchise", "investment", "ownership"];
@@ -37,7 +37,7 @@ export function OwnerInformationForm() {
         return;
       }
 
-      setFormData((prev) => ({ ...prev, stationCode: code }));
+      setFormData((prev) => (prev.stationCode === code ? prev : { ...prev, stationCode: code }));
 
       const response = await axios.get(`${API_BASE_URL}/owners/station/${code}`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -45,19 +45,36 @@ export function OwnerInformationForm() {
 
       const row = Array.isArray(response.data?.data) ? response.data.data[0] : null;
       if (row) {
-        setExistingOwnerId(String(row.id));
-        setFormData((prev) => ({
-          ...prev,
-          ownerId: row.owner_id || prev.ownerId,
-          ownerName: row.owner_name || prev.ownerName,
-          issueDate: row.issue_date ? String(row.issue_date).slice(0, 10) : prev.issueDate,
-          issuePlace: row.issue_place || prev.issuePlace,
-          ownerMobile: row.owner_mobile || prev.ownerMobile,
-          ownerAddress: row.owner_address || prev.ownerAddress,
-          ownerEmail: row.owner_email || prev.ownerEmail,
-          stationTypeCode: row.station_type_code || prev.stationTypeCode,
-          stationCode: row.station_code || prev.stationCode,
-        }));
+        const nextExistingOwnerId = String(row.id);
+        setExistingOwnerId((prev) => (prev === nextExistingOwnerId ? prev : nextExistingOwnerId));
+
+        setFormData((prev) => {
+          const next = {
+            ...prev,
+            ownerId: row.owner_id || prev.ownerId,
+            ownerName: row.owner_name || prev.ownerName,
+            issueDate: row.issue_date ? String(row.issue_date).slice(0, 10) : prev.issueDate,
+            issuePlace: row.issue_place || prev.issuePlace,
+            ownerMobile: row.owner_mobile || prev.ownerMobile,
+            ownerAddress: row.owner_address || prev.ownerAddress,
+            ownerEmail: row.owner_email || prev.ownerEmail,
+            stationTypeCode: row.station_type_code || prev.stationTypeCode,
+            stationCode: row.station_code || prev.stationCode,
+          };
+
+          const changed =
+            next.ownerId !== prev.ownerId ||
+            next.ownerName !== prev.ownerName ||
+            next.issueDate !== prev.issueDate ||
+            next.issuePlace !== prev.issuePlace ||
+            next.ownerMobile !== prev.ownerMobile ||
+            next.ownerAddress !== prev.ownerAddress ||
+            next.ownerEmail !== prev.ownerEmail ||
+            next.stationTypeCode !== prev.stationTypeCode ||
+            next.stationCode !== prev.stationCode;
+
+          return changed ? next : prev;
+        });
       }
     } catch (error) {
       console.error("Error fetching owners:", error);
@@ -69,22 +86,30 @@ export function OwnerInformationForm() {
   }, [resolvedStationCode, selectedStation?.station_code]);
 
   useEffect(() => {
-    if (!hasAutoPopulateData()) {
+    if (!investmentProjectData) {
       return;
     }
 
     setFormData((prev) => {
-      const partialData = getPartialPopulationData('owner');
-      return {
+      const next = {
         ...prev,
-        ownerId: prev.ownerId || partialData.ownerId || prev.ownerId,
-        ownerName: prev.ownerName || partialData.ownerName || prev.ownerName,
-        ownerMobile: prev.ownerMobile || partialData.ownerMobile || prev.ownerMobile,
-        ownerAddress: prev.ownerAddress || partialData.ownerAddress || prev.ownerAddress,
-        ownerEmail: prev.ownerEmail || partialData.ownerEmail || prev.ownerEmail,
+        ownerId: prev.ownerId || investmentProjectData.idNo || prev.ownerId,
+        ownerName: prev.ownerName || investmentProjectData.ownerName || prev.ownerName,
+        ownerMobile: prev.ownerMobile || investmentProjectData.ownerContactNo || prev.ownerMobile,
+        ownerAddress: prev.ownerAddress || investmentProjectData.nationalAddress || prev.ownerAddress,
+        ownerEmail: prev.ownerEmail || investmentProjectData.email || prev.ownerEmail,
       };
+
+      const changed =
+        next.ownerId !== prev.ownerId ||
+        next.ownerName !== prev.ownerName ||
+        next.ownerMobile !== prev.ownerMobile ||
+        next.ownerAddress !== prev.ownerAddress ||
+        next.ownerEmail !== prev.ownerEmail;
+
+      return changed ? next : prev;
     });
-  }, [hasAutoPopulateData, getPartialPopulationData]);
+  }, [investmentProjectData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -50,18 +50,34 @@ export function StationInformationForm() {
         const data = await response.json();
         const row = data?.data;
         if (row) {
-          setExistingStationCode(row.station_code);
-          setFormData((prev) => ({
-            ...prev,
-            stationCode: row.station_code || prev.stationCode,
-            stationName: row.station_name || prev.stationName,
-            areaRegion: row.area_region || prev.areaRegion,
-            city: row.city || prev.city,
-            district: row.district || prev.district,
-            street: row.street || prev.street,
-            geographicLocation: row.geographic_location || prev.geographicLocation,
-            stationTypeCode: row.station_type_code || prev.stationTypeCode,
-          }));
+          const nextExistingStationCode = row.station_code || null;
+          setExistingStationCode((prev) => (prev === nextExistingStationCode ? prev : nextExistingStationCode));
+
+          setFormData((prev) => {
+            const next = {
+              ...prev,
+              stationCode: row.station_code || prev.stationCode,
+              stationName: row.station_name || prev.stationName,
+              areaRegion: row.area_region || prev.areaRegion,
+              city: row.city || prev.city,
+              district: row.district || prev.district,
+              street: row.street || prev.street,
+              geographicLocation: row.geographic_location || prev.geographicLocation,
+              stationTypeCode: row.station_type_code || prev.stationTypeCode,
+            };
+
+            const changed =
+              next.stationCode !== prev.stationCode ||
+              next.stationName !== prev.stationName ||
+              next.areaRegion !== prev.areaRegion ||
+              next.city !== prev.city ||
+              next.district !== prev.district ||
+              next.street !== prev.street ||
+              next.geographicLocation !== prev.geographicLocation ||
+              next.stationTypeCode !== prev.stationTypeCode;
+
+            return changed ? next : prev;
+          });
         }
       }
     } catch (error) {
