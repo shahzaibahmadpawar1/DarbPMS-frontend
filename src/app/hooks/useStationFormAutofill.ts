@@ -243,22 +243,17 @@ export function useStationFormAutofill({ pathname, stationCode }: AutofillOption
     // Step 2: apply stored values to empty matching fields.
     applyStoredValues();
 
-    // Step 3: run a second pass after child components finish rendering.
+    // Step 3: run one delayed pass after child components finish rendering.
     const t1 = window.setTimeout(() => {
       collectAndStore(true);
       applyStoredValues();
-    }, 0);
-    const t2 = window.setTimeout(() => {
-      collectAndStore(true);
-      applyStoredValues();
-    }, 220);
+    }, 90);
 
     document.addEventListener("input", onFieldInput, true);
     document.addEventListener("change", onFieldInput, true);
 
     return () => {
       window.clearTimeout(t1);
-      window.clearTimeout(t2);
       document.removeEventListener("input", onFieldInput, true);
       document.removeEventListener("change", onFieldInput, true);
     };

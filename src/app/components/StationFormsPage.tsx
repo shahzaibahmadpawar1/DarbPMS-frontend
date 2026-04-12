@@ -8,6 +8,8 @@ import { useStation } from "../context/StationContext";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 type CompletionMap = Record<string, boolean>;
+type CompletionCache = { updatedAt: number; data: CompletionMap };
+const COMPLETION_CACHE_TTL_MS = 30_000;
 
 const FORM_COMPLETION_ENDPOINTS: Record<string, string> = {
   "cameras": "/cameras/station/{stationCode}",
@@ -49,6 +51,39 @@ function hasPersistedData(data: unknown, formPath?: string): boolean {
   }
 
   return Boolean(data);
+}
+
+function getCompletionCacheKey(stationCode: string): string {
+  return `stationCompletion:${stationCode}`;
+}
+
+function readCompletionCache(stationCode: string): CompletionMap | null {
+  try {
+    const raw = sessionStorage.getItem(getCompletionCacheKey(stationCode));
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw) as CompletionCache;
+    if (!parsed || typeof parsed !== "object") return null;
+    if (!parsed.updatedAt || typeof parsed.updatedAt !== "number") return null;
+    if (!parsed.data || typeof parsed.data !== "object") return null;
+    if (Date.now() - parsed.updatedAt > COMPLETION_CACHE_TTL_MS) return null;
+
+    return parsed.data;
+  } catch {
+    return null;
+  }
+}
+
+function writeCompletionCache(stationCode: string, data: CompletionMap): void {
+  try {
+    const payload: CompletionCache = {
+      updatedAt: Date.now(),
+      data,
+    };
+    sessionStorage.setItem(getCompletionCacheKey(stationCode), JSON.stringify(payload));
+  } catch {
+    // Ignore storage quota / parse errors and keep runtime behavior.
+  }
 }
 
 export function StationFormsPage() {
@@ -164,8 +199,6 @@ export function StationFormsPage() {
           status: s.station_status_code || "Active",
         };
 
-        const completion = await resolveCompletion(s.station_code);
-        setCompletionByPath(completion);
         setStation(mapped);
         setSelectedStation({
           id: mapped.id,
@@ -174,6 +207,17 @@ export function StationFormsPage() {
           region: mapped.region,
           city: mapped.city,
           project: mapped.project,
+        });
+
+        const cachedCompletion = readCompletionCache(s.station_code);
+        if (cachedCompletion) {
+          setCompletionByPath(cachedCompletion);
+        }
+
+        // Refresh completion asynchronously so the page paints quickly on navigation.
+        void resolveCompletion(s.station_code).then((completion) => {
+          setCompletionByPath(completion);
+          writeCompletionCache(s.station_code, completion);
         });
       } catch {
         setStation(null);

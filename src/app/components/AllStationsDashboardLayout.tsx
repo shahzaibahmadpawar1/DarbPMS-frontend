@@ -108,10 +108,17 @@ export function AllStationsDashboardLayout() {
         };
 
         fetchTaskCount();
+
+        const onFocus = () => {
+            fetchTaskCount();
+        };
+        window.addEventListener("focus", onFocus);
+
         return () => {
             isMounted = false;
+            window.removeEventListener("focus", onFocus);
         };
-    }, [location.pathname]);
+    }, []);
 
     useEffect(() => {
         const token = localStorage.getItem("auth_token");
@@ -139,10 +146,17 @@ export function AllStationsDashboardLayout() {
         };
 
         fetchUnderReviewCount();
+
+        const onFocus = () => {
+            fetchUnderReviewCount();
+        };
+        window.addEventListener("focus", onFocus);
+
         return () => {
             isMounted = false;
+            window.removeEventListener("focus", onFocus);
         };
-    }, [location.pathname]);
+    }, []);
 
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];

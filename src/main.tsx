@@ -6,13 +6,24 @@
 
   createRoot(document.getElementById("root")!).render(<App />);
 
-  // Activate DeepL DOM translation after React renders if Arabic is selected
+  // Activate DeepL translation during idle time if Arabic is selected.
   const savedLang = localStorage.getItem("darb_lang") || "en";
   if (savedLang === "ar") {
-      // Wait for React's initial render to complete
-      setTimeout(() => {
+      const activate = () => {
           deeplService.activate();
-      }, 600);
+      };
+
+      const requestIdle = (
+          window as Window & {
+              requestIdleCallback?: (callback: IdleRequestCallback, options?: IdleRequestOptions) => number;
+          }
+      ).requestIdleCallback;
+
+      if (typeof requestIdle === "function") {
+          requestIdle(activate, { timeout: 800 });
+      } else {
+          window.setTimeout(activate, 60);
+      }
   }
   
 

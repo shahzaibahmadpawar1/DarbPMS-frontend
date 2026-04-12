@@ -41,7 +41,7 @@ export function DeedInformationForm() {
   });
 
   useEffect(() => {
-    const fetchStationAndRecords = async () => {
+    const hydrateForm = async () => {
       let targetStation = selectedStation;
 
       if (!targetStation && stationId && stationId !== 'new-station') {
@@ -51,31 +51,27 @@ export function DeedInformationForm() {
             headers: { Authorization: `Bearer ${token}` }
           });
           targetStation = response.data.data;
-          setCurrentStation(targetStation);
         } catch (error) {
           console.error("Error fetching station details:", error);
         }
       }
 
       if (targetStation) {
-        setFormData(prev => ({ ...prev, stationCode: targetStation.station_code }));
-        fetchRecords(targetStation.station_code);
-      } else {
-        fetchRecords();
+        setCurrentStation(targetStation);
       }
-    };
 
-    fetchStationAndRecords();
-  }, [selectedStation, stationId]);
+      const stationCode = targetStation?.station_code || "";
+      if (stationCode) {
+        setFormData(prev => prev.stationCode === stationCode ? prev : { ...prev, stationCode });
+      }
 
-  useEffect(() => {
-    const loadLatestSaved = async () => {
+      await fetchRecords(stationCode || undefined);
+
       try {
         const token = localStorage.getItem('auth_token');
         if (!token) return;
 
         const params = new URLSearchParams();
-        const stationCode = selectedStation?.station_code || currentStation?.station_code || "";
         if (stationCode) params.set('stationCode', stationCode);
 
         const response = await axios.get(`${API_BASE_URL}/deeds/latest-saved?${params.toString()}`, {
@@ -110,8 +106,8 @@ export function DeedInformationForm() {
       }
     };
 
-    void loadLatestSaved();
-  }, [selectedStation?.station_code, currentStation?.station_code]);
+    void hydrateForm();
+  }, [selectedStation, stationId]);
 
   const fetchRecords = async (stationCode?: string) => {
     try {

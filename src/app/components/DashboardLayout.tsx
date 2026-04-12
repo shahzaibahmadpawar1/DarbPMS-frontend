@@ -88,10 +88,17 @@ export function DashboardLayout() {
     };
 
     fetchTaskCount();
+
+    const onFocus = () => {
+      fetchTaskCount();
+    };
+    window.addEventListener("focus", onFocus);
+
     return () => {
       isMounted = false;
+      window.removeEventListener("focus", onFocus);
     };
-  }, [location.pathname]);
+  }, []);
 
   const navigation: NavItem[] = [
     { title: stationName, path: "/dashboard", icon: <img src={logo} alt="" className="w-5 h-5 object-contain brightness-0 invert" /> },
