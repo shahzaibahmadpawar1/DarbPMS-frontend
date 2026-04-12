@@ -1,16 +1,20 @@
 import { useState, useEffect } from "react";
-import { Save, List, PlusCircle } from "lucide-react";
+import { Save, List, PlusCircle, Send } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
+import { useResolvedStationCode } from "../../hooks/useResolvedStationCode";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 export function TanksForm() {
     const { accessMode } = useStation();
+    const resolvedStationCode = useResolvedStationCode();
     const isReadOnly = accessMode === 'view-only';
 
     const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
     const [loading, setLoading] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+    const [draftTankCode, setDraftTankCode] = useState<string | null>(null);
     const [records, setRecords] = useState<any[]>([]);
 
     const [formData, setFormData] = useState({
@@ -27,6 +31,55 @@ export function TanksForm() {
     useEffect(() => {
         fetchRecords();
     }, []);
+
+    useEffect(() => {
+        if (!resolvedStationCode || isReadOnly) return;
+        setFormData((prev) => ({
+            ...prev,
+            stationCode: prev.stationCode || resolvedStationCode,
+        }));
+    }, [resolvedStationCode, isReadOnly]);
+
+    useEffect(() => {
+        const loadLatestSaved = async () => {
+            try {
+                const token = localStorage.getItem('auth_token');
+                if (!token) return;
+
+                const stationCode = formData.stationCode || resolvedStationCode || '';
+                const params = new URLSearchParams();
+                if (stationCode) params.set('stationCode', stationCode);
+
+                const response = await fetch(`${API_BASE_URL}/tanks/latest-saved?${params.toString()}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (!response.ok) return;
+                const result = await response.json();
+                const saved = result?.data;
+                if (!saved) return;
+
+                setDraftTankCode(saved.tank_code || null);
+                setFormData({
+                    tankCode: saved.tank_code || "",
+                    fuelType: saved.fuel_type || "",
+                    vendor: saved.vendor || "",
+                    tankCapacity: saved.tank_capacity != null ? String(saved.tank_capacity) : "",
+                    tankSize: saved.tank_size || "",
+                    tankManufacturer: saved.tank_manufacturer || "",
+                    stationCode: saved.station_code || stationCode,
+                    canopyCode: saved.canopy_code || "",
+                });
+            } catch (error) {
+                console.error("Error loading latest saved tank:", error);
+            }
+        };
+
+        void loadLatestSaved();
+    }, [resolvedStationCode, isReadOnly]);
 
     const fetchRecords = async () => {
         try {
@@ -54,47 +107,65 @@ export function TanksForm() {
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
+    const persistTank = async (mode: 'save' | 'submit') => {
+        if (mode === 'submit') setSubmitting(true); else setLoading(true);
 
         try {
             const token = localStorage.getItem('auth_token');
-            const response = await fetch(`${API_BASE_URL}/tanks`, {
-                method: 'POST',
+            const response = await fetch(draftTankCode ? `${API_BASE_URL}/tanks/${draftTankCode}` : `${API_BASE_URL}/tanks`, {
+                method: draftTankCode ? 'PUT' : 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({
+                    ...formData,
+                    tankCode: draftTankCode || formData.tankCode,
+                    submit: mode === 'submit',
+                }),
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                alert("Tank information saved successfully!");
-                setFormData({
-                    tankCode: "",
-                    fuelType: "",
-                    vendor: "",
-                    tankCapacity: "",
-                    tankSize: "",
-                    tankManufacturer: "",
-                    stationCode: "",
-                    canopyCode: "",
-                });
+                setDraftTankCode(data?.data?.tank_code || draftTankCode);
+
+                if (mode === 'submit') {
+                    alert("Tank information submitted successfully!");
+                    setDraftTankCode(null);
+                    setFormData({
+                        tankCode: "",
+                        fuelType: "",
+                        vendor: "",
+                        tankCapacity: "",
+                        tankSize: "",
+                        tankManufacturer: "",
+                        stationCode: resolvedStationCode || "",
+                        canopyCode: "",
+                    });
+                } else {
+                    alert("Tank information saved successfully. You can continue later.");
+                }
+
                 fetchRecords();
+                setViewMode('records');
             } else if (response.status === 401 || response.status === 403) {
                 alert("Authentication failed. Please log out and then log in again to sync with the Vercel backend. Your token might be from a different session (localhost).");
             } else {
-                alert(`Error: ${data.error || 'Failed to save tank information'}`);
+                alert(`Error: ${data.error || `Failed to ${mode} tank information`}`);
             }
         } catch (error) {
             console.error("Error saving tank:", error);
-            alert("Failed to save tank information. Please check your connection.");
+            alert(`Failed to ${mode} tank information. Please check your connection.`);
         } finally {
             setLoading(false);
+            setSubmitting(false);
         }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        await persistTank('save');
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -217,14 +288,24 @@ export function TanksForm() {
                     </div>
 
                     {!isReadOnly && (
-                        <div className="mt-8 flex justify-end">
+                        <div className="mt-8 flex justify-end gap-3">
                             <button
-                                type="submit"
-                                disabled={loading}
-                                className="bg-primary text-primary-foreground px-8 py-3 rounded-lg font-bold hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2"
+                                type="button"
+                                disabled={loading || submitting}
+                                onClick={() => void persistTank('save')}
+                                className="border border-border px-8 py-3 rounded-lg font-bold transition-all flex items-center gap-2 disabled:opacity-60"
                             >
                                 <Save className="w-5 h-5" />
-                                {loading ? "Saving..." : "Save Tank Information"}
+                                {loading ? "Saving..." : "Save"}
+                            </button>
+                            <button
+                                type="button"
+                                disabled={loading || submitting}
+                                onClick={() => void persistTank('submit')}
+                                className="bg-primary text-primary-foreground px-8 py-3 rounded-lg font-bold hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2"
+                            >
+                                <Send className="w-5 h-5" />
+                                {submitting ? "Submitting..." : "Submit"}
                             </button>
                         </div>
                     )}

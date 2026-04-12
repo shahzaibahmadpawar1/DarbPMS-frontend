@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { Save, List, PlusCircle, Trash2, Building2 } from "lucide-react";
+import { Save, List, PlusCircle, Trash2, Building2, Send } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
+import { useResolvedStationCode } from "../../hooks/useResolvedStationCode";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
@@ -13,10 +14,13 @@ type CommercialComponent = {
 
 export function AreasForm() {
     const { accessMode } = useStation();
+    const resolvedStationCode = useResolvedStationCode();
     const isReadOnly = accessMode === 'view-only';
 
     const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
     const [loading, setLoading] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+    const [draftId, setDraftId] = useState<string | null>(null);
     const [records, setRecords] = useState<any[]>([]);
 
     const [formData, setFormData] = useState({
@@ -38,6 +42,65 @@ export function AreasForm() {
     useEffect(() => {
         fetchRecords();
     }, []);
+
+    useEffect(() => {
+        if (!resolvedStationCode || isReadOnly) return;
+        setFormData((prev) => ({
+            ...prev,
+            stationCode: prev.stationCode || resolvedStationCode,
+        }));
+    }, [resolvedStationCode, isReadOnly]);
+
+    useEffect(() => {
+        const loadLatestSaved = async () => {
+            try {
+                const token = localStorage.getItem('auth_token');
+                if (!token) return;
+
+                const stationCode = formData.stationCode || resolvedStationCode || '';
+                const params = new URLSearchParams();
+                if (stationCode) params.set('stationCode', stationCode);
+                const response = await fetch(`${API_BASE_URL}/areas/latest-saved?${params.toString()}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (!response.ok) return;
+                const result = await response.json();
+                const saved = result?.data;
+                if (!saved?.id) return;
+
+                setDraftId(saved.id);
+                setFormData({
+                    stationCode: saved.station_code || stationCode,
+                    stationArea: saved.station_area != null ? String(saved.station_area) : "",
+                    constructionArea: saved.construction_area != null ? String(saved.construction_area) : "",
+                    canopyArea: saved.canopy_area != null ? String(saved.canopy_area) : "",
+                    mosqueArea: saved.mosque_area != null ? String(saved.mosque_area) : "",
+                    mensWcCount: saved.mens_wc_count != null ? String(saved.mens_wc_count) : "",
+                    womenWcCount: saved.women_wc_count != null ? String(saved.women_wc_count) : "",
+                    mensPrayerArea: saved.mens_prayer_area != null ? String(saved.mens_prayer_area) : "",
+                    womenPrayerArea: saved.women_prayer_area != null ? String(saved.women_prayer_area) : "",
+                    workerRoomsCount: saved.worker_rooms_count != null ? String(saved.worker_rooms_count) : "",
+                    administrationArea: saved.administration_area != null ? String(saved.administration_area) : "",
+                    numberOfPumps: saved.number_of_pumps != null ? String(saved.number_of_pumps) : "",
+                    commercialComponents: Array.isArray(saved.commercial_components)
+                        ? saved.commercial_components.map((component: any) => ({
+                            building: component.building_name || "",
+                            area: component.area != null ? String(component.area) : "",
+                            number: component.component_number || "",
+                        }))
+                        : [],
+                });
+            } catch (error) {
+                console.error("Error loading latest saved area:", error);
+            }
+        };
+
+        void loadLatestSaved();
+    }, [resolvedStationCode, isReadOnly]);
 
     const fetchRecords = async () => {
         try {
@@ -95,51 +158,64 @@ export function AreasForm() {
         setFormData(prev => ({ ...prev, [name]: value }));
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
+    const persistArea = async (mode: 'save' | 'submit') => {
+        if (mode === 'submit') setSubmitting(true); else setLoading(true);
 
         try {
             const token = localStorage.getItem('auth_token');
-            const response = await fetch(`${API_BASE_URL}/areas`, {
-                method: 'POST',
+            const response = await fetch(draftId ? `${API_BASE_URL}/areas/${draftId}` : `${API_BASE_URL}/areas`, {
+                method: draftId ? 'PUT' : 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({ ...formData, submit: mode === 'submit' }),
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                alert("Area information saved successfully!");
-                setFormData({
-                    stationCode: "",
-                    stationArea: "",
-                    constructionArea: "",
-                    canopyArea: "",
-                    mosqueArea: "",
-                    mensWcCount: "",
-                    womenWcCount: "",
-                    mensPrayerArea: "",
-                    womenPrayerArea: "",
-                    workerRoomsCount: "",
-                    administrationArea: "",
-                    numberOfPumps: "",
-                    commercialComponents: [],
-                });
+                setDraftId(data?.data?.id || draftId);
+
+                if (mode === 'submit') {
+                    alert("Area information submitted successfully!");
+                    setDraftId(null);
+                    setFormData({
+                        stationCode: resolvedStationCode || "",
+                        stationArea: "",
+                        constructionArea: "",
+                        canopyArea: "",
+                        mosqueArea: "",
+                        mensWcCount: "",
+                        womenWcCount: "",
+                        mensPrayerArea: "",
+                        womenPrayerArea: "",
+                        workerRoomsCount: "",
+                        administrationArea: "",
+                        numberOfPumps: "",
+                        commercialComponents: [],
+                    });
+                } else {
+                    alert("Area information saved successfully! You can continue later.");
+                }
+
                 fetchRecords();
                 setViewMode('records');
             } else {
-                alert(`Error: ${data.error || 'Failed to save area information'}`);
+                alert(`Error: ${data.error || `Failed to ${mode} area information`}`);
             }
         } catch (error) {
             console.error("Error saving area:", error);
-            alert("Failed to save area information. Please check your connection.");
+            alert(`Failed to ${mode} area information. Please check your connection.`);
         } finally {
             setLoading(false);
+            setSubmitting(false);
         }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        await persistArea('save');
     };
 
     return (
@@ -420,14 +496,24 @@ export function AreasForm() {
                     </div>
 
                     {!isReadOnly && (
-                        <div className="mt-8 flex justify-end">
+                        <div className="mt-8 flex justify-end gap-3">
                             <button
-                                type="submit"
-                                disabled={loading}
-                                className="bg-primary text-primary-foreground px-10 py-4 rounded-xl font-bold hover:shadow-2xl hover:scale-105 transition-all flex items-center gap-2 shadow-primary/25"
+                                type="button"
+                                disabled={loading || submitting}
+                                onClick={() => void persistArea('save')}
+                                className="border border-border px-10 py-4 rounded-xl font-bold transition-all flex items-center gap-2 disabled:opacity-60"
                             >
                                 <Save className="w-5 h-5" />
-                                {loading ? "Saving..." : "Save Area Information"}
+                                {loading ? "Saving..." : "Save"}
+                            </button>
+                            <button
+                                type="button"
+                                disabled={loading || submitting}
+                                onClick={() => void persistArea('submit')}
+                                className="bg-primary text-primary-foreground px-10 py-4 rounded-xl font-bold hover:shadow-2xl hover:scale-105 transition-all flex items-center gap-2 shadow-primary/25"
+                            >
+                                <Send className="w-5 h-5" />
+                                {submitting ? "Submitting..." : "Submit"}
                             </button>
                         </div>
                     )}

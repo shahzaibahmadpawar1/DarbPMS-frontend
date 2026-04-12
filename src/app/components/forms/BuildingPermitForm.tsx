@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Save, List, PlusCircle, Eye } from "lucide-react";
+import { Save, List, PlusCircle, Eye, Send } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
 import axios from "axios";
@@ -15,6 +15,8 @@ export function BuildingPermitForm() {
 
   const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [draftId, setDraftId] = useState<string | null>(null);
   const [records, setRecords] = useState<any[]>([]);
   const [currentStation, setCurrentStation] = useState<any>(selectedStation);
 
@@ -75,6 +77,60 @@ export function BuildingPermitForm() {
     fetchStationAndRecords();
   }, [selectedStation, stationId]);
 
+  useEffect(() => {
+    const loadLatestSaved = async () => {
+      try {
+        const token = localStorage.getItem('auth_token');
+        if (!token) return;
+
+        const params = new URLSearchParams();
+        const stationCode = selectedStation?.station_code || currentStation?.station_code || "";
+        if (stationCode) params.set('stationCode', stationCode);
+
+        const response = await axios.get(`${API_BASE_URL}/building-permits/latest-saved?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        const saved = response.data?.data;
+        if (!saved?.id) return;
+
+        setDraftId(saved.id);
+        setFormData({
+          permitNumber: saved.permit_number || "",
+          licenseDate: saved.license_date ? String(saved.license_date).slice(0, 10) : "",
+          expiryDate: saved.expiry_date ? String(saved.expiry_date).slice(0, 10) : "",
+          licenseType: saved.license_type || "",
+          organizationChartNumber: saved.organization_chart_number || "",
+          constructionType: saved.construction_type || "",
+          urbanArea: saved.urban_area || "",
+          landArea: saved.land_area != null ? String(saved.land_area) : "",
+          wallsPerimeter: saved.walls_perimeter != null ? String(saved.walls_perimeter) : "",
+          northBorder: saved.north_border || "",
+          eastBorder: saved.east_border || "",
+          southBorder: saved.south_border || "",
+          westBorder: saved.west_border || "",
+          northDimensions: saved.north_dimensions != null ? String(saved.north_dimensions) : "",
+          eastDimensions: saved.east_dimensions != null ? String(saved.east_dimensions) : "",
+          southDimensions: saved.south_dimensions != null ? String(saved.south_dimensions) : "",
+          westernDimensions: saved.western_dimensions != null ? String(saved.western_dimensions) : "",
+          northThrowback: saved.north_throwback != null ? String(saved.north_throwback) : "",
+          eastThrowback: saved.east_throwback != null ? String(saved.east_throwback) : "",
+          southThrowback: saved.south_throwback != null ? String(saved.south_throwback) : "",
+          westThrowback: saved.west_throwback != null ? String(saved.west_throwback) : "",
+          constructionComponents: saved.construction_components || "",
+          numberOfUnits: saved.number_of_units != null ? String(saved.number_of_units) : "",
+          stationStatusCode: saved.station_status_code || "",
+          stationCode: saved.station_code || stationCode,
+          officeCode: saved.office_code || "",
+        });
+      } catch (error) {
+        console.error("Error loading latest saved building permit:", error);
+      }
+    };
+
+    void loadLatestSaved();
+  }, [selectedStation?.station_code, currentStation?.station_code]);
+
   const fetchRecords = async (stationCode?: string) => {
     try {
       const token = localStorage.getItem('auth_token');
@@ -92,52 +148,68 @@ export function BuildingPermitForm() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  const persistBuildingPermit = async (mode: 'save' | 'submit') => {
+    if (mode === 'submit') setSubmitting(true); else setLoading(true);
     try {
       const token = localStorage.getItem('auth_token');
-      await axios.post(`${API_BASE_URL}/building-permits`, formData, {
+      const payload = { ...formData, submit: mode === 'submit' };
+      const response = draftId
+        ? await axios.put(`${API_BASE_URL}/building-permits/${draftId}`, payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        : await axios.post(`${API_BASE_URL}/building-permits`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      alert("Building Permit saved successfully!");
-      setFormData({
-        permitNumber: "",
-        licenseDate: "",
-        expiryDate: "",
-        licenseType: "",
-        organizationChartNumber: "",
-        constructionType: "",
-        urbanArea: "",
-        landArea: "",
-        wallsPerimeter: "",
-        northBorder: "",
-        eastBorder: "",
-        southBorder: "",
-        westBorder: "",
-        northDimensions: "",
-        eastDimensions: "",
-        southDimensions: "",
-        westernDimensions: "",
-        northThrowback: "",
-        eastThrowback: "",
-        southThrowback: "",
-        westThrowback: "",
-        constructionComponents: "",
-        numberOfUnits: "",
-        stationStatusCode: "",
-        stationCode: selectedStation?.station_code || "",
-        officeCode: "",
-      });
+
+      if (response.data?.data?.id) {
+        setDraftId(response.data.data.id);
+      }
+
+      if (mode === 'submit') {
+        alert("Building permit submitted successfully!");
+        setDraftId(null);
+        setFormData({
+          permitNumber: "",
+          licenseDate: "",
+          expiryDate: "",
+          licenseType: "",
+          organizationChartNumber: "",
+          constructionType: "",
+          urbanArea: "",
+          landArea: "",
+          wallsPerimeter: "",
+          northBorder: "",
+          eastBorder: "",
+          southBorder: "",
+          westBorder: "",
+          northDimensions: "",
+          eastDimensions: "",
+          southDimensions: "",
+          westernDimensions: "",
+          northThrowback: "",
+          eastThrowback: "",
+          southThrowback: "",
+          westThrowback: "",
+          constructionComponents: "",
+          numberOfUnits: "",
+          stationStatusCode: "",
+          stationCode: selectedStation?.station_code || "",
+          officeCode: "",
+        });
+      } else {
+        alert("Building permit saved successfully! You can continue later.");
+      }
+
       fetchRecords();
       setViewMode('records');
     } catch (error: any) {
-      console.error("Error saving permit:", error);
-      const errorMsg = error.response?.data?.error || "Failed to save permit";
+      console.error(`Error during permit ${mode}:`, error);
+      const errorMsg = error.response?.data?.error || `Failed to ${mode} permit`;
       const details = error.response?.data?.details ? `\nDetails: ${error.response.data.details}` : "";
       alert(`${errorMsg}${details}`);
     } finally {
       setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -185,7 +257,7 @@ export function BuildingPermitForm() {
       </div>
 
       {viewMode === 'form' ? (
-        <form onSubmit={handleSubmit} className="bg-card rounded-xl shadow-xl p-8 card-glow border-t-4 border-primary relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <form onSubmit={(e) => e.preventDefault()} className="bg-card rounded-xl shadow-xl p-8 card-glow border-t-4 border-primary relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1">Permit Number <span className="text-red-500">*</span></label>
@@ -293,14 +365,24 @@ export function BuildingPermitForm() {
           </div>
 
           {!isReadOnly && (
-            <div className="flex justify-end mt-6">
+            <div className="flex justify-end mt-6 gap-3">
               <button
-                type="submit"
-                disabled={loading}
-                className="btn-primary px-6 py-3 rounded-lg flex items-center gap-2 transition-all shadow-lg hover:shadow-primary/20 disabled:opacity-50"
+                type="button"
+                onClick={() => void persistBuildingPermit('save')}
+                disabled={loading || submitting}
+                className="border border-border px-6 py-3 rounded-lg flex items-center gap-2 transition-all shadow-lg disabled:opacity-50"
               >
                 <Save className="w-5 h-5" />
                 {loading ? "Saving..." : "Save Building Permit"}
+              </button>
+              <button
+                type="button"
+                onClick={() => void persistBuildingPermit('submit')}
+                disabled={loading || submitting}
+                className="btn-primary px-6 py-3 rounded-lg flex items-center gap-2 transition-all shadow-lg hover:shadow-primary/20 disabled:opacity-50"
+              >
+                <Send className="w-5 h-5" />
+                {submitting ? "Submitting..." : "Submit Building Permit"}
               </button>
             </div>
           )}

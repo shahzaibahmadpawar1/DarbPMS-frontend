@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Save, List, PlusCircle, Eye } from "lucide-react";
+import { Save, List, PlusCircle, Eye, Send } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
 import axios from "axios";
@@ -15,6 +15,8 @@ export function CommercialLicenseForm() {
 
   const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [draftId, setDraftId] = useState<string | null>(null);
   const [records, setRecords] = useState<any[]>([]);
   const [currentStation, setCurrentStation] = useState<any>(selectedStation);
 
@@ -65,6 +67,50 @@ export function CommercialLicenseForm() {
     fetchStationAndRecords();
   }, [selectedStation, stationId]);
 
+  useEffect(() => {
+    const loadLatestSaved = async () => {
+      try {
+        const token = localStorage.getItem('auth_token');
+        if (!token) return;
+
+        const params = new URLSearchParams();
+        const stationCode = selectedStation?.station_code || currentStation?.station_code || "";
+        if (stationCode) params.set('stationCode', stationCode);
+
+        const response = await axios.get(`${API_BASE_URL}/commercial-licenses/latest-saved?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        const saved = response.data?.data;
+        if (!saved?.id) return;
+
+        setDraftId(saved.id);
+        setFormData({
+          licenseNo: saved.license_no || "",
+          paymentDueDate: saved.payment_due_date ? String(saved.payment_due_date).slice(0, 10) : "",
+          issuanceDate: saved.issuance_date ? String(saved.issuance_date).slice(0, 10) : "",
+          licenseExpiryDate: saved.license_expiry_date ? String(saved.license_expiry_date).slice(0, 10) : "",
+          numberOfDays: saved.number_of_days != null ? String(saved.number_of_days) : "",
+          licenseStatus: saved.license_status || "",
+          ownerName: saved.owner_name || "",
+          ownerId: saved.owner_id || "",
+          isicClassification: saved.isic_classification || "",
+          municipality: saved.municipality || "",
+          subMunicipality: saved.sub_municipality || "",
+          district: saved.district || "",
+          street: saved.street || "",
+          totalSpace: saved.total_space != null ? String(saved.total_space) : "",
+          signSpace: saved.sign_space != null ? String(saved.sign_space) : "",
+          stationCode: saved.station_code || stationCode,
+        });
+      } catch (error) {
+        console.error("Error loading latest saved commercial license:", error);
+      }
+    };
+
+    void loadLatestSaved();
+  }, [selectedStation?.station_code, currentStation?.station_code]);
+
   const fetchRecords = async (stationCode?: string) => {
     try {
       const token = localStorage.getItem('auth_token');
@@ -82,43 +128,64 @@ export function CommercialLicenseForm() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  const persistCommercialLicense = async (mode: 'save' | 'submit') => {
+    if (mode === 'submit') setSubmitting(true); else setLoading(true);
     try {
       const token = localStorage.getItem('auth_token');
-      await axios.post(`${API_BASE_URL}/commercial-licenses`, formData, {
+      const payload = { ...formData, submit: mode === 'submit' };
+      const response = draftId
+        ? await axios.put(`${API_BASE_URL}/commercial-licenses/${draftId}`, payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        : await axios.post(`${API_BASE_URL}/commercial-licenses`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      alert("Commercial License saved successfully!");
-      setFormData({
-        licenseNo: "",
-        paymentDueDate: "",
-        issuanceDate: "",
-        licenseExpiryDate: "",
-        numberOfDays: "",
-        licenseStatus: "",
-        ownerName: "",
-        ownerId: "",
-        isicClassification: "",
-        municipality: "",
-        subMunicipality: "",
-        district: "",
-        street: "",
-        totalSpace: "",
-        signSpace: "",
-        stationCode: selectedStation?.station_code || "",
-      });
+
+      if (response.data?.data?.id) {
+        setDraftId(response.data.data.id);
+      }
+
+      if (mode === 'submit') {
+        alert("Commercial License submitted successfully!");
+        setDraftId(null);
+        setFormData({
+          licenseNo: "",
+          paymentDueDate: "",
+          issuanceDate: "",
+          licenseExpiryDate: "",
+          numberOfDays: "",
+          licenseStatus: "",
+          ownerName: "",
+          ownerId: "",
+          isicClassification: "",
+          municipality: "",
+          subMunicipality: "",
+          district: "",
+          street: "",
+          totalSpace: "",
+          signSpace: "",
+          stationCode: selectedStation?.station_code || currentStation?.station_code || "",
+        });
+      } else {
+        alert("Commercial License saved successfully! You can continue later.");
+      }
+
       fetchRecords();
       setViewMode('records');
     } catch (error: any) {
-      console.error("Error saving license:", error);
-      const errorMsg = error.response?.data?.error || "Failed to save license";
+      console.error(`Error during commercial license ${mode}:`, error);
+      const errorMsg = error.response?.data?.error || `Failed to ${mode} commercial license`;
       const details = error.response?.data?.details ? `\nDetails: ${error.response.data.details}` : "";
       alert(`${errorMsg}${details}`);
     } finally {
       setLoading(false);
+      setSubmitting(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await persistCommercialLicense('save');
   };
 
   return (
@@ -218,14 +285,27 @@ export function CommercialLicenseForm() {
           </div>
 
           {!isReadOnly && (
-            <div className="flex justify-end mt-6">
+            <div className="flex justify-end gap-3 mt-6">
               <button
-                type="submit"
-                disabled={loading}
-                className="btn-primary px-6 py-3 rounded-lg flex items-center gap-2 shadow-lg disabled:opacity-50"
+                type="button"
+                onClick={() => persistCommercialLicense('save')}
+                disabled={loading || submitting}
+                className="px-6 py-3 rounded-lg border border-border text-foreground hover:bg-muted flex items-center gap-2 disabled:opacity-50"
               >
                 <Save className="w-5 h-5" />
-                {loading ? "Saving..." : "Save Commercial License"}
+                {loading ? "Saving..." : "Save"}
+              </button>
+              <button
+                type="submit"
+                onClick={(e) => {
+                  e.preventDefault();
+                  void persistCommercialLicense('submit');
+                }}
+                disabled={loading || submitting}
+                className="btn-primary px-6 py-3 rounded-lg flex items-center gap-2 shadow-lg disabled:opacity-50"
+              >
+                <Send className="w-5 h-5" />
+                {submitting ? "Submitting..." : "Submit"}
               </button>
             </div>
           )}

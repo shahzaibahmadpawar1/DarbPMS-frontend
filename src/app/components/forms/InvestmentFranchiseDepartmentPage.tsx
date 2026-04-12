@@ -231,6 +231,9 @@ function NewProjectTab() {
     const [elements, setElements] = useState<CommercialElement[]>(
         DEFAULT_ELEMENT_NAMES.map(name => ({ id: createId(), name, count: "0", area: "" }))
     );
+    const [draftProjectId, setDraftProjectId] = useState<string | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [projectDocuments, setProjectDocuments] = useState<ProjectDocumentSlot[]>(
         DEFAULT_DOCUMENT_SLOTS.map(label => ({ id: createId(), label, file: null }))
     );
@@ -262,6 +265,67 @@ function NewProjectTab() {
     };
 
     const { token } = useAuth();
+    const departmentType = window.location.pathname.includes('investment') ? 'investment' : 'franchise';
+
+    useEffect(() => {
+        const loadLatestSavedProject = async () => {
+            if (!token || !canCreateProject) return;
+
+            try {
+                const response = await fetch(
+                    `${API_URL}/investment-projects/latest-saved?departmentType=${departmentType}`,
+                    { headers: { 'Authorization': `Bearer ${token}` } }
+                );
+
+                if (!response.ok) {
+                    return;
+                }
+
+                const result = await response.json();
+                const savedProject = result?.data;
+                if (!savedProject?.id) {
+                    return;
+                }
+
+                setDraftProjectId(savedProject.id);
+                setForm((prev) => ({
+                    ...prev,
+                    requestType: savedProject.request_type || "",
+                    city: savedProject.city || "",
+                    projectName: savedProject.project_name || "",
+                    projectCode: savedProject.project_code || "",
+                    district: savedProject.district || "",
+                    area: savedProject.area != null ? String(savedProject.area) : "",
+                    projectStatus: savedProject.project_status || "",
+                    contractType: savedProject.contract_type || "",
+                    googleLocation: savedProject.google_location || "",
+                    priorityLevel: savedProject.priority_level || "",
+                    ownerName: savedProject.owner_name || "",
+                    ownerContactNo: savedProject.owner_contact_no || "",
+                    idNo: savedProject.id_no || "",
+                    nationalAddress: savedProject.national_address || "",
+                    email: savedProject.email || "",
+                    ownerType: savedProject.owner_type || "individual",
+                    requestSender: prev.requestSender,
+                    orderDate: savedProject.order_date ? String(savedProject.order_date).slice(0, 10) : "",
+                }));
+
+                setElements([
+                    { id: createId(), name: "Super Market", count: String(savedProject.super_market || 0), area: String(savedProject.super_market_area || 0) },
+                    { id: createId(), name: "Fuel Station", count: String(savedProject.fuel_station || 0), area: String(savedProject.fuel_station_area || 0) },
+                    { id: createId(), name: "Kiosks", count: String(savedProject.kiosks || 0), area: String(savedProject.kiosks_area || 0) },
+                    { id: createId(), name: "Retail Shop", count: String(savedProject.retail_shop || 0), area: String(savedProject.retail_shop_area || 0) },
+                    { id: createId(), name: "Drive Through", count: String(savedProject.drive_through || 0), area: String(savedProject.drive_through_area || 0) },
+                ]);
+
+                alert('Loaded your latest saved project draft.');
+            } catch (error) {
+                console.error('Failed to load latest saved project:', error);
+            }
+        };
+
+        void loadLatestSavedProject();
+    }, [token, canCreateProject, departmentType]);
 
     const uploadProjectFile = async (file: File): Promise<string> => {
         if (!token) {
@@ -287,11 +351,22 @@ function NewProjectTab() {
         return result.data.url as string;
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const persistProject = async (mode: 'save' | 'submit') => {
         try {
+            const isSubmitMode = mode === 'submit';
+            if (isSubmitMode) {
+                setIsSubmitting(true);
+            } else {
+                setIsSaving(true);
+            }
+
             if (!token) {
                 alert("Authentication required. Please login again.");
+                return;
+            }
+
+            if (isSubmitMode && (!form.projectName.trim() || !form.projectCode.trim())) {
+                alert("Project Name and Project Code are required to submit.");
                 return;
             }
 
@@ -373,7 +448,7 @@ function NewProjectTab() {
             }
 
             const body = {
-                departmentType: (window.location.pathname.includes('investment') ? 'investment' : 'franchise'),
+                departmentType,
                 ...form,
                 superMarket: mapped.superMarket,
                 fuelStation: mapped.fuelStation,
@@ -392,10 +467,16 @@ function NewProjectTab() {
                 documentsUrl,
                 autocadUrl,
                 projectDocuments: uploadedDocuments,
+                submit: isSubmitMode,
             };
 
-            const response = await fetch(`${API_URL}/investment-projects`, {
-                method: 'POST',
+            const endpoint = draftProjectId
+                ? `${API_URL}/investment-projects/${draftProjectId}`
+                : `${API_URL}/investment-projects`;
+            const method = draftProjectId ? 'PUT' : 'POST';
+
+            const response = await fetch(endpoint, {
+                method,
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -404,6 +485,12 @@ function NewProjectTab() {
             });
 
             if (response.ok) {
+                const responseData = await response.json();
+                const savedId = responseData?.data?.id;
+                if (savedId) {
+                    setDraftProjectId(savedId);
+                }
+
                 setInvestmentProjectData({
                     projectName: form.projectName,
                     projectCode: form.projectCode,
@@ -417,24 +504,33 @@ function NewProjectTab() {
                     nationalAddress: form.nationalAddress,
                     email: form.email,
                 });
-                alert("Project submitted successfully for review!");
-                setForm({
-                    requestType: "", city: "", projectName: "", projectCode: "",
-                    district: "", area: "", projectStatus: "", contractType: "",
-                    googleLocation: "",
-                    priorityLevel: "", ownerName: "", ownerContactNo: "",
-                    idNo: "", nationalAddress: "", email: "", ownerType: "individual",
-                    requestSender: "", orderDate: "",
-                });
-                setElements(DEFAULT_ELEMENT_NAMES.map(name => ({ id: createId(), name, count: "0", area: "" })));
-                setProjectDocuments(DEFAULT_DOCUMENT_SLOTS.map(label => ({ id: createId(), label, file: null })));
+
+                if (isSubmitMode) {
+                    alert("Project submitted successfully for review!");
+                    setDraftProjectId(null);
+                    setForm({
+                        requestType: "", city: "", projectName: "", projectCode: "",
+                        district: "", area: "", projectStatus: "", contractType: "",
+                        googleLocation: "",
+                        priorityLevel: "", ownerName: "", ownerContactNo: "",
+                        idNo: "", nationalAddress: "", email: "", ownerType: "individual",
+                        requestSender: "", orderDate: "",
+                    });
+                    setElements(DEFAULT_ELEMENT_NAMES.map(name => ({ id: createId(), name, count: "0", area: "" })));
+                    setProjectDocuments(DEFAULT_DOCUMENT_SLOTS.map(label => ({ id: createId(), label, file: null })));
+                } else {
+                    alert("Project saved. You can continue later and submit when ready.");
+                }
             } else {
                 const err = await response.json();
-                alert(`Error: ${err.error || 'Failed to submit'}`);
+                alert(`Error: ${err.error || 'Failed to save project'}`);
             }
         } catch (err) {
             console.error(err);
-            alert("Submission failed");
+            alert("Action failed");
+        } finally {
+            setIsSaving(false);
+            setIsSubmitting(false);
         }
     };
 
@@ -448,7 +544,7 @@ function NewProjectTab() {
     }
 
     return (
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
             {/* â”€â”€ Project Info â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
             <div className="bg-card rounded-xl border border-border p-6 shadow-sm">
                 <SectionHeader icon={<ClipboardList className="w-5 h-5" />} title="Project Information" subtitle="Basic details about the project request" />
@@ -662,10 +758,22 @@ function NewProjectTab() {
             </div>
 
             {/* â”€â”€ Submit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
-            <div className="flex justify-end">
-                <button type="submit"
-                    className="btn-primary px-8 py-3 rounded-xl flex items-center gap-2 font-semibold text-sm shadow-lg hover:shadow-primary/25 transition-all">
-                    <Send className="w-4 h-4" /> Submit Project Request
+            <div className="flex justify-end gap-3">
+                <button
+                    type="button"
+                    onClick={() => void persistProject('save')}
+                    disabled={isSaving || isSubmitting}
+                    className="px-8 py-3 rounded-xl flex items-center gap-2 font-semibold text-sm border border-border text-foreground bg-background hover:bg-muted transition-all disabled:opacity-60"
+                >
+                    <Save className="w-4 h-4" /> {isSaving ? 'Saving...' : 'Save'}
+                </button>
+                <button
+                    type="button"
+                    onClick={() => void persistProject('submit')}
+                    disabled={isSaving || isSubmitting}
+                    className="btn-primary px-8 py-3 rounded-xl flex items-center gap-2 font-semibold text-sm shadow-lg hover:shadow-primary/25 transition-all disabled:opacity-60"
+                >
+                    <Send className="w-4 h-4" /> {isSubmitting ? 'Submitting...' : 'Submit Project Request'}
                 </button>
             </div>
         </form>

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Save, List, PlusCircle, Eye, FileText } from "lucide-react";
+import { Save, List, PlusCircle, Eye, FileText, Send } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
 import axios from "axios";
@@ -15,6 +15,8 @@ export function ContractForm() {
 
   const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [draftId, setDraftId] = useState<string | null>(null);
   const [records, setRecords] = useState<any[]>([]);
   const [currentStation, setCurrentStation] = useState<any>(selectedStation);
 
@@ -79,6 +81,64 @@ export function ContractForm() {
     fetchStationAndRecords();
   }, [selectedStation, stationId]);
 
+  useEffect(() => {
+    const loadLatestSaved = async () => {
+      try {
+        const token = localStorage.getItem('auth_token');
+        if (!token) return;
+
+        const params = new URLSearchParams();
+        const stationCode = selectedStation?.station_code || currentStation?.station_code || "";
+        if (stationCode) params.set('stationCode', stationCode);
+
+        const response = await axios.get(`${API_BASE_URL}/contracts/latest-saved?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        const saved = response.data?.data;
+        if (!saved?.id) return;
+
+        setDraftId(saved.id);
+        setFormData({
+          contractNo: saved.contract_no || "",
+          contractType: saved.contract_type || "",
+          contractSignatureDate: saved.contract_signature_date ? String(saved.contract_signature_date).slice(0, 10) : "",
+          contractSignatureLocation: saved.contract_signature_location || "",
+          tenancyStartDate: saved.tenancy_start_date ? String(saved.tenancy_start_date).slice(0, 10) : "",
+          tenancyEndDate: saved.tenancy_end_date ? String(saved.tenancy_end_date).slice(0, 10) : "",
+          lessorName: saved.lessor_name || "",
+          nationality: saved.nationality || "",
+          idType: saved.id_type || "",
+          idNo: saved.id_no || "",
+          idCopy: saved.id_copy || "",
+          mobileNo: saved.mobile_no || "",
+          email: saved.email || "",
+          tenantName: saved.tenant_name || "",
+          tenantNationality: saved.tenant_nationality || "",
+          tenantIdType: saved.tenant_id_type || "",
+          tenantIdNo: saved.tenant_id_no || "",
+          tenantIdCopy: saved.tenant_id_copy || "",
+          tenantMobileNo: saved.tenant_mobile_no || "",
+          tenantEmail: saved.tenant_email || "",
+          duration: saved.duration || "",
+          days: saved.days != null ? String(saved.days) : "",
+          propertyValue: saved.property_value != null ? String(saved.property_value) : "",
+          installments: saved.installments != null ? String(saved.installments) : "",
+          dueDate: saved.due_date ? String(saved.due_date).slice(0, 10) : "",
+          dueAmount: saved.due_amount != null ? String(saved.due_amount) : "",
+          paidAmount: saved.paid_amount != null ? String(saved.paid_amount) : "",
+          notPaidAmount: saved.not_paid_amount != null ? String(saved.not_paid_amount) : "",
+          duePeriod: saved.due_period || "",
+          stationCode: saved.station_code || stationCode,
+        });
+      } catch (error) {
+        console.error("Error loading latest saved contract:", error);
+      }
+    };
+
+    void loadLatestSaved();
+  }, [selectedStation?.station_code, currentStation?.station_code]);
+
   const fetchRecords = async (stationCode?: string) => {
     try {
       const token = localStorage.getItem('auth_token');
@@ -96,56 +156,72 @@ export function ContractForm() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  const persistContract = async (mode: 'save' | 'submit') => {
+    if (mode === 'submit') setSubmitting(true); else setLoading(true);
     try {
       const token = localStorage.getItem('auth_token');
-      await axios.post(`${API_BASE_URL}/contracts`, formData, {
+      const payload = { ...formData, submit: mode === 'submit' };
+      const response = draftId
+        ? await axios.put(`${API_BASE_URL}/contracts/${draftId}`, payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        : await axios.post(`${API_BASE_URL}/contracts`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      alert("Contract saved successfully!");
-      setFormData({
-        contractNo: "",
-        contractType: "",
-        contractSignatureDate: "",
-        contractSignatureLocation: "",
-        tenancyStartDate: "",
-        tenancyEndDate: "",
-        lessorName: "",
-        nationality: "",
-        idType: "",
-        idNo: "",
-        idCopy: "",
-        mobileNo: "",
-        email: "",
-        tenantName: "",
-        tenantNationality: "",
-        tenantIdType: "",
-        tenantIdNo: "",
-        tenantIdCopy: "",
-        tenantMobileNo: "",
-        tenantEmail: "",
-        duration: "",
-        days: "",
-        propertyValue: "",
-        installments: "",
-        dueDate: "",
-        dueAmount: "",
-        paidAmount: "",
-        notPaidAmount: "",
-        duePeriod: "",
-        stationCode: selectedStation?.station_code || "",
-      });
+
+      if (response.data?.data?.id) {
+        setDraftId(response.data.data.id);
+      }
+
+      if (mode === 'submit') {
+        alert("Contract submitted successfully!");
+        setDraftId(null);
+        setFormData({
+          contractNo: "",
+          contractType: "",
+          contractSignatureDate: "",
+          contractSignatureLocation: "",
+          tenancyStartDate: "",
+          tenancyEndDate: "",
+          lessorName: "",
+          nationality: "",
+          idType: "",
+          idNo: "",
+          idCopy: "",
+          mobileNo: "",
+          email: "",
+          tenantName: "",
+          tenantNationality: "",
+          tenantIdType: "",
+          tenantIdNo: "",
+          tenantIdCopy: "",
+          tenantMobileNo: "",
+          tenantEmail: "",
+          duration: "",
+          days: "",
+          propertyValue: "",
+          installments: "",
+          dueDate: "",
+          dueAmount: "",
+          paidAmount: "",
+          notPaidAmount: "",
+          duePeriod: "",
+          stationCode: selectedStation?.station_code || "",
+        });
+      } else {
+        alert("Contract saved successfully! You can continue later.");
+      }
+
       fetchRecords();
       setViewMode('records');
     } catch (error: any) {
-      console.error("Error saving contract:", error);
-      const errorMsg = error.response?.data?.error || "Failed to save contract";
+      console.error(`Error during contract ${mode}:`, error);
+      const errorMsg = error.response?.data?.error || `Failed to ${mode} contract`;
       const details = error.response?.data?.details ? `\nDetails: ${error.response.data.details}` : "";
       alert(`${errorMsg}${details}`);
     } finally {
       setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -193,7 +269,7 @@ export function ContractForm() {
       </div>
 
       {viewMode === 'form' ? (
-        <form onSubmit={handleSubmit} className="bg-card rounded-xl shadow-xl p-8 card-glow border-t-4 border-primary relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <form onSubmit={(e) => e.preventDefault()} className="bg-card rounded-xl shadow-xl p-8 card-glow border-t-4 border-primary relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="space-y-8">
             {/* Section 1: Basic Info */}
             <div>
@@ -326,10 +402,14 @@ export function ContractForm() {
           </div>
 
           {!isReadOnly && (
-            <div className="flex justify-end mt-8 pt-4 border-t border-border">
-              <button type="submit" disabled={loading} className="btn-primary px-8 py-3 rounded-lg flex items-center gap-2 shadow-lg disabled:opacity-50">
+            <div className="flex justify-end mt-8 pt-4 border-t border-border gap-3">
+              <button type="button" onClick={() => void persistContract('save')} disabled={loading || submitting} className="border border-border px-8 py-3 rounded-lg flex items-center gap-2 shadow-lg disabled:opacity-50">
                 <Save className="w-5 h-5" />
                 {loading ? "Saving..." : "Save Contract"}
+              </button>
+              <button type="button" onClick={() => void persistContract('submit')} disabled={loading || submitting} className="btn-primary px-8 py-3 rounded-lg flex items-center gap-2 shadow-lg disabled:opacity-50">
+                <Send className="w-5 h-5" />
+                {submitting ? "Submitting..." : "Submit Contract"}
               </button>
             </div>
           )}

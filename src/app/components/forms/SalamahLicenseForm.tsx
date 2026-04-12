@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Save, List, Eye, FileCheck } from "lucide-react";
+import { Save, List, Eye, FileCheck, Send } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
 import { useResolvedStationCode } from "../../hooks/useResolvedStationCode";
@@ -34,6 +34,9 @@ export function SalamahLicenseForm() {
   const resolvedStationCode = useResolvedStationCode();
   const isReadOnly = accessMode === 'view-only';
   const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [draftId, setDraftId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     licenseNo: isReadOnly ? "SAL-99812-2024" : "",
@@ -66,9 +69,55 @@ export function SalamahLicenseForm() {
     setFormData((prev) => ({ ...prev, stationCode: prev.stationCode || resolvedStationCode }));
   }, [resolvedStationCode, isReadOnly]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    const loadLatestSaved = async () => {
+      try {
+        const token = localStorage.getItem("auth_token");
+        if (!token || isReadOnly) return;
 
+        const stationCode = formData.stationCode || resolvedStationCode || "";
+        const params = new URLSearchParams();
+        if (stationCode) params.set("stationCode", stationCode);
+
+        const response = await fetch(`${API_BASE_URL}/government-licenses/salamah/latest-saved?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const result = await response.json();
+        const saved = result?.data;
+        if (!response.ok || !saved?.id) return;
+
+        setDraftId(saved.id);
+        setFormData({
+          licenseNo: saved.license_no || "",
+          issuanceDate: saved.issuance_date ? String(saved.issuance_date).slice(0, 10) : "",
+          licenseExpiryDate: saved.license_expiry_date ? String(saved.license_expiry_date).slice(0, 10) : "",
+          numberOfDays: saved.number_of_days != null ? String(saved.number_of_days) : "",
+          licenseStatus: saved.license_status || "",
+          investorName: saved.investor_name || "",
+          ministryOfInteriorNo: saved.ministry_of_interior_no || "",
+          nationalAddress: saved.national_address || "",
+          commercialRegister: saved.commercial_register || "",
+          facilityName: saved.facility_name || "",
+          branch: saved.branch || "",
+          area: saved.area || "",
+          city: saved.city || "",
+          district: saved.district || "",
+          street: saved.street || "",
+          landNo: saved.land_no || "",
+          shopSpace: saved.shop_space != null ? String(saved.shop_space) : "",
+          stationCode: saved.station_code || stationCode,
+          officeCode: saved.office_code || "",
+        });
+      } catch (error) {
+        console.error("Error loading latest saved salamah license:", error);
+      }
+    };
+
+    void loadLatestSaved();
+  }, [resolvedStationCode, isReadOnly]);
+
+  const persistSalamahLicense = async (mode: 'save' | 'submit') => {
     const token = localStorage.getItem("auth_token");
     const stationCode = formData.stationCode || resolvedStationCode;
 
@@ -77,33 +126,64 @@ export function SalamahLicenseForm() {
       return;
     }
 
-    if (!formData.licenseNo || !stationCode) {
-      alert("License No and Station Code are required.");
+    if (!stationCode) {
+      alert("Station Code is required.");
       return;
     }
 
+    if (mode === 'submit') setSubmitting(true); else setLoading(true);
+
     try {
-      const response = await fetch(`${API_BASE_URL}/government-licenses/salamah`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...formData,
-          stationCode,
-        }),
-      });
+      const payload = {
+        ...formData,
+        stationCode,
+        submit: mode === 'submit',
+      };
+
+      const response = draftId
+        ? await fetch(`${API_BASE_URL}/government-licenses/salamah/${draftId}`, {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          })
+        : await fetch(`${API_BASE_URL}/government-licenses/salamah`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result?.error || "Failed to save Salamah license");
+        throw new Error(result?.error || `Failed to ${mode} Salamah license`);
       }
 
-      alert("Salamah License saved successfully!");
+      if (result?.data?.id) {
+        setDraftId(result.data.id);
+      }
+
+      if (mode === 'submit') {
+        alert("Salamah License submitted successfully!");
+        setDraftId(null);
+      } else {
+        alert("Salamah License saved successfully! You can continue later.");
+      }
     } catch (error: any) {
-      alert(error?.message || "Failed to save Salamah License");
+      alert(error?.message || `Failed to ${mode} Salamah License`);
+    } finally {
+      setLoading(false);
+      setSubmitting(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await persistSalamahLicense('save');
   };
 
   const mockRecords = [
@@ -168,9 +248,24 @@ export function SalamahLicenseForm() {
             ))}
           </div>
           {!isReadOnly && (
-            <div className="flex justify-end mt-6">
-              <button type="submit" className="btn-primary px-6 py-3 rounded-lg flex items-center gap-2 transition-all shadow-lg hover:shadow-primary/20">
-                <Save className="w-5 h-5" /> Save Salamah License
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => void persistSalamahLicense('save')}
+                disabled={loading || submitting}
+                className="px-6 py-3 rounded-lg border border-border text-foreground hover:bg-muted flex items-center gap-2 disabled:opacity-50"
+              >
+                <Save className="w-5 h-5" />
+                {loading ? "Saving..." : "Save"}
+              </button>
+              <button
+                type="button"
+                onClick={() => void persistSalamahLicense('submit')}
+                disabled={loading || submitting}
+                className="btn-primary px-6 py-3 rounded-lg flex items-center gap-2 transition-all shadow-lg hover:shadow-primary/20 disabled:opacity-50"
+              >
+                <Send className="w-5 h-5" />
+                {submitting ? "Submitting..." : "Submit"}
               </button>
             </div>
           )}

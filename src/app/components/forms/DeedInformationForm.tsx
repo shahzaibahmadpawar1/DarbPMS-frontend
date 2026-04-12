@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Save, List, PlusCircle, Eye } from "lucide-react";
+import { Save, List, PlusCircle, Eye, Send } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
 import axios from "axios";
@@ -15,6 +15,8 @@ export function DeedInformationForm() {
 
   const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [draftId, setDraftId] = useState<string | null>(null);
   const [records, setRecords] = useState<any[]>([]);
   const [currentStation, setCurrentStation] = useState<any>(selectedStation);
 
@@ -66,6 +68,51 @@ export function DeedInformationForm() {
     fetchStationAndRecords();
   }, [selectedStation, stationId]);
 
+  useEffect(() => {
+    const loadLatestSaved = async () => {
+      try {
+        const token = localStorage.getItem('auth_token');
+        if (!token) return;
+
+        const params = new URLSearchParams();
+        const stationCode = selectedStation?.station_code || currentStation?.station_code || "";
+        if (stationCode) params.set('stationCode', stationCode);
+
+        const response = await axios.get(`${API_BASE_URL}/deeds/latest-saved?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+
+        const saved = response.data?.data;
+        if (!saved?.id) return;
+
+        setDraftId(saved.id);
+        setFormData({
+          deedNo: saved.deed_no || "",
+          deedDate: saved.deed_date ? String(saved.deed_date).slice(0, 10) : "",
+          deedIssueBy: saved.deed_issue_by || "",
+          realEstateUnitNumber: saved.real_estate_unit_number || "",
+          area: saved.area != null ? String(saved.area) : "",
+          nationality: saved.nationality || "",
+          percentage: saved.percentage != null ? String(saved.percentage) : "",
+          address: saved.address || "",
+          idType: saved.id_type || "",
+          idDate: saved.id_date ? String(saved.id_date).slice(0, 10) : "",
+          landNo: saved.land_no || "",
+          blockNumber: saved.block_number || "",
+          district: saved.district || "",
+          city: saved.city || "",
+          unitType: saved.unit_type || "",
+          statusCode: saved.status_code || "",
+          stationCode: saved.station_code || stationCode,
+        });
+      } catch (error) {
+        console.error("Error loading latest saved deed:", error);
+      }
+    };
+
+    void loadLatestSaved();
+  }, [selectedStation?.station_code, currentStation?.station_code]);
+
   const fetchRecords = async (stationCode?: string) => {
     try {
       const token = localStorage.getItem('auth_token');
@@ -83,43 +130,59 @@ export function DeedInformationForm() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
+  const persistDeed = async (mode: 'save' | 'submit') => {
+    if (mode === 'submit') setSubmitting(true); else setLoading(true);
     try {
       const token = localStorage.getItem('auth_token');
-      await axios.post(`${API_BASE_URL}/deeds`, formData, {
+      const payload = { ...formData, submit: mode === 'submit' };
+      const response = draftId
+        ? await axios.put(`${API_BASE_URL}/deeds/${draftId}`, payload, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        : await axios.post(`${API_BASE_URL}/deeds`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      alert("Deed Information saved successfully!");
-      setFormData({
-        deedNo: "",
-        deedDate: "",
-        deedIssueBy: "",
-        realEstateUnitNumber: "",
-        area: "",
-        nationality: "",
-        percentage: "",
-        address: "",
-        idType: "",
-        idDate: "",
-        landNo: "",
-        blockNumber: "",
-        district: "",
-        city: "",
-        unitType: "",
-        statusCode: "",
-        stationCode: selectedStation?.station_code || "",
-      });
+
+      if (response.data?.data?.id) {
+        setDraftId(response.data.data.id);
+      }
+
+      if (mode === 'submit') {
+        alert("Deed information submitted successfully!");
+        setDraftId(null);
+        setFormData({
+          deedNo: "",
+          deedDate: "",
+          deedIssueBy: "",
+          realEstateUnitNumber: "",
+          area: "",
+          nationality: "",
+          percentage: "",
+          address: "",
+          idType: "",
+          idDate: "",
+          landNo: "",
+          blockNumber: "",
+          district: "",
+          city: "",
+          unitType: "",
+          statusCode: "",
+          stationCode: selectedStation?.station_code || "",
+        });
+      } else {
+        alert("Deed information saved successfully! You can continue later.");
+      }
+
       fetchRecords();
       setViewMode('records');
     } catch (error: any) {
-      console.error("Error saving deed:", error);
-      const errorMsg = error.response?.data?.error || "Failed to save deed information";
+      console.error(`Error during deed ${mode}:`, error);
+      const errorMsg = error.response?.data?.error || `Failed to ${mode} deed information`;
       const details = error.response?.data?.details ? `\nDetails: ${error.response.data.details}` : "";
       alert(`${errorMsg}${details}`);
     } finally {
       setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -167,7 +230,7 @@ export function DeedInformationForm() {
       </div>
 
       {viewMode === 'form' ? (
-        <form onSubmit={handleSubmit} className="bg-card rounded-xl shadow-xl p-8 card-glow border-t-4 border-primary relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+        <form onSubmit={(e) => e.preventDefault()} className="bg-card rounded-xl shadow-xl p-8 card-glow border-t-4 border-primary relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div>
               <label className="block text-sm font-medium text-muted-foreground mb-1">Deed No <span className="text-red-500">*</span></label>
@@ -257,14 +320,24 @@ export function DeedInformationForm() {
           </div>
 
           {!isReadOnly && (
-            <div className="flex justify-end mt-6">
+            <div className="flex justify-end mt-6 gap-3">
               <button
-                type="submit"
-                disabled={loading}
-                className="btn-primary px-6 py-3 rounded-lg flex items-center gap-2 transition-all shadow-lg hover:shadow-primary/20 disabled:opacity-50"
+                type="button"
+                onClick={() => void persistDeed('save')}
+                disabled={loading || submitting}
+                className="border border-border px-6 py-3 rounded-lg flex items-center gap-2 transition-all shadow-lg disabled:opacity-50"
               >
                 <Save className="w-5 h-5" />
                 {loading ? "Saving..." : "Save Deed Information"}
+              </button>
+              <button
+                type="button"
+                onClick={() => void persistDeed('submit')}
+                disabled={loading || submitting}
+                className="btn-primary px-6 py-3 rounded-lg flex items-center gap-2 transition-all shadow-lg hover:shadow-primary/20 disabled:opacity-50"
+              >
+                <Send className="w-5 h-5" />
+                {submitting ? "Submitting..." : "Submit Deed Information"}
               </button>
             </div>
           )}

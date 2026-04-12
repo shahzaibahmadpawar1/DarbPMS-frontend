@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Save, List, Eye, FileCheck } from "lucide-react";
+import { Save, List, Eye, FileCheck, Send } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
 import { useResolvedStationCode } from "../../hooks/useResolvedStationCode";
@@ -34,6 +34,9 @@ export function EnvironmentalLicenseForm() {
   const resolvedStationCode = useResolvedStationCode();
   const isReadOnly = accessMode === 'view-only';
   const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [draftId, setDraftId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     issuanceNo: isReadOnly ? "ENV-2024-88029" : "",
@@ -70,9 +73,59 @@ export function EnvironmentalLicenseForm() {
     setFormData((prev) => ({ ...prev, stationCode: prev.stationCode || resolvedStationCode }));
   }, [resolvedStationCode, isReadOnly]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  useEffect(() => {
+    const loadLatestSaved = async () => {
+      try {
+        const token = localStorage.getItem("auth_token");
+        if (!token || isReadOnly) return;
 
+        const stationCode = formData.stationCode || resolvedStationCode || "";
+        const params = new URLSearchParams();
+        if (stationCode) params.set("stationCode", stationCode);
+
+        const response = await fetch(`${API_BASE_URL}/government-licenses/environmental/latest-saved?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const result = await response.json();
+        const saved = result?.data;
+        if (!response.ok || !saved?.id) return;
+
+        setDraftId(saved.id);
+        setFormData({
+          issuanceNo: saved.issuance_no || "",
+          issuanceDate: saved.issuance_date ? String(saved.issuance_date).slice(0, 10) : "",
+          licenseExpiryDate: saved.license_expiry_date ? String(saved.license_expiry_date).slice(0, 10) : "",
+          numberOfDays: saved.number_of_days != null ? String(saved.number_of_days) : "",
+          licenseStatus: saved.license_status || "",
+          facilityName: saved.facility_name || "",
+          ownerName: saved.owner_name || "",
+          address: saved.address || "",
+          facilityNo: saved.facility_no || "",
+          geographicLocation: saved.geographic_location || "",
+          commercialRegister: saved.commercial_register || "",
+          workArea: saved.work_area || "",
+          businessType: saved.business_type || "",
+          orderNumber: saved.order_number || "",
+          orderDate: saved.order_date ? String(saved.order_date).slice(0, 10) : "",
+          phone: saved.phone || "",
+          fax: saved.fax || "",
+          mailBox: saved.mail_box || "",
+          boxCode: saved.box_code || "",
+          city: saved.city || "",
+          issued: saved.issued || "",
+          stationCode: saved.station_code || stationCode,
+          officeCode: saved.office_code || "",
+        });
+      } catch (error) {
+        console.error("Error loading latest saved environmental license:", error);
+      }
+    };
+
+    void loadLatestSaved();
+  }, [resolvedStationCode, isReadOnly]);
+
+  const persistEnvironmentalLicense = async (mode: 'save' | 'submit') => {
     const token = localStorage.getItem("auth_token");
     const stationCode = formData.stationCode || resolvedStationCode;
 
@@ -81,33 +134,64 @@ export function EnvironmentalLicenseForm() {
       return;
     }
 
-    if (!formData.issuanceNo || !stationCode) {
-      alert("Issuance No and Station Code are required.");
+    if (!stationCode) {
+      alert("Station Code is required.");
       return;
     }
 
+    if (mode === 'submit') setSubmitting(true); else setLoading(true);
+
     try {
-      const response = await fetch(`${API_BASE_URL}/government-licenses/environmental`, {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...formData,
-          stationCode,
-        }),
-      });
+      const payload = {
+        ...formData,
+        stationCode,
+        submit: mode === 'submit',
+      };
+
+      const response = draftId
+        ? await fetch(`${API_BASE_URL}/government-licenses/environmental/${draftId}`, {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          })
+        : await fetch(`${API_BASE_URL}/government-licenses/environmental`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
 
       const result = await response.json();
       if (!response.ok) {
-        throw new Error(result?.error || "Failed to save Environmental license");
+        throw new Error(result?.error || `Failed to ${mode} Environmental license`);
       }
 
-      alert("Environmental License saved successfully!");
+      if (result?.data?.id) {
+        setDraftId(result.data.id);
+      }
+
+      if (mode === 'submit') {
+        alert("Environmental License submitted successfully!");
+        setDraftId(null);
+      } else {
+        alert("Environmental License saved successfully! You can continue later.");
+      }
     } catch (error: any) {
-      alert(error?.message || "Failed to save Environmental License");
+      alert(error?.message || `Failed to ${mode} Environmental License`);
+    } finally {
+      setLoading(false);
+      setSubmitting(false);
     }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await persistEnvironmentalLicense('save');
   };
 
   const mockRecords = [
@@ -176,9 +260,24 @@ export function EnvironmentalLicenseForm() {
             ))}
           </div>
           {!isReadOnly && (
-            <div className="flex justify-end mt-6">
-              <button type="submit" className="btn-primary px-6 py-3 rounded-lg flex items-center gap-2 transition-all shadow-lg hover:shadow-primary/20">
-                <Save className="w-5 h-5" /> Save Environmental License
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => void persistEnvironmentalLicense('save')}
+                disabled={loading || submitting}
+                className="px-6 py-3 rounded-lg border border-border text-foreground hover:bg-muted flex items-center gap-2 disabled:opacity-50"
+              >
+                <Save className="w-5 h-5" />
+                {loading ? "Saving..." : "Save"}
+              </button>
+              <button
+                type="button"
+                onClick={() => void persistEnvironmentalLicense('submit')}
+                disabled={loading || submitting}
+                className="btn-primary px-6 py-3 rounded-lg flex items-center gap-2 transition-all shadow-lg hover:shadow-primary/20 disabled:opacity-50"
+              >
+                <Send className="w-5 h-5" />
+                {submitting ? "Submitting..." : "Submit"}
               </button>
             </div>
           )}

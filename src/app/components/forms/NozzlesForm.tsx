@@ -1,20 +1,24 @@
 import { useState, useEffect } from "react";
-import { Save, List, PlusCircle } from "lucide-react";
+import { Save, List, PlusCircle, Send } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
+import { useResolvedStationCode } from "../../hooks/useResolvedStationCode";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 export function NozzlesForm() {
     const { accessMode } = useStation();
+    const resolvedStationCode = useResolvedStationCode();
     const isReadOnly = accessMode === 'view-only';
 
     const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
     const [loading, setLoading] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+    const [draftNozzleSerialNumber, setDraftNozzleSerialNumber] = useState<string | null>(null);
     const [records, setRecords] = useState<any[]>([]);
 
     const [formData, setFormData] = useState({
-        quantity: "",
+        nozzleSerialNumber: "",
         fuelType: "",
         vendor: "",
         dispenserSerialNumber: "",
@@ -22,6 +26,74 @@ export function NozzlesForm() {
 
     useEffect(() => {
         fetchRecords();
+    }, []);
+
+    useEffect(() => {
+        const prefillDispenserForStation = async () => {
+            if (!resolvedStationCode || isReadOnly) return;
+            if (draftNozzleSerialNumber || formData.dispenserSerialNumber) return;
+
+            try {
+                const token = localStorage.getItem('auth_token');
+                if (!token) return;
+
+                const response = await fetch(`${API_BASE_URL}/dispensers/station/${encodeURIComponent(resolvedStationCode)}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (!response.ok) return;
+                const data = await response.json();
+                const firstDispenser = Array.isArray(data?.data) ? data.data[0] : null;
+                const serialNumber = firstDispenser?.dispenser_serial_number;
+
+                if (serialNumber) {
+                    setFormData((prev) => ({
+                        ...prev,
+                        dispenserSerialNumber: prev.dispenserSerialNumber || serialNumber,
+                    }));
+                }
+            } catch (error) {
+                console.error('Error prefilling dispenser by station:', error);
+            }
+        };
+
+        void prefillDispenserForStation();
+    }, [resolvedStationCode, isReadOnly, draftNozzleSerialNumber, formData.dispenserSerialNumber]);
+
+    useEffect(() => {
+        const loadLatestSaved = async () => {
+            try {
+                const token = localStorage.getItem('auth_token');
+                if (!token) return;
+
+                const response = await fetch(`${API_BASE_URL}/nozzles/latest-saved`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (!response.ok) return;
+                const result = await response.json();
+                const saved = result?.data;
+                if (!saved) return;
+
+                setDraftNozzleSerialNumber(saved.nozzle_serial_number || null);
+                setFormData({
+                    nozzleSerialNumber: saved.nozzle_serial_number || "",
+                    fuelType: saved.fuel_type || "",
+                    vendor: saved.vendor || "",
+                    dispenserSerialNumber: saved.dispenser_serial_number || "",
+                });
+            } catch (error) {
+                console.error("Error loading latest saved nozzle:", error);
+            }
+        };
+
+        void loadLatestSaved();
     }, []);
 
     const fetchRecords = async () => {
@@ -50,43 +122,64 @@ export function NozzlesForm() {
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
+    const persistNozzle = async (mode: 'save' | 'submit') => {
+        if (mode === 'submit') setSubmitting(true); else setLoading(true);
 
         try {
             const token = localStorage.getItem('auth_token');
-            const response = await fetch(`${API_BASE_URL}/nozzles`, {
-                method: 'POST',
+            const response = await fetch(
+                draftNozzleSerialNumber ? `${API_BASE_URL}/nozzles/${draftNozzleSerialNumber}` : `${API_BASE_URL}/nozzles`,
+                {
+                method: draftNozzleSerialNumber ? 'PUT' : 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({
+                    ...formData,
+                    nozzleSerialNumber: draftNozzleSerialNumber || formData.nozzleSerialNumber,
+                    submit: mode === 'submit',
+                }),
+            }
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                alert("Nozzle information saved successfully!");
-                setFormData({
-                    quantity: "",
-                    fuelType: "",
-                    vendor: "",
-                    dispenserSerialNumber: "",
-                });
+                setDraftNozzleSerialNumber(data?.data?.nozzle_serial_number || draftNozzleSerialNumber);
+
+                if (mode === 'submit') {
+                    alert("Nozzle information submitted successfully!");
+                    setDraftNozzleSerialNumber(null);
+                    setFormData({
+                        nozzleSerialNumber: "",
+                        fuelType: "",
+                        vendor: "",
+                        dispenserSerialNumber: "",
+                    });
+                } else {
+                    alert("Nozzle information saved successfully. You can continue later.");
+                }
+
                 fetchRecords();
+                setViewMode('records');
             } else if (response.status === 401 || response.status === 403) {
                 alert("Authentication failed. Please log out and then log in again to sync with the Vercel backend. Your token might be from a different session (localhost).");
             } else {
-                alert(`Error: ${data.error || 'Failed to save nozzle information'}`);
+                alert(`Error: ${data.error || `Failed to ${mode} nozzle information`}`);
             }
         } catch (error) {
             console.error("Error saving nozzle:", error);
-            alert("Failed to save nozzle information. Please check your connection.");
+            alert(`Failed to ${mode} nozzle information. Please check your connection.`);
         } finally {
             setLoading(false);
+            setSubmitting(false);
         }
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        await persistNozzle('save');
     };
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -134,11 +227,11 @@ export function NozzlesForm() {
                 <form onSubmit={handleSubmit} className="max-w-4xl bg-card rounded-2xl border border-border p-8 shadow-sm">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
-                            <label className="text-sm font-semibold text-muted-foreground">Quantity *</label>
+                            <label className="text-sm font-semibold text-muted-foreground">Nozzle Serial Number *</label>
                             <input
-                                type="number"
-                                name="quantity"
-                                value={formData.quantity}
+                                type="text"
+                                name="nozzleSerialNumber"
+                                value={formData.nozzleSerialNumber}
                                 onChange={handleInputChange}
                                 required
                                 disabled={isReadOnly}
@@ -187,14 +280,24 @@ export function NozzlesForm() {
                     </div>
 
                     {!isReadOnly && (
-                        <div className="mt-8 flex justify-end">
+                        <div className="mt-8 flex justify-end gap-3">
                             <button
-                                type="submit"
-                                disabled={loading}
-                                className="bg-primary text-primary-foreground px-8 py-3 rounded-lg font-bold hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2"
+                                type="button"
+                                disabled={loading || submitting}
+                                onClick={() => void persistNozzle('save')}
+                                className="border border-border px-8 py-3 rounded-lg font-bold transition-all flex items-center gap-2 disabled:opacity-60"
                             >
                                 <Save className="w-5 h-5" />
-                                {loading ? "Saving..." : "Save Nozzle Information"}
+                                {loading ? "Saving..." : "Save"}
+                            </button>
+                            <button
+                                type="button"
+                                disabled={loading || submitting}
+                                onClick={() => void persistNozzle('submit')}
+                                className="bg-primary text-primary-foreground px-8 py-3 rounded-lg font-bold hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2"
+                            >
+                                <Send className="w-5 h-5" />
+                                {submitting ? "Submitting..." : "Submit"}
                             </button>
                         </div>
                     )}

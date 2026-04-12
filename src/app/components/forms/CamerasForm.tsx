@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Save, List, PlusCircle } from "lucide-react";
+import { Save, List, PlusCircle, Send } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
 
@@ -11,6 +11,8 @@ export function CamerasForm() {
 
     const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
     const [loading, setLoading] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+    const [draftSerialNumber, setDraftSerialNumber] = useState<string | null>(null);
     const [records, setRecords] = useState<any[]>([]);
 
     const [formData, setFormData] = useState({
@@ -25,6 +27,42 @@ export function CamerasForm() {
 
     useEffect(() => {
         fetchRecords();
+    }, []);
+
+    useEffect(() => {
+        const loadLatestSaved = async () => {
+            try {
+                const token = localStorage.getItem('auth_token');
+                if (!token) return;
+
+                const response = await fetch(`${API_BASE_URL}/cameras/latest-saved`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                });
+
+                if (!response.ok) return;
+                const result = await response.json();
+                const saved = result?.data;
+                if (!saved) return;
+
+                setDraftSerialNumber(saved.serial_number || null);
+                setFormData({
+                    quantity: "",
+                    cameraType: saved.camera_type || "",
+                    model: saved.model || "",
+                    size: saved.size || "",
+                    location: saved.location || "",
+                    status: saved.status || "",
+                    stationCode: saved.station_code || "",
+                });
+            } catch (error) {
+                console.error("Error loading latest saved camera:", error);
+            }
+        };
+
+        void loadLatestSaved();
     }, []);
 
     const fetchRecords = async () => {
@@ -53,51 +91,69 @@ export function CamerasForm() {
         }
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        setLoading(true);
+    const persistCamera = async (mode: 'save' | 'submit') => {
+        if (mode === 'submit') {
+            setSubmitting(true);
+        } else {
+            setLoading(true);
+        }
 
         try {
             const token = localStorage.getItem('auth_token');
             if (!token) {
                 alert("No authentication token found. Please log in.");
-                setLoading(false);
                 return;
             }
 
-            const response = await fetch(`${API_BASE_URL}/cameras`, {
-                method: 'POST',
+            const response = await fetch(
+                draftSerialNumber ? `${API_BASE_URL}/cameras/${draftSerialNumber}` : `${API_BASE_URL}/cameras`,
+                {
+                method: draftSerialNumber ? 'PUT' : 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({
+                    ...formData,
+                    serialNumber: draftSerialNumber || undefined,
+                    submit: mode === 'submit',
+                }),
+            }
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                alert("Camera information saved successfully!");
-                setFormData({
-                    quantity: "",
-                    cameraType: "",
-                    model: "",
-                    size: "",
-                    location: "",
-                    status: "",
-                    stationCode: "",
-                });
+                setDraftSerialNumber(data?.data?.serial_number || draftSerialNumber);
+
+                if (mode === 'submit') {
+                    alert("Camera information submitted successfully!");
+                    setDraftSerialNumber(null);
+                    setFormData({
+                        quantity: "",
+                        cameraType: "",
+                        model: "",
+                        size: "",
+                        location: "",
+                        status: "",
+                        stationCode: "",
+                    });
+                } else {
+                    alert("Camera information saved successfully. You can continue later.");
+                }
+
                 fetchRecords();
             } else if (response.status === 401 || response.status === 403) {
                 alert("Authentication failed. Please log out and then log in again to sync with the Vercel backend. Your token might be from a different session (localhost).");
             } else {
-                alert(`Error: ${data.error || 'Failed to save camera information'}`);
+                alert(`Error: ${data.error || `Failed to ${mode} camera information`}`);
             }
         } catch (error) {
             console.error("Error saving camera:", error);
-            alert("Failed to save camera information. Please check your connection.");
+            alert(`Failed to ${mode} camera information. Please check your connection.`);
         } finally {
             setLoading(false);
+            setSubmitting(false);
         }
     };
 
@@ -143,7 +199,7 @@ export function CamerasForm() {
             </div>
 
             {viewMode === 'form' ? (
-                <form onSubmit={handleSubmit} className="max-w-4xl bg-card rounded-2xl border border-border p-8 shadow-sm">
+                <form onSubmit={(e) => e.preventDefault()} className="max-w-4xl bg-card rounded-2xl border border-border p-8 shadow-sm">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-2">
                             <label className="text-sm font-semibold text-muted-foreground">Quantity *</label>
@@ -226,14 +282,24 @@ export function CamerasForm() {
                     </div>
 
                     {!isReadOnly && (
-                        <div className="mt-8 flex justify-end">
+                        <div className="mt-8 flex justify-end gap-3">
                             <button
-                                type="submit"
-                                disabled={loading}
-                                className="bg-primary text-primary-foreground px-8 py-3 rounded-lg font-bold hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2"
+                                type="button"
+                                disabled={loading || submitting}
+                                onClick={() => void persistCamera('save')}
+                                className="border border-border px-8 py-3 rounded-lg font-bold transition-all flex items-center gap-2 disabled:opacity-60"
                             >
                                 <Save className="w-5 h-5" />
                                 {loading ? "Saving..." : "Save Camera Information"}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => void persistCamera('submit')}
+                                disabled={loading || submitting}
+                                className="bg-primary text-primary-foreground px-8 py-3 rounded-lg font-bold hover:shadow-lg hover:scale-105 transition-all flex items-center gap-2"
+                            >
+                                <Send className="w-5 h-5" />
+                                {submitting ? "Submitting..." : "Submit Camera Information"}
                             </button>
                         </div>
                     )}

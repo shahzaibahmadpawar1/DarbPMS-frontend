@@ -1,4 +1,4 @@
-import { ChangeEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
     AlertCircle,
@@ -10,6 +10,7 @@ import {
     Upload,
     User,
 } from "lucide-react";
+import { departmentOptions, type Department } from "@/services/api";
 
 type WorkflowTaskStatus =
     | "manager_queue"
@@ -30,14 +31,20 @@ interface WorkflowTask {
     description: string | null;
     flow_type: WorkflowTaskFlow;
     status: WorkflowTaskStatus;
-    origin_department: "investment" | "franchise";
-    target_department: "investment" | "franchise";
+    origin_department: Department | "ceo";
+    target_department: Department | "ceo";
     assigned_to: string | null;
     assigned_by: string | null;
+    attachment_url: string | null;
+    attachment_note: string | null;
+    attachment_uploaded_by: string | null;
+    attachment_uploaded_at: string | null;
+    attachment_uploaded_by_username: string | null;
     manager_attachment_url: string | null;
     employee_attachment_url: string | null;
     manager_note: string | null;
     employee_note: string | null;
+    assignee_note: string | null;
     super_admin_comment: string | null;
     created_at: string;
     updated_at: string;
@@ -67,11 +74,16 @@ interface AssignableUser {
     id: string;
     username: string;
     role: string;
-    department: "investment" | "franchise" | null;
+    department: Department | null;
 }
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";
 const TASKS_PAGE_SIZE = 200;
+const DEPARTMENT_SET = new Set(departmentOptions.map((option) => option.value));
+
+const isDepartment = (value: unknown): value is Department => {
+    return typeof value === "string" && DEPARTMENT_SET.has(value as Department);
+};
 
 const fetchAllWorkflowTasks = async (token: string): Promise<WorkflowTask[]> => {
     const allTasks: WorkflowTask[] = [];
@@ -138,17 +150,18 @@ const branchLabel: Record<WorkflowTaskFlow, string> = {
 export function TasksPage() {
     const { token, user } = useAuth();
     const [tasks, setTasks] = useState<WorkflowTask[]>([]);
-    const [assignableUsers, setAssignableUsers] = useState<AssignableUser[]>([]);
+    const [assignableUsersByDepartment, setAssignableUsersByDepartment] = useState<Record<string, AssignableUser[]>>({});
+    const [loadingDepartmentUsers, setLoadingDepartmentUsers] = useState<Record<string, boolean>>({});
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
 
     const [selectedAssignee, setSelectedAssignee] = useState<Record<string, string>>({});
-    const [selectedDepartment, setSelectedDepartment] = useState<Record<string, "investment" | "franchise">>({});
-    const [managerFiles, setManagerFiles] = useState<Record<string, File | null>>({});
-    const [employeeFiles, setEmployeeFiles] = useState<Record<string, File | null>>({});
+    const [selectedAssigneeNote, setSelectedAssigneeNote] = useState<Record<string, string>>({});
+    const [selectedDepartment, setSelectedDepartment] = useState<Record<string, Department>>({});
+    const [taskFiles, setTaskFiles] = useState<Record<string, File | null>>({});
     const [reviewComment, setReviewComment] = useState<Record<string, string>>({});
     const [managerComment, setManagerComment] = useState<Record<string, string>>({});
-    const [branchDepartment, setBranchDepartment] = useState<Record<string, "investment" | "franchise">>({});
+    const [branchDepartment, setBranchDepartment] = useState<Record<string, Department>>({});
     const [branchAssignee, setBranchAssignee] = useState<Record<string, string>>({});
     const [taskHistory, setTaskHistory] = useState<Record<string, { task: WorkflowTask; history: WorkflowHistoryEntry[] }>>({});
     const [expandedHistoryTaskId, setExpandedHistoryTaskId] = useState<string | null>(null);
@@ -156,6 +169,7 @@ export function TasksPage() {
     const canAssign = user?.role === "department_manager" || user?.role === "super_admin" || user?.role === "supervisor";
     const canValidateAsManager = user?.role === "department_manager" || user?.role === "super_admin";
     const isSuperAdmin = user?.role === "super_admin";
+    const isProjectDepartmentManager = user?.role === "department_manager" && user?.department === "project";
 
     const [activeTab, setActiveTab] = useState<RoleViewTab>(() => {
         if (isSuperAdmin) return "super-admin";
@@ -177,26 +191,43 @@ export function TasksPage() {
         setActiveTab("employee");
     }, [isSuperAdmin, canAssign]);
 
+    const fetchAssignableUsersByDepartment = useCallback(async (department: Department): Promise<void> => {
+        if (!token || !canAssign) return;
+        if (assignableUsersByDepartment[department] || loadingDepartmentUsers[department]) return;
+
+        setLoadingDepartmentUsers((prev) => ({ ...prev, [department]: true }));
+
+        try {
+            const response = await fetch(
+                `${API_URL}/tasks/assignable-users?targetDepartment=${encodeURIComponent(department)}`,
+                {
+                    headers: { Authorization: `Bearer ${token}` },
+                },
+            );
+
+            if (!response.ok) {
+                return;
+            }
+
+            const usersResult = await response.json();
+            const users = Array.isArray(usersResult?.data) ? usersResult.data : [];
+            const filteredUsers = users.filter((user: AssignableUser) => user.department === department);
+            setAssignableUsersByDepartment((prev) => ({ ...prev, [department]: filteredUsers }));
+        } catch (error) {
+            console.error(`Failed to fetch assignable users for department ${department}:`, error);
+        } finally {
+            setLoadingDepartmentUsers((prev) => ({ ...prev, [department]: false }));
+        }
+    }, [token, canAssign, assignableUsersByDepartment, loadingDepartmentUsers]);
+
     const loadData = async () => {
         if (!token) return;
 
         setLoading(true);
         try {
-            const [allTasks, usersResponse] = await Promise.all([
-                fetchAllWorkflowTasks(token),
-                canAssign
-                    ? fetch(`${API_URL}/tasks/assignable-users`, {
-                        headers: { Authorization: `Bearer ${token}` },
-                    })
-                    : Promise.resolve(null),
-            ]);
+            const allTasks = await fetchAllWorkflowTasks(token);
 
             setTasks(allTasks);
-
-            if (usersResponse && usersResponse.ok) {
-                const usersResult = await usersResponse.json();
-                setAssignableUsers(Array.isArray(usersResult?.data) ? usersResult.data : []);
-            }
         } catch (error) {
             console.error("Failed to fetch workflow tasks:", error);
         } finally {
@@ -207,6 +238,26 @@ export function TasksPage() {
     useEffect(() => {
         loadData();
     }, [token, canAssign]);
+
+    useEffect(() => {
+        if (!canAssign || !token || tasks.length === 0) return;
+
+        const departmentsToPrefetch = Array.from(
+            new Set(
+                tasks
+                    .map((task) => task.target_department)
+                    .filter((department): department is Department => isDepartment(department)),
+            ),
+        );
+
+        if (isProjectDepartmentManager && !departmentsToPrefetch.includes("project")) {
+            departmentsToPrefetch.push("project");
+        }
+
+        departmentsToPrefetch.forEach((department) => {
+            void fetchAssignableUsersByDepartment(department);
+        });
+    }, [canAssign, token, tasks, fetchAssignableUsersByDepartment, isProjectDepartmentManager]);
 
     const matchesSearch = (task: WorkflowTask, query: string): boolean => {
         const q = query.toLowerCase();
@@ -271,6 +322,10 @@ export function TasksPage() {
         return result?.data?.url || null;
     };
 
+    const getTaskAttachmentUrl = (task: WorkflowTask): string | null => {
+        return task.attachment_url || task.manager_attachment_url || task.employee_attachment_url || null;
+    };
+
     const handleAssign = async (taskId: string) => {
         const task = tasks.find((item) => item.id === taskId);
         const isAlreadyAssigned = !!task?.assigned_to || task?.status !== "manager_queue";
@@ -281,7 +336,7 @@ export function TasksPage() {
 
         const assignedToUserId = selectedAssignee[taskId];
         const fallbackDepartment = task?.target_department;
-        const targetDepartment = selectedDepartment[taskId] || fallbackDepartment;
+        const targetDepartment = isProjectDepartmentManager ? "project" : (selectedDepartment[taskId] || fallbackDepartment);
 
         if (!assignedToUserId || !targetDepartment || !token) {
             alert("Select employee and target department first.");
@@ -294,7 +349,11 @@ export function TasksPage() {
                 Authorization: `Bearer ${token}`,
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({ assignedToUserId, targetDepartment }),
+            body: JSON.stringify({
+                assignedToUserId,
+                targetDepartment,
+                assigneeNote: selectedAssigneeNote[taskId] || "",
+            }),
         });
 
         if (!response.ok) {
@@ -307,7 +366,7 @@ export function TasksPage() {
     };
 
     const handleManagerAttachment = async (taskId: string) => {
-        const file = managerFiles[taskId];
+        const file = taskFiles[taskId];
         if (!file) {
             alert("Select a file first.");
             return;
@@ -337,7 +396,7 @@ export function TasksPage() {
     };
 
     const handleEmployeeSubmit = async (taskId: string) => {
-        const file = employeeFiles[taskId];
+        const file = taskFiles[taskId];
         let attachmentUrl: string | null = null;
         if (file) {
             attachmentUrl = await uploadFile(file);
@@ -437,7 +496,7 @@ export function TasksPage() {
     };
 
     const handleManagerSubmit = async (taskId: string) => {
-        const file = managerFiles[taskId];
+        const file = taskFiles[taskId];
         if (!file) {
             alert("Select a file first.");
             return;
@@ -491,14 +550,9 @@ export function TasksPage() {
         }
     };
 
-    const onManagerFileChange = (taskId: string, event: ChangeEvent<HTMLInputElement>) => {
+    const onTaskFileChange = (taskId: string, event: ChangeEvent<HTMLInputElement>) => {
         const selected = event.target.files?.[0] || null;
-        setManagerFiles((prev) => ({ ...prev, [taskId]: selected }));
-    };
-
-    const onEmployeeFileChange = (taskId: string, event: ChangeEvent<HTMLInputElement>) => {
-        const selected = event.target.files?.[0] || null;
-        setEmployeeFiles((prev) => ({ ...prev, [taskId]: selected }));
+        setTaskFiles((prev) => ({ ...prev, [taskId]: selected }));
     };
 
     const renderTaskCard = (task: WorkflowTask, mode: RoleViewTab) => {
@@ -508,7 +562,6 @@ export function TasksPage() {
         const canEmployeeAct = mode === "employee"
             && task.assigned_to === user?.id
             && (task.status === "assigned" || task.status === "employee_submitted");
-
         return (
             <div key={task.id} className="bg-card/80 rounded-2xl border border-border p-5 space-y-4">
                 <div className="flex flex-wrap items-start justify-between gap-4">
@@ -590,19 +643,41 @@ export function TasksPage() {
                     <p className="text-muted-foreground">Project Status: {task.review_status}</p>
                 </div>
 
+                {task.assignee_note && (
+                    <div className="rounded-lg border border-border p-3 bg-background/70">
+                        <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Assignment Note</p>
+                        <p className="text-sm text-foreground">{task.assignee_note}</p>
+                    </div>
+                )}
+
+{getTaskAttachmentUrl(task)
+                    && !(mode === "super-admin" && (task.status === "manager_submitted" || task.status === "under_super_admin_review"))
+                    && (
+                    <div className="rounded-lg border border-border p-3 bg-background/70">
+                        <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Attachment</p>
+                        <a href={getTaskAttachmentUrl(task) || "#"} target="_blank" rel="noreferrer" className="text-primary underline text-sm">
+                            Open attached file
+                        </a>
+                        <p className="text-xs text-muted-foreground mt-2">
+                            Uploaded by: {task.attachment_uploaded_by_username || "Unknown"}
+                            {task.attachment_uploaded_at ? ` on ${new Date(task.attachment_uploaded_at).toLocaleString()}` : ""}
+                        </p>
+                    </div>
+                )}
+
                 {((canManagerAct && canValidateAsManager) || canEmployeeAct || (mode === "manager" && task.review_status === "Validated" && task.status === "assigned")) && (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         {canManagerAct && canValidateAsManager && task.review_status !== "Validated" && (
                             <div className="space-y-2">
-                                <p className="text-xs font-bold text-muted-foreground uppercase">Manager Attachment</p>
+                                <p className="text-xs font-bold text-muted-foreground uppercase">Attachment</p>
                                 <input
                                     type="file"
-                                    onChange={(e) => onManagerFileChange(task.id, e)}
+                                    onChange={(e) => onTaskFileChange(task.id, e)}
                                     className="w-full px-3 py-2 border border-border rounded-lg bg-background"
                                 />
-                                {task.manager_attachment_url && (
-                                    <a href={task.manager_attachment_url} target="_blank" rel="noreferrer" className="text-xs text-primary underline">
-                                        View uploaded manager attachment
+                                {getTaskAttachmentUrl(task) && (
+                                    <a href={getTaskAttachmentUrl(task) || "#"} target="_blank" rel="noreferrer" className="text-xs text-primary underline">
+                                        View uploaded attachment
                                     </a>
                                 )}
                                 <button
@@ -610,17 +685,17 @@ export function TasksPage() {
                                     onClick={() => handleManagerAttachment(task.id)}
                                     className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90"
                                 >
-                                    <Upload className="w-4 h-4 inline mr-1" /> Upload Manager Attachment
+                                    <Upload className="w-4 h-4 inline mr-1" /> Upload Attachment
                                 </button>
                             </div>
                         )}
 
-                        {mode === "manager" && task.review_status === "Validated" && task.status === "assigned" && (
+                        {mode === "manager" && task.workflow_path && task.status === "assigned" && (
                             <div className="space-y-2 lg:col-span-2">
-                                <p className="text-xs font-bold text-muted-foreground uppercase">Branch Attachment For Super Admin</p>
+                                <p className="text-xs font-bold text-muted-foreground uppercase">Attachment For Super Admin (Branch Routing)</p>
                                 <input
                                     type="file"
-                                    onChange={(e) => onManagerFileChange(task.id, e)}
+                                    onChange={(e) => onTaskFileChange(task.id, e)}
                                     className="w-full px-3 py-2 border border-border rounded-lg bg-background"
                                 />
                                 <textarea
@@ -640,30 +715,116 @@ export function TasksPage() {
                             </div>
                         )}
 
-                        <div className="space-y-2">
-                            <p className="text-xs font-bold text-muted-foreground uppercase">Employee Attachment</p>
-                            <input
-                                type="file"
-                                onChange={(e) => onEmployeeFileChange(task.id, e)}
-                                className="w-full px-3 py-2 border border-border rounded-lg bg-background"
-                            />
-                            {task.employee_attachment_url && (
-                                <a href={task.employee_attachment_url} target="_blank" rel="noreferrer" className="text-xs text-primary underline">
-                                    View uploaded employee attachment
-                                </a>
-                            )}
-                            {canEmployeeAct && (
+                        {canEmployeeAct && (
+                            <div className="space-y-2">
+                                <p className="text-xs font-bold text-muted-foreground uppercase">Attachment</p>
+                                <input
+                                    type="file"
+                                    onChange={(e) => onTaskFileChange(task.id, e)}
+                                    className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                />
+                                {getTaskAttachmentUrl(task) && (
+                                    <a href={getTaskAttachmentUrl(task) || "#"} target="_blank" rel="noreferrer" className="text-xs text-primary underline">
+                                        View uploaded attachment
+                                    </a>
+                                )}
                                 <button
                                     type="button"
                                     onClick={() => handleEmployeeSubmit(task.id)}
                                     className="px-4 py-2 bg-info text-white rounded-lg text-sm font-semibold hover:bg-info/90"
                                 >
-                                    <Upload className="w-4 h-4 inline mr-1" /> {employeeFiles[task.id] ? "Upload & Submit Employee Attachment" : "Submit For Review"}
+                                    <Upload className="w-4 h-4 inline mr-1" /> {taskFiles[task.id] ? "Upload & Submit Attachment" : "Submit For Review"}
                                 </button>
-                            )}
-                        </div>
+                            </div>
+                        )}
                     </div>
                 )}
+
+                {mode === "manager" && canAssign && isPendingTask && (() => {
+                    const chosenDepartment = isProjectDepartmentManager
+                        ? "project"
+                        : (selectedDepartment[task.id] || task.target_department);
+                    const departmentUsers = isDepartment(chosenDepartment)
+                        ? (assignableUsersByDepartment[chosenDepartment] || [])
+                            .filter((u) => u.department === chosenDepartment)
+                            .filter((u) => !isProjectDepartmentManager || u.role === "supervisor" || u.role === "employee")
+                        : [];
+                    const isDepartmentUsersLoading = isDepartment(chosenDepartment)
+                        ? loadingDepartmentUsers[chosenDepartment]
+                        : false;
+                    const isAssignLocked = !!task.assigned_to || task.status !== "manager_queue";
+
+                    return (
+                    <div className="border-t border-border pt-4 grid grid-cols-1 md:grid-cols-4 gap-3">
+                        {isProjectDepartmentManager ? (
+                            <input
+                                type="text"
+                                value="Project"
+                                readOnly
+                                className="px-3 py-2 border border-border rounded-lg bg-muted text-foreground"
+                            />
+                        ) : (
+                            <select
+                                value={selectedDepartment[task.id] || task.target_department}
+                                onChange={(e) => {
+                                    const nextDepartment = e.target.value as Department;
+                                    setSelectedDepartment((prev) => ({ ...prev, [task.id]: nextDepartment }));
+                                    setSelectedAssignee((prev) => ({ ...prev, [task.id]: "" }));
+                                    void fetchAssignableUsersByDepartment(nextDepartment);
+                                }}
+                                className="px-3 py-2 border border-border rounded-lg bg-background"
+                                disabled={isAssignLocked}
+                            >
+                                {departmentOptions.map((department) => (
+                                    <option key={department.value} value={department.value}>
+                                        {department.label}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
+                        <select
+                            value={selectedAssignee[task.id] || ""}
+                            onChange={(e) => setSelectedAssignee((prev) => ({ ...prev, [task.id]: e.target.value }))}
+                            className="px-3 py-2 border border-border rounded-lg bg-background md:col-span-2"
+                            disabled={isAssignLocked}
+                        >
+                            <option value="">Select assignee</option>
+                            {isDepartmentUsersLoading ? (
+                                <option value="" disabled>Loading assignees...</option>
+                            ) : null}
+                            {departmentUsers.map((u) => (
+                                <option key={u.id} value={u.id}>
+                                    {u.username} ({u.department || "none"})
+                                </option>
+                            ))}
+                        </select>
+                        <input
+                            type="text"
+                            value={selectedAssigneeNote[task.id] || ""}
+                            onChange={(e) => setSelectedAssigneeNote((prev) => ({ ...prev, [task.id]: e.target.value }))}
+                            placeholder="Optional note for assignee"
+                            className="px-3 py-2 border border-border rounded-lg bg-background md:col-span-3"
+                            disabled={isAssignLocked}
+                        />
+                        <button
+                            type="button"
+                            onClick={() => handleAssign(task.id)}
+                            disabled={isAssignLocked || !selectedAssignee[task.id]}
+                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${isAssignLocked || !selectedAssignee[task.id]
+                                ? "bg-muted text-muted-foreground cursor-not-allowed opacity-60 blur-[0.3px]"
+                                : "bg-primary text-white hover:bg-primary/90"
+                                }`}
+                        >
+                            {isAssignLocked ? "Assigned" : "Assign"}
+                        </button>
+                        {isAssignLocked && (
+                            <p className="text-xs text-muted-foreground md:col-span-4">
+                                This task is already assigned to {task.assigned_to_username || "a user"} and cannot be reassigned.
+                            </p>
+                        )}
+                    </div>
+                    );
+                })()}
 
                 {mode === "manager" && canValidateAsManager && (task.status === "manager_queue" || task.status === "employee_submitted") && (
                     <div className="border-t border-border pt-4 space-y-3">
@@ -685,86 +846,34 @@ export function TasksPage() {
                     </div>
                 )}
 
-                {mode === "manager" && canAssign && isPendingTask && (() => {
-                    const chosenDepartment = selectedDepartment[task.id] || task.target_department;
-                    const departmentUsers = assignableUsers.filter((u) => u.department === chosenDepartment);
-                    const isAssignLocked = !!task.assigned_to || task.status !== "manager_queue";
-
-                    return (
-                    <div className="border-t border-border pt-4 grid grid-cols-1 md:grid-cols-4 gap-3">
-                        <select
-                            value={selectedDepartment[task.id] || task.target_department}
-                            onChange={(e) => {
-                                const nextDepartment = e.target.value as "investment" | "franchise";
-                                setSelectedDepartment((prev) => ({ ...prev, [task.id]: nextDepartment }));
-                                setSelectedAssignee((prev) => ({ ...prev, [task.id]: "" }));
-                            }}
-                            className="px-3 py-2 border border-border rounded-lg bg-background"
-                            disabled={isAssignLocked}
-                        >
-                            <option value="investment">investment</option>
-                            <option value="franchise">franchise</option>
-                        </select>
-                        <select
-                            value={selectedAssignee[task.id] || ""}
-                            onChange={(e) => setSelectedAssignee((prev) => ({ ...prev, [task.id]: e.target.value }))}
-                            className="px-3 py-2 border border-border rounded-lg bg-background md:col-span-2"
-                            disabled={isAssignLocked}
-                        >
-                            <option value="">Select assignee</option>
-                            {departmentUsers.map((u) => (
-                                <option key={u.id} value={u.id}>
-                                    {u.username} ({u.department || "none"})
-                                </option>
-                            ))}
-                        </select>
-                        <button
-                            type="button"
-                            onClick={() => handleAssign(task.id)}
-                            disabled={isAssignLocked || !selectedAssignee[task.id]}
-                            className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${isAssignLocked || !selectedAssignee[task.id]
-                                ? "bg-muted text-muted-foreground cursor-not-allowed opacity-60 blur-[0.3px]"
-                                : "bg-primary text-white hover:bg-primary/90"
-                                }`}
-                        >
-                            {isAssignLocked ? "Assigned" : "Assign"}
-                        </button>
-                        {isAssignLocked && (
-                            <p className="text-xs text-muted-foreground md:col-span-4">
-                                This task is already assigned to {task.assigned_to_username || "a user"} and cannot be reassigned.
-                            </p>
-                        )}
-                    </div>
-                    );
-                })()}
-
                 {mode === "super-admin" && (task.status === "manager_submitted" || task.status === "under_super_admin_review") && (
                     <div className="border-t border-border pt-4 space-y-3">
                         <p className="text-xs text-muted-foreground">
-                            One attachment is required for contract/documents review. Either manager or employee upload is enough.
+                            Attachments uploaded at validation and branch routing stages are shown below.
                         </p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-                            <div className="rounded-lg border border-border p-3 bg-background/70">
-                                <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Manager Attachment</p>
-                                {task.manager_attachment_url ? (
-                                    <a href={task.manager_attachment_url} target="_blank" rel="noreferrer" className="text-primary underline">
-                                        Open manager file
-                                    </a>
-                                ) : (
-                                    <p className="text-muted-foreground">Not uploaded</p>
+                        {task.attachment_url && (
+                            <div className="rounded-lg border border-border p-3 bg-background/70 text-sm">
+                                <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Initial Attachment (from Validation)</p>
+                                <a href={task.attachment_url} target="_blank" rel="noreferrer" className="text-primary underline">
+                                    Open attachment
+                                </a>
+                                <p className="text-xs text-muted-foreground mt-2">
+                                    Uploaded by: {task.attachment_uploaded_by_username || "Unknown"}
+                                    {task.attachment_uploaded_at ? ` on ${new Date(task.attachment_uploaded_at).toLocaleString()}` : ""}
+                                </p>
+                            </div>
+                        )}
+                        {task.manager_attachment_url && (
+                            <div className="rounded-lg border border-border p-3 bg-background/70 text-sm">
+                                <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Branch Attachment (from Branch Manager)</p>
+                                <a href={task.manager_attachment_url} target="_blank" rel="noreferrer" className="text-primary underline">
+                                    Open attachment
+                                </a>
+                                {task.manager_note && (
+                                    <p className="text-xs text-foreground mt-2">Note: {task.manager_note}</p>
                                 )}
                             </div>
-                            <div className="rounded-lg border border-border p-3 bg-background/70">
-                                <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Employee Attachment</p>
-                                {task.employee_attachment_url ? (
-                                    <a href={task.employee_attachment_url} target="_blank" rel="noreferrer" className="text-primary underline">
-                                        Open employee file
-                                    </a>
-                                ) : (
-                                    <p className="text-muted-foreground">Not uploaded</p>
-                                )}
-                            </div>
-                        </div>
+                        )}
                         <p className="text-sm font-semibold text-foreground"><ShieldCheck className="w-4 h-4 inline mr-1" /> Super Admin Decision</p>
                         <textarea
                             rows={2}
@@ -777,14 +886,18 @@ export function TasksPage() {
                             <select
                                 value={branchDepartment[task.id] || task.target_department}
                                 onChange={(e) => {
-                                    const nextDepartment = e.target.value as "investment" | "franchise";
+                                    const nextDepartment = e.target.value as Department;
                                     setBranchDepartment((prev) => ({ ...prev, [task.id]: nextDepartment }));
                                     setBranchAssignee((prev) => ({ ...prev, [task.id]: "" }));
+                                    void fetchAssignableUsersByDepartment(nextDepartment);
                                 }}
                                 className="px-3 py-2 border border-border rounded-lg bg-background"
                             >
-                                <option value="investment">investment</option>
-                                <option value="franchise">franchise</option>
+                                {departmentOptions.map((department) => (
+                                    <option key={department.value} value={department.value}>
+                                        {department.label}
+                                    </option>
+                                ))}
                             </select>
                             <select
                                 value={branchAssignee[task.id] || ""}
@@ -792,8 +905,11 @@ export function TasksPage() {
                                 className="px-3 py-2 border border-border rounded-lg bg-background"
                             >
                                 <option value="">Select department manager</option>
-                                {assignableUsers
-                                    .filter((u) => u.role === "department_manager" && u.department === (branchDepartment[task.id] || task.target_department))
+                                {(isDepartment(branchDepartment[task.id] || task.target_department)
+                                    ? (assignableUsersByDepartment[branchDepartment[task.id] || task.target_department] || [])
+                                        .filter((u) => u.department === (branchDepartment[task.id] || task.target_department))
+                                    : [])
+                                    .filter((u) => u.role === "department_manager")
                                     .map((u) => (
                                         <option key={u.id} value={u.id}>
                                             {u.username} ({u.department || "none"})
