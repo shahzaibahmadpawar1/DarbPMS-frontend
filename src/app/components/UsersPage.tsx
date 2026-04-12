@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Users, UserPlus, Trash2, Eye, EyeOff, X, Loader2, Shield, Pencil, FileText } from "lucide-react";
-import { Department, getDepartmentLabel, getRoleLabel, usersAPI, UserRecord, UserRole, UserType, UserStatus, StationOption } from "@/services/api";
+import { Department, departmentOptions, getDepartmentLabel, getRoleLabel, usersAPI, UserRecord, UserRole, UserType, UserStatus, StationOption } from "@/services/api";
 
 export function UsersPage() {
     const [users, setUsers] = useState<UserRecord[]>([]);
@@ -266,9 +266,15 @@ export function UsersPage() {
             return "bg-zinc-100 text-zinc-700 border border-zinc-200";
         }
 
-        return department === "investment"
-            ? "bg-info/10 text-info border border-info/20"
-            : "bg-primary/10 text-primary border border-primary/20";
+        if (department === "investment") {
+            return "bg-info/10 text-info border border-info/20";
+        }
+
+        if (department === "franchise") {
+            return "bg-primary/10 text-primary border border-primary/20";
+        }
+
+        return "bg-muted/50 text-foreground border border-border";
     };
 
     return (
@@ -593,8 +599,11 @@ export function UsersPage() {
                                                 onChange={(e) => setNewDepartment(e.target.value as Department)}
                                                 className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
                                             >
-                                                <option value="investment">Investment</option>
-                                                <option value="franchise">Franchise</option>
+                                                {departmentOptions.map((option) => (
+                                                    <option key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </option>
+                                                ))}
                                             </select>
                                         </div>
                                     )}
@@ -900,8 +909,11 @@ export function UsersPage() {
                                                 onChange={(e) => setEditDepartment(e.target.value as Department)}
                                                 className="w-full px-3 py-2 bg-background border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors"
                                             >
-                                                <option value="investment">Investment</option>
-                                                <option value="franchise">Franchise</option>
+                                                {departmentOptions.map((option) => (
+                                                    <option key={option.value} value={option.value}>
+                                                        {option.label}
+                                                    </option>
+                                                ))}
                                             </select>
                                         </div>
                                     )}

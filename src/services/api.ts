@@ -1,7 +1,47 @@
 // API Base URL from environment variables
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
-export type Department = 'investment' | 'franchise';
+export type Department =
+    | 'investment'
+    | 'franchise'
+    | 'it'
+    | 'project'
+    | 'finance'
+    | 'operation'
+    | 'maintanance'
+    | 'hr'
+    | 'realestate'
+    | 'procurement'
+    | 'quality'
+    | 'marketing'
+    | 'property_management'
+    | 'legal'
+    | 'government_relations'
+    | 'safety';
+
+export const departmentOptions: Array<{ value: Department; label: string }> = [
+    { value: 'investment', label: 'Investment' },
+    { value: 'franchise', label: 'Franchise' },
+    { value: 'it', label: 'IT' },
+    { value: 'project', label: 'Project' },
+    { value: 'finance', label: 'Finance' },
+    { value: 'operation', label: 'Operation' },
+    { value: 'maintanance', label: 'Maintanance' },
+    { value: 'hr', label: 'HR' },
+    { value: 'realestate', label: 'Realestate' },
+    { value: 'procurement', label: 'Procurement' },
+    { value: 'quality', label: 'Quality' },
+    { value: 'marketing', label: 'Marketing' },
+    { value: 'property_management', label: 'Property Management' },
+    { value: 'legal', label: 'Legal' },
+    { value: 'government_relations', label: 'Government Relations' },
+    { value: 'safety', label: 'Safety' },
+];
+
+const departmentLabelMap: Record<Department, string> = departmentOptions.reduce((labels, option) => {
+    labels[option.value] = option.label;
+    return labels;
+}, {} as Record<Department, string>);
 export type UserType = 'internal' | 'external';
 export type UserStatus = 'active' | 'inactive';
 
@@ -38,7 +78,7 @@ export function getDepartmentLabel(department: Department | null): string {
         return 'All Departments';
     }
 
-    return department === 'investment' ? 'Investment' : 'Franchise';
+    return departmentLabelMap[department] || department;
 }
 
 // API Response types

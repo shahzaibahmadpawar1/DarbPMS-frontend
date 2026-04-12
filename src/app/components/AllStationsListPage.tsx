@@ -147,6 +147,10 @@ export function AllStationsListPage() {
         }
     };
 
+    const openStation = (stationId: string) => {
+        navigate(`/station/${stationId}`);
+    };
+
     const getStatusColor = (status: string) => {
         switch (status) {
             case "Active":
@@ -227,17 +231,22 @@ export function AllStationsListPage() {
                                     <th className="px-6 py-4 text-sm font-semibold text-muted-foreground">City</th>
                                     <th className="px-6 py-4 text-sm font-semibold text-muted-foreground">Station Type</th>
                                     <th className="px-6 py-4 text-sm font-semibold text-muted-foreground">Station Status</th>
+                                    <th className="px-6 py-4 text-sm font-semibold text-muted-foreground text-right">Action</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-border">
                                 {filteredBucketStations.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} className="px-6 py-20 text-center text-muted-foreground">
+                                        <td colSpan={6} className="px-6 py-20 text-center text-muted-foreground">
                                             No stations found for this bucket.
                                         </td>
                                     </tr>
                                 ) : filteredBucketStations.map((station) => (
-                                    <tr key={station.id} className="hover:bg-muted/50 transition-colors">
+                                    <tr
+                                        key={station.id}
+                                        className="hover:bg-muted/50 transition-colors cursor-pointer"
+                                        onClick={() => openStation(station.id)}
+                                    >
                                         <td className="px-6 py-4 font-semibold text-foreground">{station.name}</td>
                                         <td className="px-6 py-4 font-mono text-sm text-muted-foreground uppercase">{station.station_code}</td>
                                         <td className="px-6 py-4 text-foreground">{station.city}</td>
@@ -246,6 +255,19 @@ export function AllStationsListPage() {
                                             <span className={`inline-flex px-2 py-1 rounded-full text-xs font-semibold border ${getStatusBadgeClass(station.status)}`}>
                                                 {station.status}
                                             </span>
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <button
+                                                type="button"
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-sm font-semibold text-primary hover:bg-primary/10 transition-colors"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    openStation(station.id);
+                                                }}
+                                            >
+                                                Details
+                                                <ChevronRight className="w-4 h-4" />
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
@@ -337,7 +359,7 @@ export function AllStationsListPage() {
                             {/* Station Header */}
                             <div
                                 className="p-3 sm:p-4 md:p-6 cursor-pointer hover:bg-primary/5 transition-colors"
-                                onClick={() => navigate(`/station/${station.id}`)}
+                                onClick={() => openStation(station.id)}
                             >
                                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
                                     <div className="flex items-center gap-3 sm:gap-4 flex-1 w-full sm:w-auto">
@@ -394,7 +416,15 @@ export function AllStationsListPage() {
                                                 <Trash2 className="w-4 h-4" />
                                             </button>
                                         )}
-                                        <button className="p-1.5 sm:p-2 hover:bg-muted rounded-lg transition-colors flex-shrink-0" aria-label="Open station">
+                                        <button
+                                            type="button"
+                                            className="p-1.5 sm:p-2 hover:bg-muted rounded-lg transition-colors flex-shrink-0"
+                                            aria-label="Open station"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                openStation(station.id);
+                                            }}
+                                        >
                                             <ChevronRight className="w-5 h-5 text-muted-foreground" />
                                         </button>
                                     </div>
