@@ -64,6 +64,19 @@ const fetchAllInvestmentProjects = async (token: string): Promise<InvestmentProj
     return allProjects;
 };
 
+const fetchInvestmentProjectById = async (token: string, projectId: string): Promise<InvestmentProject | null> => {
+    const response = await fetch(`${API_URL}/investment-projects/${projectId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (!response.ok) {
+        return null;
+    }
+
+    const result = await response.json();
+    return (result?.data as InvestmentProject) || null;
+};
+
 interface InvestmentProject {
     id: string;
     project_name: string;
@@ -134,8 +147,24 @@ export function UnderReviewProjectsPage() {
         try {
             setIsLoading(true);
             const allProjects = await fetchAllInvestmentProjects(token);
-            // Filter based on role logic
-            // For now, show all but UI elements change
+
+            if (!selectedProjectId) {
+                setProjects(allProjects);
+                return;
+            }
+
+            const hasSelectedProject = allProjects.some((project) => project.id === selectedProjectId);
+            if (hasSelectedProject) {
+                setProjects(allProjects);
+                return;
+            }
+
+            const selectedProject = await fetchInvestmentProjectById(token, selectedProjectId);
+            if (selectedProject) {
+                setProjects([selectedProject, ...allProjects]);
+                return;
+            }
+
             setProjects(allProjects);
         } catch (err) {
             console.error("Failed to fetch projects:", err);
@@ -146,7 +175,7 @@ export function UnderReviewProjectsPage() {
 
     useEffect(() => {
         fetchProjects();
-    }, [token]);
+    }, [token, selectedProjectId]);
 
     useEffect(() => {
         if (!selectedProjectId || projects.length === 0) {

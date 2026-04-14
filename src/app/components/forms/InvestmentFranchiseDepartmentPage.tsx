@@ -71,6 +71,7 @@ interface CommercialElement {
     name: string;
     count: string;
     area: string;
+    isDefault?: boolean;
 }
 
 interface ProjectDocumentSlot {
@@ -229,7 +230,7 @@ function NewProjectTab() {
     }, [user]);
 
     const [elements, setElements] = useState<CommercialElement[]>(
-        DEFAULT_ELEMENT_NAMES.map(name => ({ id: createId(), name, count: "0", area: "" }))
+        DEFAULT_ELEMENT_NAMES.map(name => ({ id: createId(), name, count: "0", area: "", isDefault: true }))
     );
     const [draftProjectId, setDraftProjectId] = useState<string | null>(null);
     const [isSaving, setIsSaving] = useState(false);
@@ -245,11 +246,23 @@ function NewProjectTab() {
     };
 
     const addElement = () => {
-        setElements(prev => [...prev, { id: createId(), name: "", count: "0", area: "" }]);
+        setElements(prev => [...prev, { id: createId(), name: "", count: "0", area: "", isDefault: false }]);
     };
 
     const removeElement = (id: string) => {
-        setElements(prev => prev.filter(el => el.id !== id));
+        setElements((prev) => {
+            const target = prev.find((el) => el.id === id);
+            if (!target) {
+                return prev;
+            }
+
+            if (target.isDefault && user?.role !== "super_admin") {
+                alert("Only super admin can delete the default station elements.");
+                return prev;
+            }
+
+            return prev.filter((el) => el.id !== id);
+        });
     };
 
     const updateDocument = (id: string, patch: Partial<ProjectDocumentSlot>) => {
@@ -311,11 +324,11 @@ function NewProjectTab() {
                 }));
 
                 setElements([
-                    { id: createId(), name: "Super Market", count: String(savedProject.super_market || 0), area: String(savedProject.super_market_area || 0) },
-                    { id: createId(), name: "Fuel Station", count: String(savedProject.fuel_station || 0), area: String(savedProject.fuel_station_area || 0) },
-                    { id: createId(), name: "Kiosks", count: String(savedProject.kiosks || 0), area: String(savedProject.kiosks_area || 0) },
-                    { id: createId(), name: "Retail Shop", count: String(savedProject.retail_shop || 0), area: String(savedProject.retail_shop_area || 0) },
-                    { id: createId(), name: "Drive Through", count: String(savedProject.drive_through || 0), area: String(savedProject.drive_through_area || 0) },
+                    { id: createId(), name: "Super Market", count: String(savedProject.super_market || 0), area: String(savedProject.super_market_area || 0), isDefault: true },
+                    { id: createId(), name: "Fuel Station", count: String(savedProject.fuel_station || 0), area: String(savedProject.fuel_station_area || 0), isDefault: true },
+                    { id: createId(), name: "Kiosks", count: String(savedProject.kiosks || 0), area: String(savedProject.kiosks_area || 0), isDefault: true },
+                    { id: createId(), name: "Retail Shop", count: String(savedProject.retail_shop || 0), area: String(savedProject.retail_shop_area || 0), isDefault: true },
+                    { id: createId(), name: "Drive Through", count: String(savedProject.drive_through || 0), area: String(savedProject.drive_through_area || 0), isDefault: true },
                 ]);
 
                 alert('Loaded your latest saved project draft.');
@@ -516,7 +529,7 @@ function NewProjectTab() {
                         idNo: "", nationalAddress: "", email: "", ownerType: "individual",
                         requestSender: "", orderDate: "",
                     });
-                    setElements(DEFAULT_ELEMENT_NAMES.map(name => ({ id: createId(), name, count: "0", area: "" })));
+                    setElements(DEFAULT_ELEMENT_NAMES.map(name => ({ id: createId(), name, count: "0", area: "", isDefault: true })));
                     setProjectDocuments(DEFAULT_DOCUMENT_SLOTS.map(label => ({ id: createId(), label, file: null })));
                 } else {
                     alert("Project saved. You can continue later and submit when ready.");
@@ -618,23 +631,31 @@ function NewProjectTab() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {elements.map((el, idx) => (
                         <div key={el.id} className="bg-muted/50 rounded-xl p-4 border border-border hover:border-primary/30 transition-colors space-y-3">
+                            {(() => {
+                                const lockDefaultName = !!el.isDefault && user?.role !== "super_admin";
+                                return (
                             <div className="flex items-center gap-2">
                                 <input
                                     type="text"
                                     value={el.name}
+                                    readOnly={lockDefaultName}
                                     onChange={e => updateElement(el.id, "name", e.target.value)}
                                     placeholder={`Element ${idx + 1} name`}
-                                    className="w-full text-sm font-semibold border border-border rounded-lg px-2.5 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary"
+                                    title={lockDefaultName ? "Only super admin can edit default element names" : ""}
+                                    className={`w-full text-sm font-semibold border border-border rounded-lg px-2.5 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary ${lockDefaultName ? "bg-muted/60 cursor-not-allowed" : ""}`}
                                 />
                                 <button
                                     type="button"
                                     onClick={() => removeElement(el.id)}
-                                    className="p-2 rounded-lg hover:bg-destructive/10"
-                                    title="Remove element"
+                                    disabled={el.isDefault && user?.role !== "super_admin"}
+                                    className="p-2 rounded-lg hover:bg-destructive/10 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
+                                    title={el.isDefault && user?.role !== "super_admin" ? "Only super admin can delete default elements" : "Remove element"}
                                 >
                                     <Trash2 className="w-4 h-4 text-destructive" />
                                 </button>
                             </div>
+                                );
+                            })()}
                             <div className="grid grid-cols-2 gap-2 items-end">
                                 <div>
                                     <p className="text-[10px] text-muted-foreground mb-1 text-center">Count</p>

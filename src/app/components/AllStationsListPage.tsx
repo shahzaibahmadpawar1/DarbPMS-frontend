@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import logo from "../../assets/logo.png";
 import { useAuth } from "@/context/AuthContext";
+import { isStationTypeFilterValue, STATION_TYPE_QUERY_KEY } from "../constants/stationTypeFilter";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 const STATIONS_PAGE_SIZE = 200;
@@ -43,6 +44,8 @@ export function AllStationsListPage() {
     const { user, token } = useAuth();
     const [searchParams] = useSearchParams();
     const activeBucket = searchParams.get('bucket') || '';
+    const stationTypeParam = searchParams.get(STATION_TYPE_QUERY_KEY);
+    const selectedStationType = isStationTypeFilterValue(stationTypeParam) ? stationTypeParam : '';
     const bucketLabel = activeBucket ? bucketLabels[activeBucket] || 'Station Drilldown' : '';
     const [stations, setStations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -57,7 +60,7 @@ export function AllStationsListPage() {
 
     useEffect(() => {
         fetchStations();
-    }, [activeBucket]);
+    }, [activeBucket, selectedStationType]);
 
     const fetchStations = async () => {
         const token = localStorage.getItem('auth_token');
@@ -69,7 +72,11 @@ export function AllStationsListPage() {
 
         try {
             if (activeBucket) {
-                const endpoint = `${API_BASE_URL}/dashboard/stations?bucket=${encodeURIComponent(activeBucket)}`;
+                const bucketParams = new URLSearchParams({ bucket: activeBucket });
+                if (selectedStationType) {
+                    bucketParams.set(STATION_TYPE_QUERY_KEY, selectedStationType);
+                }
+                const endpoint = `${API_BASE_URL}/dashboard/stations?${bucketParams.toString()}`;
                 const response = await fetch(endpoint, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
@@ -99,7 +106,14 @@ export function AllStationsListPage() {
                 let offset = 0;
 
                 while (true) {
-                    const response = await fetch(`${API_BASE_URL}/stations?limit=${STATIONS_PAGE_SIZE}&offset=${offset}`, {
+                    const allStationsParams = new URLSearchParams({
+                        limit: String(STATIONS_PAGE_SIZE),
+                        offset: String(offset),
+                    });
+                    if (selectedStationType) {
+                        allStationsParams.set('type', selectedStationType);
+                    }
+                    const response = await fetch(`${API_BASE_URL}/stations?${allStationsParams.toString()}`, {
                         headers: {
                             'Authorization': `Bearer ${token}`,
                             'Content-Type': 'application/json',

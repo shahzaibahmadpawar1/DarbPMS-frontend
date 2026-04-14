@@ -1,5 +1,5 @@
 import { ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import {
     AlertCircle,
@@ -156,6 +156,7 @@ const branchLabel: Record<WorkflowTaskFlow, string> = {
 export function TasksPage() {
     const { token, user } = useAuth();
     const navigate = useNavigate();
+    const location = useLocation();
     const [tasks, setTasks] = useState<WorkflowTask[]>([]);
     const [assignableUsersByDepartment, setAssignableUsersByDepartment] = useState<Record<string, AssignableUser[]>>({});
     const [loadingDepartmentUsers, setLoadingDepartmentUsers] = useState<Record<string, boolean>>({});
@@ -173,6 +174,7 @@ export function TasksPage() {
     const [taskHistory, setTaskHistory] = useState<Record<string, { task: WorkflowTask; history: WorkflowHistoryEntry[] }>>({});
     const [expandedHistoryTaskId, setExpandedHistoryTaskId] = useState<string | null>(null);
     const [showOnlyMySubmittedForms, setShowOnlyMySubmittedForms] = useState(false);
+    const [taskLoadError, setTaskLoadError] = useState<string | null>(null);
 
     const canAssign = user?.role === "department_manager" || user?.role === "super_admin" || user?.role === "supervisor";
     const canValidateAsManager = user?.role === "department_manager" || user?.role === "super_admin";
@@ -184,6 +186,12 @@ export function TasksPage() {
         if (canAssign) return "manager";
         return "employee";
     });
+
+    const underReviewPath = useMemo(() => {
+        return location.pathname.startsWith("/all-stations-")
+            ? "/all-stations-under-review"
+            : "/dashboard/under-review";
+    }, [location.pathname]);
 
     useEffect(() => {
         if (isSuperAdmin) {
@@ -232,12 +240,19 @@ export function TasksPage() {
         if (!token) return;
 
         setLoading(true);
+        setTaskLoadError(null);
         try {
-            const allTasks = await fetchAllWorkflowTasks(token);
+            let allTasks = await fetchAllWorkflowTasks(token);
+
+            // A quick retry smooths over occasional cold-start/schema sync delays.
+            if (allTasks.length === 0) {
+                allTasks = await fetchAllWorkflowTasks(token);
+            }
 
             setTasks(allTasks);
         } catch (error) {
             console.error("Failed to fetch workflow tasks:", error);
+            setTaskLoadError("Failed to load tasks. Retrying usually resolves this.");
         } finally {
             setLoading(false);
         }
@@ -610,7 +625,7 @@ export function TasksPage() {
                         {task.investment_project_id && (
                             <button
                                 type="button"
-                                onClick={() => navigate(`/dashboard/under-review?projectId=${task.investment_project_id}`)}
+                                onClick={() => navigate(`${underReviewPath}?projectId=${task.investment_project_id}`)}
                                 className="px-3 py-1.5 rounded-lg border border-primary/20 bg-primary/10 text-primary font-semibold hover:bg-primary/20"
                             >
                                 Details
@@ -1123,6 +1138,11 @@ export function TasksPage() {
                     </div>
 
                     <div className="bg-card/80 rounded-2xl border border-border p-4 mb-6 space-y-4">
+                        {taskLoadError && (
+                            <div className="rounded-lg border border-error/20 bg-error/10 text-error px-3 py-2 text-sm font-medium">
+                                {taskLoadError}
+                            </div>
+                        )}
                         <div className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
                             <input

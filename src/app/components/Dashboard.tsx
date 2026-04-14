@@ -8,8 +8,14 @@ import {
   Rocket,
 } from "lucide-react";
 import { BrandName } from "./BrandName";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import {
+  isStationTypeFilterValue,
+  STATION_TYPE_FILTER_OPTIONS,
+  STATION_TYPE_QUERY_KEY,
+  type StationTypeFilterValue,
+} from "../constants/stationTypeFilter";
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
@@ -26,6 +32,9 @@ interface ActivityRecord {
 
 export function Dashboard() {
   const { token, user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const stationTypeParam = searchParams.get(STATION_TYPE_QUERY_KEY);
+  const stationType = isStationTypeFilterValue(stationTypeParam) ? stationTypeParam : '';
   const [dashStats, setDashStats] = useState<any>(null);
   const [activities, setActivities] = useState<ActivityRecord[]>([]);
   const [activityScope, setActivityScope] = useState<ActivityScope>('mine');
@@ -40,7 +49,11 @@ export function Dashboard() {
       setLoadError(null);
       try {
         for (let attempt = 0; attempt < 2; attempt += 1) {
-          const response = await fetch(`${API_URL}/dashboard/stats`, {
+          const params = new URLSearchParams();
+          if (stationType) {
+            params.set(STATION_TYPE_QUERY_KEY, stationType);
+          }
+          const response = await fetch(`${API_URL}/dashboard/stats${params.toString() ? `?${params.toString()}` : ''}`, {
             headers: { 'Authorization': `Bearer ${token}` },
           });
 
@@ -63,7 +76,7 @@ export function Dashboard() {
       }
     };
     fetchStats();
-  }, [token]);
+  }, [token, stationType]);
 
   const canViewAllActivity = user?.role === 'super_admin';
 
@@ -192,13 +205,48 @@ export function Dashboard() {
   ];
 
   const stations: any[] = stationsList;
+  const handleStationTypeChange = (value: StationTypeFilterValue) => {
+    const nextParams = new URLSearchParams(searchParams);
+    if (value) {
+      nextParams.set(STATION_TYPE_QUERY_KEY, value);
+    } else {
+      nextParams.delete(STATION_TYPE_QUERY_KEY);
+    }
+    setSearchParams(nextParams);
+  };
+
+  const buildStationsLink = (bucket: string) => {
+    const params = new URLSearchParams({ bucket });
+    if (stationType) {
+      params.set(STATION_TYPE_QUERY_KEY, stationType);
+    }
+    return `/all-stations-list?${params.toString()}`;
+  };
 
   return (
     <div className="p-8">
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-4xl font-black text-foreground mb-2 tracking-tight">Dashboard</h1>
           <p className="text-muted-foreground"><BrandName /> Project Management & Tracking System</p>
+        </div>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <label htmlFor="dashboard-station-type" className="text-sm font-semibold text-muted-foreground">
+            Station Type
+          </label>
+          <select
+            id="dashboard-station-type"
+            value={stationType}
+            onChange={(event) => handleStationTypeChange(event.target.value as StationTypeFilterValue)}
+            className="min-w-[180px] rounded-lg border border-border bg-background px-3 py-2 text-sm font-semibold text-foreground shadow-sm"
+            aria-label="Filter dashboard by station type"
+          >
+            {STATION_TYPE_FILTER_OPTIONS.map((option) => (
+              <option key={option.value || 'all'} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -213,7 +261,7 @@ export function Dashboard() {
         {stationCards.map((stat) => (
           <Link
             key={stat.title}
-            to={`/all-stations-list?bucket=${stat.bucket}`}
+            to={buildStationsLink(stat.bucket)}
             className="bg-card rounded-xl shadow-md p-5 card-glow transition-all block group relative overflow-hidden border border-border"
           >
             <div className="flex items-start justify-between gap-3 mb-4">
@@ -232,7 +280,7 @@ export function Dashboard() {
         {projectCards.map((stat) => (
           <Link
             key={stat.title}
-            to={`/all-stations-list?bucket=${stat.bucket}`}
+            to={buildStationsLink(stat.bucket)}
             className="rounded-xl shadow-md px-4 py-4 card-glow transition-all block group relative overflow-hidden border border-border bg-card"
           >
             <div className={`absolute inset-0 opacity-60 ${stat.color}`}></div>
