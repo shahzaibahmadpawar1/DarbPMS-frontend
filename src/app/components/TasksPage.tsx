@@ -582,7 +582,6 @@ export function TasksPage() {
     };
 
     const renderTaskCard = (task: WorkflowTask, mode: RoleViewTab) => {
-        const isPendingTask = task.status !== "approved" && task.status !== "rejected";
         const canManagerAct = mode === "manager"
             && (task.status === "manager_queue" || task.status === "assigned" || task.status === "employee_submitted");
         const canEmployeeAct = mode === "employee"
@@ -592,7 +591,7 @@ export function TasksPage() {
         const displayTitle = task.project_name || task.title;
         const displayCode = task.project_code || task.id;
         const meta = task.metadata && typeof task.metadata === "object" ? (task.metadata as Record<string, any>) : null;
-        const reviewerComment = task.super_admin_comment || task.manager_note || task.assignee_note;
+        const reviewerComment = task.super_admin_comment || task.manager_note;
         return (
             <div key={task.id} className="bg-card/80 rounded-2xl border border-border p-5 space-y-4">
                 <div className="flex flex-wrap items-start justify-between gap-4">
@@ -796,11 +795,6 @@ export function TasksPage() {
                                     onChange={(e) => onTaskFileChange(task.id, e)}
                                     className="w-full px-3 py-2 border border-border rounded-lg bg-background"
                                 />
-                                {getTaskAttachmentUrl(task) && (
-                                    <a href={getTaskAttachmentUrl(task) || "#"} target="_blank" rel="noreferrer" className="text-xs text-primary underline">
-                                        View uploaded attachment
-                                    </a>
-                                )}
                                 <button
                                     type="button"
                                     onClick={() => handleManagerAttachment(task.id)}
@@ -844,11 +838,6 @@ export function TasksPage() {
                                     onChange={(e) => onTaskFileChange(task.id, e)}
                                     className="w-full px-3 py-2 border border-border rounded-lg bg-background"
                                 />
-                                {getTaskAttachmentUrl(task) && (
-                                    <a href={getTaskAttachmentUrl(task) || "#"} target="_blank" rel="noreferrer" className="text-xs text-primary underline">
-                                        View uploaded attachment
-                                    </a>
-                                )}
                                 <button
                                     type="button"
                                     onClick={() => handleEmployeeSubmit(task.id)}
@@ -861,7 +850,7 @@ export function TasksPage() {
                     </div>
                 )}
 
-                {mode === "manager" && canAssign && isPendingTask && (() => {
+                {mode === "manager" && canAssign && task.status === "manager_queue" && !task.assigned_to && (() => {
                     const chosenDepartment = isProjectDepartmentManager
                         ? "project"
                         : (selectedDepartment[task.id] || task.target_department);
@@ -970,11 +959,11 @@ export function TasksPage() {
                 {!isGenericTask && mode === "super-admin" && (task.status === "manager_submitted" || task.status === "under_super_admin_review") && (
                     <div className="border-t border-border pt-4 space-y-3">
                         <p className="text-xs text-muted-foreground">
-                            Attachments uploaded at validation and branch routing stages are shown below.
+                            The validation attachment is shown below.
                         </p>
                         {task.attachment_url && (
                             <div className="rounded-lg border border-border p-3 bg-background/70 text-sm">
-                                <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Initial Attachment (from Validation)</p>
+                                <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Attachment (from Validation)</p>
                                 <a href={task.attachment_url} target="_blank" rel="noreferrer" className="text-primary underline">
                                     Open attachment
                                 </a>
@@ -982,17 +971,6 @@ export function TasksPage() {
                                     Uploaded by: {task.attachment_uploaded_by_username || "Unknown"}
                                     {task.attachment_uploaded_at ? ` on ${new Date(task.attachment_uploaded_at).toLocaleString()}` : ""}
                                 </p>
-                            </div>
-                        )}
-                        {task.manager_attachment_url && (
-                            <div className="rounded-lg border border-border p-3 bg-background/70 text-sm">
-                                <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Branch Attachment (from Branch Manager)</p>
-                                <a href={task.manager_attachment_url} target="_blank" rel="noreferrer" className="text-primary underline">
-                                    Open attachment
-                                </a>
-                                {task.manager_note && (
-                                    <p className="text-xs text-foreground mt-2">Note: {task.manager_note}</p>
-                                )}
                             </div>
                         )}
                         <p className="text-sm font-semibold text-foreground"><ShieldCheck className="w-4 h-4 inline mr-1" /> Super Admin Decision</p>
