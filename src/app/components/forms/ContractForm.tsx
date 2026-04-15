@@ -6,12 +6,14 @@ import axios from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 
 export function ContractForm() {
   const { stationId } = useParams();
+  const location = useLocation();
   const { accessMode, selectedStation } = useStation();
   const isReadOnly = accessMode === 'view-only';
+  const taskId = new URLSearchParams(location.search).get("taskId") || "";
 
   const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
   const [loading, setLoading] = useState(false);
@@ -56,6 +58,46 @@ export function ContractForm() {
     reviewStatus: "Draft",
     stationCode: "",
   });
+
+  const applyContractRowToForm = (saved: any, fallbackStationCode: string) => {
+    if (!saved?.id) return;
+    setDraftId(saved.id);
+    setFormData({
+      contractNo: saved.contract_no || "",
+      contractType: saved.contract_type || "",
+      contractSignatureDate: saved.contract_signature_date ? String(saved.contract_signature_date).slice(0, 10) : "",
+      contractSignatureLocation: saved.contract_signature_location || "",
+      tenancyStartDate: saved.tenancy_start_date ? String(saved.tenancy_start_date).slice(0, 10) : "",
+      tenancyEndDate: saved.tenancy_end_date ? String(saved.tenancy_end_date).slice(0, 10) : "",
+      lessorName: saved.lessor_name || "",
+      nationality: saved.nationality || "",
+      idType: saved.id_type || "",
+      idNo: saved.id_no || "",
+      idCopy: saved.id_copy || "",
+      mobileNo: saved.mobile_no || "",
+      email: saved.email || "",
+      tenantName: saved.tenant_name || "",
+      tenantNationality: saved.tenant_nationality || "",
+      tenantIdType: saved.tenant_id_type || "",
+      tenantIdNo: saved.tenant_id_no || "",
+      tenantIdCopy: saved.tenant_id_copy || "",
+      tenantMobileNo: saved.tenant_mobile_no || "",
+      tenantEmail: saved.tenant_email || "",
+      duration: saved.duration || "",
+      days: saved.days != null ? String(saved.days) : "",
+      propertyValue: saved.property_value != null ? String(saved.property_value) : "",
+      installments: saved.installments != null ? String(saved.installments) : "",
+      dueDate: saved.due_date ? String(saved.due_date).slice(0, 10) : "",
+      dueAmount: saved.due_amount != null ? String(saved.due_amount) : "",
+      paidAmount: saved.paid_amount != null ? String(saved.paid_amount) : "",
+      notPaidAmount: saved.not_paid_amount != null ? String(saved.not_paid_amount) : "",
+      duePeriod: saved.due_period || "",
+      contractAttachmentUrl: saved.contract_attachment_url || "",
+      contractAttachmentName: saved.contract_attachment_name || "",
+      reviewStatus: saved.review_status || (saved.is_submitted ? "Pending Review" : "Draft"),
+      stationCode: saved.station_code || fallbackStationCode,
+    });
+  };
 
   const uploadAttachment = async (file: File) => {
     const token = localStorage.getItem('auth_token');
@@ -118,51 +160,52 @@ export function ContractForm() {
         });
 
         const saved = response.data?.data;
+        if (taskId) return;
         if (!saved?.id) return;
 
-        setDraftId(saved.id);
-        setFormData({
-          contractNo: saved.contract_no || "",
-          contractType: saved.contract_type || "",
-          contractSignatureDate: saved.contract_signature_date ? String(saved.contract_signature_date).slice(0, 10) : "",
-          contractSignatureLocation: saved.contract_signature_location || "",
-          tenancyStartDate: saved.tenancy_start_date ? String(saved.tenancy_start_date).slice(0, 10) : "",
-          tenancyEndDate: saved.tenancy_end_date ? String(saved.tenancy_end_date).slice(0, 10) : "",
-          lessorName: saved.lessor_name || "",
-          nationality: saved.nationality || "",
-          idType: saved.id_type || "",
-          idNo: saved.id_no || "",
-          idCopy: saved.id_copy || "",
-          mobileNo: saved.mobile_no || "",
-          email: saved.email || "",
-          tenantName: saved.tenant_name || "",
-          tenantNationality: saved.tenant_nationality || "",
-          tenantIdType: saved.tenant_id_type || "",
-          tenantIdNo: saved.tenant_id_no || "",
-          tenantIdCopy: saved.tenant_id_copy || "",
-          tenantMobileNo: saved.tenant_mobile_no || "",
-          tenantEmail: saved.tenant_email || "",
-          duration: saved.duration || "",
-          days: saved.days != null ? String(saved.days) : "",
-          propertyValue: saved.property_value != null ? String(saved.property_value) : "",
-          installments: saved.installments != null ? String(saved.installments) : "",
-          dueDate: saved.due_date ? String(saved.due_date).slice(0, 10) : "",
-          dueAmount: saved.due_amount != null ? String(saved.due_amount) : "",
-          paidAmount: saved.paid_amount != null ? String(saved.paid_amount) : "",
-          notPaidAmount: saved.not_paid_amount != null ? String(saved.not_paid_amount) : "",
-          duePeriod: saved.due_period || "",
-          contractAttachmentUrl: saved.contract_attachment_url || "",
-          contractAttachmentName: saved.contract_attachment_name || "",
-          reviewStatus: saved.review_status || (saved.is_submitted ? "Pending Review" : "Draft"),
-          stationCode: saved.station_code || stationCode,
-        });
+        applyContractRowToForm(saved, stationCode);
       } catch (error) {
         console.error("Error loading latest saved contract:", error);
       }
     };
 
     void hydrateForm();
-  }, [selectedStation, stationId]);
+  }, [selectedStation, stationId, taskId]);
+
+  useEffect(() => {
+    const hydrateFromTask = async () => {
+      if (!taskId) return;
+      const token = localStorage.getItem("auth_token");
+      if (!token) return;
+
+      try {
+        setLoading(true);
+        const response = await axios.post(
+          `${API_BASE_URL}/contracts/from-task/${encodeURIComponent(taskId)}`,
+          {},
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+        const contract = response.data?.data;
+        if (!contract?.id) return;
+
+        const stationCode = contract.station_code || "";
+        if (stationCode) {
+          await fetchRecords(stationCode);
+        }
+        applyContractRowToForm(contract, stationCode);
+        setViewMode("form");
+      } catch (error: any) {
+        console.error("Error starting contract task:", error);
+        const errorMsg = error.response?.data?.error || "Failed to open contract task";
+        alert(errorMsg);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void hydrateFromTask();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [taskId]);
 
   const fetchRecords = async (stationCode?: string) => {
     try {
@@ -195,14 +238,33 @@ export function ContractForm() {
         return;
       }
 
+      // If this form was opened from a task, ensure we have a draft contract row first.
+      // This avoids falling back to POST /contracts (which can 403 due to station department scope).
+      let effectiveDraftId = draftId;
+      if (taskId && !effectiveDraftId) {
+        const bootstrap = await axios.post(
+          `${API_BASE_URL}/contracts/from-task/${encodeURIComponent(taskId)}`,
+          {},
+          { headers: { Authorization: `Bearer ${token}` } },
+        );
+        const bootstrapped = bootstrap.data?.data;
+        if (bootstrapped?.id) {
+          effectiveDraftId = bootstrapped.id;
+          applyContractRowToForm(bootstrapped, bootstrapped.station_code || formData.stationCode || "");
+        } else {
+          alert("Failed to initialize contract draft from task.");
+          return;
+        }
+      }
+
       if (mode === 'submit' && !formData.contractAttachmentUrl) {
         alert("Please attach the contract file before submitting.");
         return;
       }
 
       const payload = { ...formData, submit: mode === 'submit' };
-      const response = draftId
-        ? await axios.put(`${API_BASE_URL}/contracts/${draftId}`, payload, {
+      const response = effectiveDraftId
+        ? await axios.put(`${API_BASE_URL}/contracts/${effectiveDraftId}`, payload, {
           headers: { Authorization: `Bearer ${token}` }
         })
         : await axios.post(`${API_BASE_URL}/contracts`, payload, {

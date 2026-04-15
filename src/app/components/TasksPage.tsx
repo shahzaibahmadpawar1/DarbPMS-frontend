@@ -587,7 +587,12 @@ export function TasksPage() {
         const canEmployeeAct = mode === "employee"
             && task.assigned_to === user?.id
             && (task.status === "assigned" || task.status === "employee_submitted");
+        const canOpenContract =
+            task.flow_type === "contract"
+            && task.assigned_to === user?.id
+            && task.status === "assigned";
         const isGenericTask = task.flow_type === "request" || task.flow_type === "ceo_contact";
+        const isContractTask = task.flow_type === "contract";
         const displayTitle = task.project_name || task.title;
         const displayCode = task.project_code || task.id;
         const meta = task.metadata && typeof task.metadata === "object" ? (task.metadata as Record<string, any>) : null;
@@ -628,6 +633,24 @@ export function TasksPage() {
                                 className="px-3 py-1.5 rounded-lg border border-primary/20 bg-primary/10 text-primary font-semibold hover:bg-primary/20"
                             >
                                 Details
+                            </button>
+                        )}
+                        {canOpenContract && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const inAllStationsLayout = location.pathname.startsWith("/all-stations-");
+                                    const stationCodeFromMeta = meta ? String(meta.stationCode || meta.station_code || meta.stationcode || "").trim() : "";
+                                    const stationCode = stationCodeFromMeta || String(task.project_code || "").trim();
+                                    if (inAllStationsLayout && stationCode) {
+                                        navigate(`/station/${encodeURIComponent(stationCode)}/form/contract?taskId=${encodeURIComponent(task.id)}`);
+                                        return;
+                                    }
+                                    navigate(`/dashboard/contract?taskId=${encodeURIComponent(task.id)}`);
+                                }}
+                                className="px-3 py-1.5 rounded-lg border border-primary/20 bg-primary/10 text-primary font-semibold hover:bg-primary/20"
+                            >
+                                Open Contract
                             </button>
                         )}
                         <button
@@ -785,7 +808,7 @@ export function TasksPage() {
                     </div>
                 )}
 
-                {!isGenericTask && ((canManagerAct && canValidateAsManager) || canEmployeeAct || (mode === "manager" && task.review_status === "Validated" && task.status === "assigned")) && (
+                {!isGenericTask && !isContractTask && ((canManagerAct && canValidateAsManager) || canEmployeeAct || (mode === "manager" && task.review_status === "Validated" && task.status === "assigned")) && (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         {canManagerAct && canValidateAsManager && task.review_status !== "Validated" && (
                             <div className="space-y-2">
