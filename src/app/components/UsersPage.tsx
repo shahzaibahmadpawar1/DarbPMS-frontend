@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { Users, UserPlus, Trash2, Eye, EyeOff, X, Loader2, Shield, Pencil, FileText } from "lucide-react";
 import { Department, departmentOptions, getDepartmentLabel, getRoleLabel, usersAPI, UserRecord, UserRole, UserType, UserStatus, StationOption } from "@/services/api";
+import { useAuth } from "@/context/AuthContext";
 
 export function UsersPage() {
+    const { user: currentUser } = useAuth();
     const [users, setUsers] = useState<UserRecord[]>([]);
     const [stations, setStations] = useState<StationOption[]>([]);
     const [loading, setLoading] = useState(true);
@@ -42,6 +44,7 @@ export function UsersPage() {
     const [editStationCodes, setEditStationCodes] = useState<string[]>([]);
     const [editFormError, setEditFormError] = useState<string | null>(null);
     const [showEditPassword, setShowEditPassword] = useState(false);
+    const isReadOnlyExecutive = currentUser?.role === "ceo";
 
     const fetchUsers = async () => {
         try {
@@ -82,7 +85,7 @@ export function UsersPage() {
 
         setActionLoading(true);
         try {
-            const department = newUserType === "internal" && newRole !== "super_admin" ? newDepartment : null;
+            const department = newUserType === "internal" && newRole !== "super_admin" && newRole !== "ceo" ? newDepartment : null;
 
             await usersAPI.create({
                 username: newUsername,
@@ -214,7 +217,7 @@ export function UsersPage() {
 
         setActionLoading(true);
         try {
-            const department = editUserType === "internal" && editRole !== "super_admin" ? editDepartment : null;
+            const department = editUserType === "internal" && editRole !== "super_admin" && editRole !== "ceo" ? editDepartment : null;
 
             await usersAPI.update(editingUserId, {
                 username: editUsername,
@@ -255,6 +258,7 @@ export function UsersPage() {
     const roleBadgeColor = (role: UserRole) => {
         switch (role) {
             case "super_admin": return "bg-red-100 text-red-700 border border-red-200";
+            case "ceo": return "bg-amber-100 text-amber-700 border border-amber-200";
             case "department_manager": return "bg-green-100 text-green-700 border border-green-200";
             case "supervisor": return "bg-primary/10 text-primary border border-primary/20";
             default: return "bg-info/10 text-info border border-info/20";
@@ -290,26 +294,28 @@ export function UsersPage() {
                         <p className="text-sm text-muted-foreground">Manage system users and their roles</p>
                     </div>
                 </div>
-                <button
-                    onClick={() => {
-                        setShowAddModal(true);
-                        setFormError(null);
-                        setNewFullName("");
-                        setNewEmail("");
-                        setNewPhone("");
-                        setNewUsername("");
-                        setNewPassword("");
-                        setNewUserType("internal");
-                        setNewRole("employee");
-                        setNewDepartment("investment");
-                        setNewStatus("active");
-                        setNewStationCodes([]);
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-sm"
-                >
-                    <UserPlus className="w-4 h-4" />
-                    Add New User
-                </button>
+                {!isReadOnlyExecutive && (
+                    <button
+                        onClick={() => {
+                            setShowAddModal(true);
+                            setFormError(null);
+                            setNewFullName("");
+                            setNewEmail("");
+                            setNewPhone("");
+                            setNewUsername("");
+                            setNewPassword("");
+                            setNewUserType("internal");
+                            setNewRole("employee");
+                            setNewDepartment("investment");
+                            setNewStatus("active");
+                            setNewStationCodes([]);
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-sm"
+                    >
+                        <UserPlus className="w-4 h-4" />
+                        Add New User
+                    </button>
+                )}
             </div>
 
             {/* Error Banner */}
@@ -404,7 +410,7 @@ export function UsersPage() {
                                         <td className="px-6 py-4">
                                             <select
                                                 value={user.status || "active"}
-                                                disabled={statusLoadingId === user.id}
+                                                disabled={statusLoadingId === user.id || isReadOnlyExecutive}
                                                 onChange={(e) => handleStatusChange(user.id, e.target.value as UserStatus)}
                                                 className="px-2.5 py-1 text-xs font-semibold rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
                                             >
@@ -444,20 +450,24 @@ export function UsersPage() {
                                                     >
                                                         <FileText className="w-4 h-4" />
                                                     </button>
-                                                    <button
-                                                        onClick={() => openEditModal(user)}
-                                                        className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
-                                                        title="Edit user"
-                                                    >
-                                                        <Pencil className="w-4 h-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => setDeleteConfirmId(user.id)}
-                                                        className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-                                                        title="Delete user"
-                                                    >
-                                                        <Trash2 className="w-4 h-4" />
-                                                    </button>
+                                                    {!isReadOnlyExecutive && (
+                                                        <>
+                                                            <button
+                                                                onClick={() => openEditModal(user)}
+                                                                className="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"
+                                                                title="Edit user"
+                                                            >
+                                                                <Pencil className="w-4 h-4" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => setDeleteConfirmId(user.id)}
+                                                                className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+                                                                title="Delete user"
+                                                            >
+                                                                <Trash2 className="w-4 h-4" />
+                                                            </button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             )}
                                         </td>
@@ -589,9 +599,10 @@ export function UsersPage() {
                                             <option value="supervisor">Supervisor</option>
                                             <option value="department_manager">Department Manager</option>
                                             <option value="super_admin">Super Admin</option>
+                                            <option value="ceo">CEO</option>
                                         </select>
                                     </div>
-                                    {newRole !== "super_admin" && (
+                                    {newRole !== "super_admin" && newRole !== "ceo" && (
                                         <div className="space-y-1.5">
                                             <label className="text-sm font-medium text-foreground">Department</label>
                                             <select
@@ -757,23 +768,25 @@ export function UsersPage() {
                                 </div>
                             </div>
 
-                            <div className="pt-2 border-t border-border flex items-center gap-3">
-                                <button
-                                    type="button"
-                                    onClick={handleDrawerEdit}
-                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:shadow-lg transition-all"
-                                >
-                                    <Pencil className="w-4 h-4" /> Edit User
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={handleDrawerDelete}
-                                    disabled={actionLoading}
-                                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-semibold hover:bg-red-600 transition-colors disabled:opacity-50"
-                                >
-                                    {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Delete User
-                                </button>
-                            </div>
+                            {!isReadOnlyExecutive && (
+                                <div className="pt-2 border-t border-border flex items-center gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={handleDrawerEdit}
+                                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:shadow-lg transition-all"
+                                    >
+                                        <Pencil className="w-4 h-4" /> Edit User
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleDrawerDelete}
+                                        disabled={actionLoading}
+                                        className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-semibold hover:bg-red-600 transition-colors disabled:opacity-50"
+                                    >
+                                        {actionLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Delete User
+                                    </button>
+                                </div>
+                            )}
                         </div>
                     </aside>
                 </>
@@ -899,9 +912,10 @@ export function UsersPage() {
                                             <option value="supervisor">Supervisor</option>
                                             <option value="department_manager">Department Manager</option>
                                             <option value="super_admin">Super Admin</option>
+                                            <option value="ceo">CEO</option>
                                         </select>
                                     </div>
-                                    {editRole !== "super_admin" && (
+                                    {editRole !== "super_admin" && editRole !== "ceo" && (
                                         <div className="space-y-1.5">
                                             <label className="text-sm font-medium text-foreground">Department</label>
                                             <select

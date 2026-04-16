@@ -17,7 +17,7 @@ interface ActivityRecord {
 
 export function ActivityHistoryPage() {
   const { token, user } = useAuth();
-  const canViewAllActivity = user?.role === 'super_admin';
+  const canViewAllActivity = user?.role === 'super_admin' || user?.role === 'ceo';
 
   const [scope, setScope] = useState<ActivityScope>('mine');
   const [records, setRecords] = useState<ActivityRecord[]>([]);

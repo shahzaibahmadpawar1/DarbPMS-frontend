@@ -274,7 +274,7 @@ export function UnderReviewProjectsPage() {
         }
     };
 
-    const isSuperAdmin = user?.role === 'super_admin';
+    const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'ceo';
     const canTakeDecision = isSuperAdmin;
 
     const filteredProjects = projects;

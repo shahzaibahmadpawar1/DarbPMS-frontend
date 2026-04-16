@@ -104,7 +104,7 @@ export function ComplaintContactForm() {
                 return;
             }
 
-            alert("Your message has been sent to the CEO office and will appear in the super admin task queue.");
+            alert("Your message has been sent to the CEO office and will appear in the executive task queue.");
             setFormData({
                 senderName: user?.username || "",
                 senderEmail: user?.email || "",
@@ -147,7 +147,7 @@ export function ComplaintContactForm() {
                         <div>
                             <h3 className="font-bold text-foreground mb-1">Direct Line to CEO Office</h3>
                             <p className="text-sm text-muted-foreground">
-                                This form creates a task for the super admin with all submitted details and attachments.
+                                This form creates an executive-review task with all submitted details and attachments.
                             </p>
                         </div>
                     </div>

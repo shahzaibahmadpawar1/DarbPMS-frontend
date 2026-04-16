@@ -78,7 +78,7 @@ export function Dashboard() {
     fetchStats();
   }, [token, stationType]);
 
-  const canViewAllActivity = user?.role === 'super_admin';
+  const canViewAllActivity = user?.role === 'super_admin' || user?.role === 'ceo';
 
   useEffect(() => {
     if (!token) return;

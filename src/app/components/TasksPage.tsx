@@ -124,7 +124,7 @@ const statusLabel: Record<WorkflowTaskStatus, string> = {
     assigned: "Assigned",
     employee_submitted: "Employee Submitted",
     manager_submitted: "Manager Submitted",
-    under_super_admin_review: "Under Super Admin Review",
+    under_super_admin_review: "Under Executive Review",
     pending_requester_decision: "Pending Requester Decision",
     approved: "Approved",
     rejected: "Rejected",
@@ -150,7 +150,7 @@ const stageLabel: Record<WorkflowTaskStatus, string> = {
     assigned: "Assigned to user",
     employee_submitted: "Employee submitted",
     manager_submitted: "Manager submitted",
-    under_super_admin_review: "Super admin review",
+    under_super_admin_review: "Executive review",
     pending_requester_decision: "Requester decision",
     approved: "Approved",
     rejected: "Rejected",
@@ -190,11 +190,11 @@ export function TasksPage() {
 
     const canAssign = user?.role === "department_manager" || user?.role === "super_admin" || user?.role === "supervisor";
     const canValidateAsManager = user?.role === "department_manager" || user?.role === "super_admin";
-    const isSuperAdmin = user?.role === "super_admin";
+    const isExecutiveReviewer = user?.role === "super_admin" || user?.role === "ceo";
     const isProjectDepartmentManager = user?.role === "department_manager" && user?.department === "project";
 
     const [activeTab, setActiveTab] = useState<RoleViewTab>(() => {
-        if (isSuperAdmin) return "super-admin";
+        if (isExecutiveReviewer) return "super-admin";
         if (canAssign) return "manager";
         return "employee";
     });
@@ -206,7 +206,7 @@ export function TasksPage() {
     }, [location.pathname]);
 
     useEffect(() => {
-        if (isSuperAdmin) {
+        if (isExecutiveReviewer) {
             setActiveTab("super-admin");
             return;
         }
@@ -217,10 +217,10 @@ export function TasksPage() {
         }
 
         setActiveTab("employee");
-    }, [isSuperAdmin, canAssign]);
+    }, [isExecutiveReviewer, canAssign]);
 
     const fetchAssignableUsersByDepartment = useCallback(async (department: Department): Promise<void> => {
-        if (!token || !canAssign) return;
+        if (!token || (!canAssign && !isExecutiveReviewer)) return;
         if (assignableUsersByDepartment[department] || loadingDepartmentUsers[department]) return;
 
         setLoadingDepartmentUsers((prev) => ({ ...prev, [department]: true }));
@@ -246,7 +246,7 @@ export function TasksPage() {
         } finally {
             setLoadingDepartmentUsers((prev) => ({ ...prev, [department]: false }));
         }
-    }, [token, canAssign, assignableUsersByDepartment, loadingDepartmentUsers]);
+    }, [token, canAssign, isExecutiveReviewer, assignableUsersByDepartment, loadingDepartmentUsers]);
 
     const loadData = async () => {
         if (!token) return;
@@ -275,7 +275,7 @@ export function TasksPage() {
     }, [token, canAssign]);
 
     useEffect(() => {
-        if (!canAssign || !token || tasks.length === 0) return;
+        if ((!canAssign && !isExecutiveReviewer) || !token || tasks.length === 0) return;
 
         const departmentsToPrefetch = Array.from(
             new Set(
@@ -292,7 +292,7 @@ export function TasksPage() {
         departmentsToPrefetch.forEach((department) => {
             void fetchAssignableUsersByDepartment(department);
         });
-    }, [canAssign, token, tasks, fetchAssignableUsersByDepartment, isProjectDepartmentManager]);
+    }, [canAssign, isExecutiveReviewer, token, tasks, fetchAssignableUsersByDepartment, isProjectDepartmentManager]);
 
     const matchesSearch = (task: WorkflowTask, query: string): boolean => {
         const q = query.toLowerCase();
@@ -954,7 +954,7 @@ export function TasksPage() {
 
                 {mode === "super-admin" && task.flow_type === "ceo_contact" && task.status === "assigned" && (
                     <div className="border-t border-border pt-4 space-y-3">
-                        <p className="text-xs font-bold text-muted-foreground uppercase">Super Admin Decision</p>
+                        <p className="text-xs font-bold text-muted-foreground uppercase">Executive Decision</p>
                         <textarea
                             rows={2}
                             value={reviewComment[task.id] || ""}
@@ -1078,7 +1078,7 @@ export function TasksPage() {
 
                         {mode === "manager" && task.workflow_path && task.status === "assigned" && (
                             <div className="space-y-2 lg:col-span-2">
-                                <p className="text-xs font-bold text-muted-foreground uppercase">Attachment For Super Admin (Branch Routing)</p>
+                                <p className="text-xs font-bold text-muted-foreground uppercase">Attachment For Executive Review (Branch Routing)</p>
                                 <input
                                     type="file"
                                     onChange={(e) => onTaskFileChange(task.id, e)}
@@ -1096,7 +1096,7 @@ export function TasksPage() {
                                     onClick={() => handleManagerSubmit(task.id)}
                                     className="px-4 py-2 bg-success text-white rounded-lg text-sm font-semibold"
                                 >
-                                    <Upload className="w-4 h-4 inline mr-1" /> Upload And Submit To Super Admin
+                                    <Upload className="w-4 h-4 inline mr-1" /> Upload And Submit To Executive Review
                                 </button>
                             </div>
                         )}
@@ -1221,14 +1221,14 @@ export function TasksPage() {
                             value={managerComment[task.id] || ""}
                             onChange={(e) => setManagerComment((prev) => ({ ...prev, [task.id]: e.target.value }))}
                             className="w-full px-3 py-2 border border-border rounded-lg bg-background"
-                            placeholder="Add validation notes before sending to super admin"
+                            placeholder="Add validation notes before sending to executive review"
                         />
                         <button
                             type="button"
                             onClick={() => handleManagerValidate(task.id)}
                             className="px-4 py-2 bg-success text-white rounded-lg text-sm font-semibold"
                         >
-                            <CheckCircle className="w-4 h-4 inline mr-1" /> Validate And Send To Super Admin
+                            <CheckCircle className="w-4 h-4 inline mr-1" /> Validate And Send To Executive Review
                         </button>
                     </div>
                 )}
@@ -1250,7 +1250,7 @@ export function TasksPage() {
                                 </p>
                             </div>
                         )}
-                        <p className="text-sm font-semibold text-foreground"><ShieldCheck className="w-4 h-4 inline mr-1" /> Super Admin Decision</p>
+                        <p className="text-sm font-semibold text-foreground"><ShieldCheck className="w-4 h-4 inline mr-1" /> Executive Decision</p>
                         <textarea
                             rows={2}
                             value={reviewComment[task.id] || ""}
@@ -1355,7 +1355,7 @@ export function TasksPage() {
             <div className="mb-8">
                 <h1 className="text-4xl font-black text-foreground mb-2 tracking-tight">Workflow Tasks</h1>
                 <p className="text-muted-foreground font-medium">
-                    Role-specific workflow queues for managers, employees, and super admin
+                    Role-specific workflow queues for managers, employees, and executive review
                 </p>
             </div>
 
@@ -1379,7 +1379,7 @@ export function TasksPage() {
                             <p className="text-3xl font-black text-info">{stats.employeeWork}</p>
                         </div>
                         <div className="bg-card/80 rounded-xl border border-border p-5">
-                            <p className="text-sm text-muted-foreground">Super Admin Review</p>
+                            <p className="text-sm text-muted-foreground">Executive Review</p>
                             <p className="text-3xl font-black text-primary">{stats.superAdminReview}</p>
                         </div>
                         <div className="bg-card/80 rounded-xl border border-border p-5">
@@ -1410,7 +1410,7 @@ export function TasksPage() {
                         </div>
 
                         <div className="flex flex-wrap gap-2">
-                            {(canAssign || isSuperAdmin) && (
+                            {(canAssign || isExecutiveReviewer) && (
                                 <button
                                     type="button"
                                     onClick={() => setActiveTab("manager")}
@@ -1428,13 +1428,13 @@ export function TasksPage() {
                                 Employee Workbench
                             </button>
 
-                            {isSuperAdmin && (
+                            {isExecutiveReviewer && (
                                 <button
                                     type="button"
                                     onClick={() => setActiveTab("super-admin")}
                                     className={`px-4 py-2 rounded-lg border text-sm font-semibold ${activeTab === "super-admin" ? "bg-primary text-white border-primary" : "bg-background border-border text-foreground"}`}
                                 >
-                                    Super Admin Review
+                                    Executive Review
                                 </button>
                             )}
 

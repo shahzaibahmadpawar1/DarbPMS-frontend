@@ -162,6 +162,7 @@ export function ContractForm() {
 
         const params = new URLSearchParams();
         if (stationCode) params.set('stationCode', stationCode);
+        if (previewMode) params.set('preview', '1');
 
         const response = await axios.get(`${API_BASE_URL}/contracts/latest-saved?${params.toString()}`, {
           headers: { Authorization: `Bearer ${token}` }
@@ -189,8 +190,10 @@ export function ContractForm() {
       try {
         setLoading(true);
         setTaskInitError("");
+        const params = new URLSearchParams();
+        if (previewMode) params.set('preview', '1');
         const response = await axios.post(
-          `${API_BASE_URL}/contracts/from-task/${encodeURIComponent(taskId)}`,
+          `${API_BASE_URL}/contracts/from-task/${encodeURIComponent(taskId)}${params.toString() ? `?${params.toString()}` : ''}`,
           {},
           { headers: { Authorization: `Bearer ${token}` } },
         );
@@ -256,8 +259,10 @@ export function ContractForm() {
       // This avoids falling back to POST /contracts (which can 403 due to station department scope).
       let effectiveDraftId = draftId;
       if (taskId && !effectiveDraftId) {
+        const params = new URLSearchParams();
+        if (previewMode) params.set('preview', '1');
         const bootstrap = await axios.post(
-          `${API_BASE_URL}/contracts/from-task/${encodeURIComponent(taskId)}`,
+          `${API_BASE_URL}/contracts/from-task/${encodeURIComponent(taskId)}${params.toString() ? `?${params.toString()}` : ''}`,
           {},
           { headers: { Authorization: `Bearer ${token}` } },
         );

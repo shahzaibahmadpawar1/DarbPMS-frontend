@@ -46,7 +46,7 @@ export type UserType = 'internal' | 'external';
 export type UserStatus = 'active' | 'inactive';
 
 // User roles
-export type UserRole = 'super_admin' | 'department_manager' | 'supervisor' | 'employee';
+export type UserRole = 'super_admin' | 'ceo' | 'department_manager' | 'supervisor' | 'employee';
 
 export function normalizeUserRole(role: unknown): UserRole {
     const normalized = String(role ?? '').trim().toLowerCase();
@@ -55,7 +55,11 @@ export function normalizeUserRole(role: unknown): UserRole {
         return 'super_admin';
     }
 
-    if (normalized === 'super_admin' || normalized === 'department_manager' || normalized === 'supervisor' || normalized === 'employee') {
+    if (normalized === 'ceo') {
+        return 'ceo';
+    }
+
+    if (normalized === 'super_admin' || normalized === 'ceo' || normalized === 'department_manager' || normalized === 'supervisor' || normalized === 'employee') {
         return normalized;
     }
 
@@ -66,6 +70,7 @@ export function normalizeUserRole(role: unknown): UserRole {
 export function getRoleLabel(role: UserRole | 'admin' | string): string {
     switch (normalizeUserRole(role)) {
         case 'super_admin': return 'Super Admin';
+        case 'ceo': return 'CEO';
         case 'department_manager': return 'Department Manager';
         case 'supervisor': return 'Supervisor';
         case 'employee': return 'Employee';

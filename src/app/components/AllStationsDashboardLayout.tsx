@@ -54,7 +54,7 @@ export function AllStationsDashboardLayout() {
     const { user } = useAuth();
     const { selectedStation } = useStation();
     const isRTL = lang === 'ar';
-    const isDepartmentScopedUser = !!user && user.role !== 'super_admin';
+    const isDepartmentScopedUser = !!user && user.role !== 'super_admin' && user.role !== 'ceo';
     const canCreateDepartmentProject = !!user && ['super_admin', 'department_manager', 'supervisor'].includes(user.role);
     const isInvestmentUser = isDepartmentScopedUser && canCreateDepartmentProject && user?.department === 'investment';
     const isFranchiseUser = isDepartmentScopedUser && canCreateDepartmentProject && user?.department === 'franchise';
@@ -251,7 +251,7 @@ export function AllStationsDashboardLayout() {
             { titleKey: "tasks", path: "/all-stations-tasks", icon: <ClipboardList className="w-5 h-5" /> },
             { titleKey: "reports", path: "/all-stations-reports", icon: <FileText className="w-5 h-5" /> },
             { titleKey: "contactCEO", path: "/all-stations-contact-ceo", icon: <MessageCircle className="w-5 h-5" /> },
-                        ...(user?.role === 'super_admin' ? [{ titleKey: "users" as const, path: "/all-stations-users", icon: <Users className="w-5 h-5" /> }] : []),
+                        ...((user?.role === 'super_admin' || user?.role === 'ceo') ? [{ titleKey: "users" as const, path: "/all-stations-users", icon: <Users className="w-5 h-5" /> }] : []),
           ];
 
     const handleChatClick = () => {
@@ -428,7 +428,7 @@ export function AllStationsDashboardLayout() {
                                     />
                                 </label>
                             )}
-                            {!isDeptUser && (
+                            {!isDeptUser && user?.role === 'super_admin' && (
                                 <Link
                                     to="/station/new-station/form/investment-department"
                                     className="flex items-center gap-2 px-3 md:px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-xs md:text-sm"
