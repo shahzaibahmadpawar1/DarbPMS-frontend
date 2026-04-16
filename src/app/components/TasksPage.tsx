@@ -19,8 +19,11 @@ type WorkflowTaskStatus =
     | "employee_submitted"
     | "manager_submitted"
     | "under_super_admin_review"
+    | "pending_requester_decision"
     | "approved"
-    | "rejected";
+    | "rejected"
+    | "requester_accepted"
+    | "requester_declined";
 
 type WorkflowTaskFlow = "contract" | "documents" | "request" | "ceo_contact";
 type RoleViewTab = "manager" | "employee" | "super-admin";
@@ -122,8 +125,11 @@ const statusLabel: Record<WorkflowTaskStatus, string> = {
     employee_submitted: "Employee Submitted",
     manager_submitted: "Manager Submitted",
     under_super_admin_review: "Under Super Admin Review",
+    pending_requester_decision: "Pending Requester Decision",
     approved: "Approved",
     rejected: "Rejected",
+    requester_accepted: "Requester Accepted",
+    requester_declined: "Requester Declined",
 };
 
 const statusClass: Record<WorkflowTaskStatus, string> = {
@@ -132,8 +138,11 @@ const statusClass: Record<WorkflowTaskStatus, string> = {
     employee_submitted: "bg-info/10 text-info border-info/20",
     manager_submitted: "bg-primary/10 text-primary border-primary/20",
     under_super_admin_review: "bg-primary/10 text-primary border-primary/20",
+    pending_requester_decision: "bg-warning/10 text-warning border-warning/20",
     approved: "bg-success/10 text-success border-success/20",
     rejected: "bg-error/10 text-error border-error/20",
+    requester_accepted: "bg-success/10 text-success border-success/20",
+    requester_declined: "bg-error/10 text-error border-error/20",
 };
 
 const stageLabel: Record<WorkflowTaskStatus, string> = {
@@ -142,8 +151,11 @@ const stageLabel: Record<WorkflowTaskStatus, string> = {
     employee_submitted: "Employee submitted",
     manager_submitted: "Manager submitted",
     under_super_admin_review: "Super admin review",
+    pending_requester_decision: "Requester decision",
     approved: "Approved",
     rejected: "Rejected",
+    requester_accepted: "Requester accepted",
+    requester_declined: "Requester declined",
 };
 
 const branchLabel: Record<WorkflowTaskFlow, string> = {
@@ -297,9 +309,21 @@ export function TasksPage() {
 
     const managerTasks = useMemo(() => {
         return tasks.filter((task) => {
-            return matchesSearch(task, search);
+            // For request workflow tasks, show if manager assigned it (even if delegated)
+            if (task.flow_type === "request" && task.assigned_by === user?.id) {
+                return matchesSearch(task, search);
+            }
+            // Show unassigned manager queue tasks
+            if (task.status === "manager_queue") {
+                return matchesSearch(task, search);
+            }
+            // For other workflow types, show all tasks that match search
+            if (task.flow_type !== "request") {
+                return matchesSearch(task, search);
+            }
+            return false;
         });
-    }, [tasks, search]);
+    }, [tasks, search, user?.id]);
 
     const employeeTasks = useMemo(() => {
         return tasks.filter((task) => {
@@ -354,8 +378,9 @@ export function TasksPage() {
 
     const handleAssign = async (taskId: string) => {
         const task = tasks.find((item) => item.id === taskId);
-        const isAlreadyAssigned = !!task?.assigned_to || task?.status !== "manager_queue";
-        if (isAlreadyAssigned) {
+        const requestTaskDelegation = task?.flow_type === "request" && task?.status === "assigned" && task?.assigned_to === user?.id;
+        const canAssignNow = task?.status === "manager_queue" || requestTaskDelegation;
+        if (!canAssignNow) {
             alert("Task is already assigned and cannot be reassigned.");
             return;
         }
@@ -438,7 +463,10 @@ export function TasksPage() {
                 Authorization: `Bearer ${token}`,
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({ attachmentUrl: attachmentUrl || undefined }),
+            body: JSON.stringify({
+                attachmentUrl: attachmentUrl || undefined,
+                note: managerComment[taskId] || "",
+            }),
         });
 
         if (!response.ok) {
@@ -465,6 +493,64 @@ export function TasksPage() {
         if (!response.ok) {
             const error = await response.json();
             alert(error?.error || "Failed to review task");
+            return;
+        }
+
+        await loadData();
+    };
+
+    const handleRequestManagerSubmit = async (taskId: string, decision: "approved" | "rejected") => {
+        if (!token) return;
+
+        const file = taskFiles[taskId];
+        let attachmentUrl: string | null = null;
+        if (file) {
+            attachmentUrl = await uploadFile(file);
+            if (!attachmentUrl) {
+                return;
+            }
+        }
+
+        const response = await fetch(`${API_URL}/tasks/${taskId}/review`, {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                decision,
+                comment: reviewComment[taskId] || "",
+                attachmentUrl: attachmentUrl || undefined,
+            }),
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            alert(error?.error || "Failed to submit manager response");
+            return;
+        }
+
+        await loadData();
+    };
+
+    const handleRequesterDecision = async (taskId: string, decision: "accept" | "decline") => {
+        if (!token) return;
+
+        const response = await fetch(`${API_URL}/tasks/${taskId}/requester-decision`, {
+            method: "PATCH",
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                decision,
+                comment: reviewComment[taskId] || "",
+            }),
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            alert(error?.error || "Failed to submit requester decision");
             return;
         }
 
@@ -503,13 +589,25 @@ export function TasksPage() {
     const handleManagerValidate = async (taskId: string) => {
         if (!token) return;
 
+        const file = taskFiles[taskId];
+        let attachmentUrl: string | null = null;
+        if (file) {
+            attachmentUrl = await uploadFile(file);
+            if (!attachmentUrl) {
+                return;
+            }
+        }
+
         const response = await fetch(`${API_URL}/tasks/${taskId}/manager-validate`, {
             method: "PATCH",
             headers: {
                 Authorization: `Bearer ${token}`,
                 "Content-Type": "application/json",
             },
-            body: JSON.stringify({ comment: managerComment[taskId] || "" }),
+            body: JSON.stringify({
+                comment: managerComment[taskId] || "",
+                attachmentUrl: attachmentUrl || undefined,
+            }),
         });
 
         if (!response.ok) {
@@ -587,14 +685,25 @@ export function TasksPage() {
         const canEmployeeAct = mode === "employee"
             && task.assigned_to === user?.id
             && (task.status === "assigned" || task.status === "employee_submitted");
+        const canSuperAdminPreviewContract =
+            mode === "super-admin"
+            && task.flow_type === "contract"
+            && task.status !== "manager_queue";
         const canOpenContract =
             task.flow_type === "contract"
             && (
                 (task.assigned_to === user?.id && task.status === "assigned")
-                || (mode === "super-admin" && (task.status === "manager_submitted" || task.status === "under_super_admin_review"))
+                || canSuperAdminPreviewContract
             );
         const isGenericTask = task.flow_type === "request" || task.flow_type === "ceo_contact";
         const isContractTask = task.flow_type === "contract";
+        const showSuperAdminDecisionPanel = !isGenericTask
+            && mode === "super-admin"
+            && (
+                task.status === "manager_submitted"
+                || task.status === "under_super_admin_review"
+                || (task.status === "assigned" && Boolean(task.workflow_path))
+            );
         const displayTitle = task.project_name || task.title;
         const displayCode = task.project_code || task.id;
         const meta = task.metadata && typeof task.metadata === "object" ? (task.metadata as Record<string, any>) : null;
@@ -644,21 +753,22 @@ export function TasksPage() {
                                     const backTo = `${location.pathname}${location.search || ""}`;
                                     const inAllStationsLayout = location.pathname.startsWith("/all-stations-");
                                     const stationCodeFromMeta = meta ? String(meta.stationCode || meta.station_code || meta.stationcode || "").trim() : "";
+                                    const previewQuery = canSuperAdminPreviewContract ? "&preview=1" : "";
                                     if (inAllStationsLayout && stationCodeFromMeta) {
                                         navigate(
-                                            `/station/${encodeURIComponent(stationCodeFromMeta)}/form/contract?taskId=${encodeURIComponent(task.id)}&backTo=${encodeURIComponent(backTo)}`,
+                                            `/station/${encodeURIComponent(stationCodeFromMeta)}/form/contract?taskId=${encodeURIComponent(task.id)}&backTo=${encodeURIComponent(backTo)}${previewQuery}`,
                                             { state: { backTo } },
                                         );
                                         return;
                                     }
                                     navigate(
-                                        `/dashboard/contract?taskId=${encodeURIComponent(task.id)}&backTo=${encodeURIComponent(backTo)}`,
+                                        `/dashboard/contract?taskId=${encodeURIComponent(task.id)}&backTo=${encodeURIComponent(backTo)}${previewQuery}`,
                                         { state: { backTo } },
                                     );
                                 }}
                                 className="px-3 py-1.5 rounded-lg border border-primary/20 bg-primary/10 text-primary font-semibold hover:bg-primary/20"
                             >
-                                Open Contract
+                                {canSuperAdminPreviewContract ? "Preview Contract" : "Open Contract"}
                             </button>
                         )}
                         <button
@@ -726,8 +836,14 @@ export function TasksPage() {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
                             <p className="text-muted-foreground"><span className="font-semibold text-foreground">Requester:</span> {(meta.requester?.username as string) || task.created_by_username || "Unknown"}</p>
                             <p className="text-muted-foreground"><span className="font-semibold text-foreground">Department:</span> {(meta.department as string) || task.origin_department}</p>
+                            <p className="text-muted-foreground"><span className="font-semibold text-foreground">Request Type:</span> {(meta.requestType as string) || "-"}</p>
                             <p className="text-muted-foreground"><span className="font-semibold text-foreground">Subject:</span> {(meta.subject as string) || task.title}</p>
                             <p className="text-muted-foreground"><span className="font-semibold text-foreground">Priority:</span> {(meta.priority as string) || "Normal"}</p>
+                            {Array.isArray(meta.stationCodes) && (
+                                <p className="text-muted-foreground md:col-span-2">
+                                    <span className="font-semibold text-foreground">Stations:</span> {meta.stationCodes.length > 0 ? meta.stationCodes.join(", ") : "None selected"}
+                                </p>
+                            )}
                             <p className="text-muted-foreground md:col-span-2"><span className="font-semibold text-foreground">Message:</span> {(meta.description as string) || task.description || "-"}</p>
                             {Array.isArray(meta.attachments) && meta.attachments.length > 0 && (
                                 <div className="md:col-span-2 space-y-2">
@@ -752,22 +868,85 @@ export function TasksPage() {
                     </div>
                 )}
 
-                {mode === "manager" && task.flow_type === "request" && task.status === "assigned" && (
+                {task.employee_note && (
+                    <div className="rounded-xl border border-border bg-background/70 p-4">
+                        <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Employee Comment</p>
+                        <p className="text-sm text-foreground">{task.employee_note}</p>
+                    </div>
+                )}
+
+                {mode === "manager" && task.flow_type === "request" && task.status === "assigned" && task.assigned_by === user?.id && (
                     <div className="border-t border-border pt-4 space-y-3">
-                        <p className="text-xs font-bold text-muted-foreground uppercase">Department Manager Decision</p>
+                        <p className="text-xs font-bold text-muted-foreground uppercase">Department Manager Response</p>
                         <textarea
                             rows={2}
                             value={reviewComment[task.id] || ""}
                             onChange={(event) => setReviewComment((prev) => ({ ...prev, [task.id]: event.target.value }))}
                             className="w-full px-3 py-2 border border-border rounded-lg bg-background"
-                            placeholder="Add approval or rejection notes"
+                            placeholder="Add response notes for requester"
+                        />
+                        {!getTaskAttachmentUrl(task) && (
+                            <input
+                                type="file"
+                                onChange={(event) => onTaskFileChange(task.id, event)}
+                                className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                            />
+                        )}
+                        <div className="flex flex-wrap gap-3">
+                            <button type="button" onClick={() => handleRequestManagerSubmit(task.id, "approved")} className="px-4 py-2 bg-success text-white rounded-lg text-sm font-semibold">
+                                <CheckCircle className="w-4 h-4 inline mr-1" /> Submit To Requester
+                            </button>
+                            <button type="button" onClick={() => handleRequestManagerSubmit(task.id, "rejected")} className="px-4 py-2 bg-error text-white rounded-lg text-sm font-semibold">
+                                <AlertCircle className="w-4 h-4 inline mr-1" /> Reject Request
+                            </button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">Attachment is optional and only one attachment is allowed per request response.</p>
+                    </div>
+                )}
+
+                {task.flow_type === "request" && task.status === "assigned" && task.assigned_to === user?.id && task.assigned_by !== user?.id && (
+                    <div className="border-t border-border pt-4 space-y-3">
+                        <p className="text-xs font-bold text-muted-foreground uppercase">Assigned Task Response</p>
+                        <p className="text-sm text-muted-foreground">You can add comments and attachments. Your response will be sent back to the department manager for review.</p>
+                        <textarea
+                            rows={2}
+                            value={reviewComment[task.id] || ""}
+                            onChange={(event) => setReviewComment((prev) => ({ ...prev, [task.id]: event.target.value }))}
+                            className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                            placeholder="Add your comments or notes"
+                        />
+                        {!getTaskAttachmentUrl(task) && (
+                            <input
+                                type="file"
+                                onChange={(event) => onTaskFileChange(task.id, event)}
+                                className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                            />
+                        )}
+                        <div className="flex flex-wrap gap-3">
+                            <button type="button" onClick={() => handleEmployeeSubmit(task.id)} className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold">
+                                <CheckCircle className="w-4 h-4 inline mr-1" /> Send Back To Manager
+                            </button>
+                        </div>
+                        <p className="text-xs text-muted-foreground">You can only add comments and attachments. Assignment and final decisions are handled by the department manager.</p>
+                    </div>
+                )}
+
+                {task.flow_type === "request" && task.status === "pending_requester_decision" && task.created_by === user?.id && (
+                    <div className="border-t border-border pt-4 space-y-3">
+                        <p className="text-xs font-bold text-muted-foreground uppercase">Requester Final Decision</p>
+                        <textarea
+                            rows={2}
+                            value={reviewComment[task.id] || ""}
+                            onChange={(event) => setReviewComment((prev) => ({ ...prev, [task.id]: event.target.value }))}
+                            className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                            placeholder="Optional decision note"
                         />
                         <div className="flex flex-wrap gap-3">
-                            <button type="button" onClick={() => handleSuperAdminReview(task.id, "approved")} className="px-4 py-2 bg-success text-white rounded-lg text-sm font-semibold">
-                                <CheckCircle className="w-4 h-4 inline mr-1" /> Approve
+                            <button type="button" onClick={() => handleRequesterDecision(task.id, "accept")} className="px-4 py-2 bg-success text-white rounded-lg text-sm font-semibold">
+                                <CheckCircle className="w-4 h-4 inline mr-1" /> Accept
                             </button>
-                            <button type="button" onClick={() => handleSuperAdminReview(task.id, "rejected")} className="px-4 py-2 bg-error text-white rounded-lg text-sm font-semibold">
-                                <AlertCircle className="w-4 h-4 inline mr-1" /> Reject
+                            <button type="button" onClick={() => handleRequesterDecision(task.id, "decline")} className="px-4 py-2 bg-error text-white rounded-lg text-sm font-semibold">
+                                <AlertCircle className="w-4 h-4 inline mr-1" /> Decline
                             </button>
                         </div>
                     </div>
@@ -802,7 +981,7 @@ export function TasksPage() {
                 )}
 
 {getTaskAttachmentUrl(task)
-                    && !(mode === "super-admin" && (task.status === "manager_submitted" || task.status === "under_super_admin_review"))
+                    && !showSuperAdminDecisionPanel
                     && (
                     <div className="rounded-lg border border-border p-3 bg-background/70">
                         <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Attachment</p>
@@ -813,6 +992,67 @@ export function TasksPage() {
                             Uploaded by: {task.attachment_uploaded_by_username || "Unknown"}
                             {task.attachment_uploaded_at ? ` on ${new Date(task.attachment_uploaded_at).toLocaleString()}` : ""}
                         </p>
+                    </div>
+                )}
+
+                {task.flow_type === "request" && canEmployeeAct && task.status === "assigned" && (
+                    <div className="border-t border-border pt-4 space-y-3">
+                        <p className="text-xs font-bold text-muted-foreground uppercase">Employee Response</p>
+                        <textarea
+                            rows={2}
+                            value={managerComment[task.id] || ""}
+                            onChange={(e) => setManagerComment((prev) => ({ ...prev, [task.id]: e.target.value }))}
+                            className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                            placeholder="Add your response notes"
+                        />
+                        {!getTaskAttachmentUrl(task) && (
+                            <input
+                                type="file"
+                                onChange={(e) => onTaskFileChange(task.id, e)}
+                                className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                            />
+                        )}
+                        <button
+                            type="button"
+                            onClick={() => handleEmployeeSubmit(task.id)}
+                            className="px-4 py-2 bg-info text-white rounded-lg text-sm font-semibold hover:bg-info/90"
+                        >
+                            <Upload className="w-4 h-4 inline mr-1" /> Submit To Manager
+                        </button>
+                    </div>
+                )}
+
+                {task.flow_type === "request" && mode === "manager" && canValidateAsManager && task.status === "employee_submitted" && (
+                    <div className="border-t border-border pt-4 space-y-3">
+                        <p className="text-xs font-bold text-muted-foreground uppercase">Manager Validation</p>
+                        <textarea
+                            rows={2}
+                            value={managerComment[task.id] || ""}
+                            onChange={(e) => setManagerComment((prev) => ({ ...prev, [task.id]: e.target.value }))}
+                            className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                            placeholder="Add final manager notes"
+                        />
+                        {!getTaskAttachmentUrl(task) && (
+                            <input
+                                type="file"
+                                onChange={(e) => onTaskFileChange(task.id, e)}
+                                className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                            />
+                        )}
+                        <button
+                            type="button"
+                            onClick={() => handleManagerValidate(task.id)}
+                            className="px-4 py-2 bg-success text-white rounded-lg text-sm font-semibold"
+                        >
+                            <CheckCircle className="w-4 h-4 inline mr-1" /> Validate And Send To Requester
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => handleRequestManagerSubmit(task.id, "rejected")}
+                            className="px-4 py-2 bg-error text-white rounded-lg text-sm font-semibold"
+                        >
+                            <AlertCircle className="w-4 h-4 inline mr-1" /> Reject Request
+                        </button>
                     </div>
                 )}
 
@@ -881,7 +1121,7 @@ export function TasksPage() {
                     </div>
                 )}
 
-                {mode === "manager" && canAssign && task.status === "manager_queue" && !task.assigned_to && (() => {
+                {mode === "manager" && canAssign && ((task.status === "manager_queue" && !task.assigned_to) || (task.flow_type === "request" && task.status === "assigned" && task.assigned_by === user?.id)) && (() => {
                     const chosenDepartment = isProjectDepartmentManager
                         ? "project"
                         : (selectedDepartment[task.id] || task.target_department);
@@ -893,7 +1133,8 @@ export function TasksPage() {
                     const isDepartmentUsersLoading = isDepartment(chosenDepartment)
                         ? loadingDepartmentUsers[chosenDepartment]
                         : false;
-                    const isAssignLocked = !!task.assigned_to || task.status !== "manager_queue";
+                    const requestTaskDelegation = task.flow_type === "request" && task.status === "assigned" && task.assigned_by === user?.id;
+                    const isAssignLocked = !requestTaskDelegation && (!!task.assigned_to || task.status !== "manager_queue");
 
                     return (
                     <div className="border-t border-border pt-4 grid grid-cols-1 md:grid-cols-4 gap-3">
@@ -963,6 +1204,11 @@ export function TasksPage() {
                                 This task is already assigned to {task.assigned_to_username || "a user"} and cannot be reassigned.
                             </p>
                         )}
+                        {requestTaskDelegation && (
+                            <p className="text-xs text-muted-foreground md:col-span-4">
+                                You can delegate this request task once to an employee in your department.
+                            </p>
+                        )}
                     </div>
                     );
                 })()}
@@ -987,7 +1233,7 @@ export function TasksPage() {
                     </div>
                 )}
 
-                {!isGenericTask && mode === "super-admin" && (task.status === "manager_submitted" || task.status === "under_super_admin_review") && (
+                {showSuperAdminDecisionPanel && (
                     <div className="border-t border-border pt-4 space-y-3">
                         <p className="text-xs text-muted-foreground">
                             The validation attachment is shown below.
@@ -1100,7 +1346,7 @@ export function TasksPage() {
         });
     }, [showOnlyMySubmittedForms, visibleTasks, user?.id]);
 
-    const completedStatuses: WorkflowTaskStatus[] = ["approved", "rejected"];
+    const completedStatuses: WorkflowTaskStatus[] = ["approved", "rejected", "requester_accepted", "requester_declined"];
     const pendingTasks = filteredVisibleTasks.filter((task) => !completedStatuses.includes(task.status));
     const completedTasks = filteredVisibleTasks.filter((task) => completedStatuses.includes(task.status));
 

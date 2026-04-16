@@ -1,55 +1,105 @@
-﻿import { useEffect, useState } from "react";
-import { Building2, MessageSquare, Send, User } from "lucide-react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
+import { Building2, Check, ChevronDown, MessageSquare, Send, User, X } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-import { departmentOptions, getRoleLabel } from "@/services/api";
+import { departmentOptions, getRoleLabel, type Department } from "@/services/api";
+import { getRequestTypesByDepartment, type RequestTypeValue } from "@/app/constants/requestTypes";
+import { Button } from "@/app/components/ui/button";
+import { cn } from "@/app/components/ui/utils";
 
-type RequestType =
-    | "general-request"
-    | "maintenance-request"
-    | "it-support"
-    | "hr-request"
-    | "procurement-request"
-    | "finance-request"
-    | "legal-request"
-    | "facility-request";
+interface StationOption {
+    station_code: string;
+    station_name: string;
+}
 
 interface RequestFormData {
-    requestType: RequestType | "";
-    department: string;
+    requestType: RequestTypeValue | "";
+    department: Department | "";
     priority: string;
     requester: string;
     subject: string;
     dueDate: string;
     description: string;
+    stationCodes: string[];
 }
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";
 
-const requestTypes = [
-    { value: "general-request", label: "General Request" },
-    { value: "maintenance-request", label: "Maintenance Request" },
-    { value: "it-support", label: "IT Support Request" },
-    { value: "hr-request", label: "HR Request" },
-    { value: "procurement-request", label: "Procurement Request" },
-    { value: "finance-request", label: "Finance Request" },
-    { value: "legal-request", label: "Legal Request" },
-    { value: "facility-request", label: "Facility Request" },
-];
-
 const initialFormState = (requester = "", department = ""): RequestFormData => ({
     requestType: "",
-    department,
+    department: department as Department | "",
     priority: "medium",
     requester,
     subject: "",
     dueDate: "",
     description: "",
+    stationCodes: [],
 });
 
 export function RequestPage() {
     const { user, token } = useAuth();
     const [formData, setFormData] = useState<RequestFormData>(() => initialFormState());
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [stations, setStations] = useState<StationOption[]>([]);
+    const stationPickerRef = useRef<HTMLDivElement | null>(null);
+    const [stationPickerOpen, setStationPickerOpen] = useState(false);
+    const [stationSearch, setStationSearch] = useState("");
+
+    const departmentRequestTypes = useMemo(
+        () => getRequestTypesByDepartment(formData.department),
+        [formData.department],
+    );
+
+    const selectedStationSet = useMemo(() => new Set(formData.stationCodes), [formData.stationCodes]);
+
+    const selectedStations = useMemo(
+        () => stations.filter((station) => selectedStationSet.has(station.station_code)),
+        [selectedStationSet, stations],
+    );
+
+    const sortedStations = useMemo(() => {
+        const query = stationSearch.trim().toLowerCase();
+
+        return [...stations]
+            .filter((station) => {
+                if (!query) {
+                    return true;
+                }
+
+                return (
+                    station.station_code.toLowerCase().includes(query) ||
+                    station.station_name.toLowerCase().includes(query)
+                );
+            })
+            .sort((left, right) => {
+            const leftSelected = selectedStationSet.has(left.station_code);
+            const rightSelected = selectedStationSet.has(right.station_code);
+
+            if (leftSelected !== rightSelected) {
+                return leftSelected ? -1 : 1;
+            }
+
+            return `${left.station_code} ${left.station_name}`.localeCompare(`${right.station_code} ${right.station_name}`);
+            });
+    }, [selectedStationSet, stationSearch, stations]);
+
+    useEffect(() => {
+        if (!stationPickerOpen) {
+            return;
+        }
+
+        const handlePointerDown = (event: MouseEvent) => {
+            if (!stationPickerRef.current) {
+                return;
+            }
+
+            if (!stationPickerRef.current.contains(event.target as Node)) {
+                setStationPickerOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handlePointerDown);
+        return () => document.removeEventListener("mousedown", handlePointerDown);
+    }, [stationPickerOpen]);
 
     useEffect(() => {
         if (!user) return;
@@ -61,6 +111,45 @@ export function RequestPage() {
             department: prev.department || (user.department ? user.department : ""),
         }));
     }, [user]);
+
+    useEffect(() => {
+        if (!token) return;
+
+        const loadStations = async () => {
+            try {
+                const response = await fetch(`${API_URL}/stations`, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                if (!response.ok) return;
+
+                const result = await response.json();
+                const stationData = Array.isArray(result?.data) ? result.data : [];
+                const normalized = stationData
+                    .map((station: any) => ({
+                        station_code: String(station.station_code || ""),
+                        station_name: String(station.station_name || station.station_code || ""),
+                    }))
+                    .filter((station: StationOption) => station.station_code.length > 0);
+
+                setStations(normalized);
+            } catch (error) {
+                console.error("Failed to load stations:", error);
+            }
+        };
+
+        void loadStations();
+    }, [token]);
+
+    useEffect(() => {
+        if (!formData.department || !formData.requestType) return;
+        const isValidSelection = departmentRequestTypes.some((option) => option.value === formData.requestType);
+        if (!isValidSelection) {
+            setFormData((prev) => ({ ...prev, requestType: "" }));
+        }
+    }, [departmentRequestTypes, formData.department, formData.requestType]);
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
@@ -90,6 +179,7 @@ export function RequestPage() {
                     subject: formData.subject,
                     dueDate: formData.dueDate,
                     description: formData.description,
+                    stationCodes: formData.stationCodes,
                 }),
             });
 
@@ -102,9 +192,8 @@ export function RequestPage() {
             alert("Request submitted. The department manager will review it in tasks.");
             setFormData((prev) => ({
                 ...initialFormState(prev.requester, prev.department),
-                department: prev.department,
+                department: prev.department as Department | "",
                 requester: prev.requester,
-                requestType: prev.requestType,
             }));
         } catch (error) {
             console.error("Failed to submit request:", error);
@@ -158,7 +247,13 @@ export function RequestPage() {
                             </label>
                             <select
                                 value={formData.department}
-                                onChange={(event) => setFormData((prev) => ({ ...prev, department: event.target.value }))}
+                                onChange={(event) =>
+                                    setFormData((prev) => ({
+                                        ...prev,
+                                        department: event.target.value as Department | "",
+                                        requestType: "",
+                                    }))
+                                }
                                 className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
                                 required
                             >
@@ -177,17 +272,130 @@ export function RequestPage() {
                             </label>
                             <select
                                 value={formData.requestType}
-                                onChange={(event) => setFormData((prev) => ({ ...prev, requestType: event.target.value as RequestType }))}
+                                onChange={(event) => setFormData((prev) => ({ ...prev, requestType: event.target.value as RequestTypeValue }))}
                                 className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background text-foreground"
                                 required
+                                disabled={!formData.department}
                             >
                                 <option value="">Select Request Type</option>
-                                {requestTypes.map((type) => (
+                                {departmentRequestTypes.map((type) => (
                                     <option key={type.value} value={type.value}>
                                         {type.label}
                                     </option>
                                 ))}
                             </select>
+                        </div>
+
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-muted-foreground mb-1">Stations (Optional)</label>
+                            <div ref={stationPickerRef} className="relative">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setStationPickerOpen((prev) => !prev)}
+                                    className="w-full justify-between px-3 py-2 h-auto min-h-10 text-left font-normal"
+                                >
+                                    <span className="truncate">
+                                        {selectedStations.length > 0
+                                            ? selectedStations.map((station) => station.station_code).join(", ")
+                                            : "Search and select one or more stations"}
+                                    </span>
+                                    <ChevronDown className="h-4 w-4 opacity-60" />
+                                </Button>
+
+                                {stationPickerOpen ? (
+                                    <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-50 overflow-hidden rounded-xl border border-border bg-background shadow-xl">
+                                        <div className="border-b border-border p-3">
+                                            <label className="mb-2 block text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                                                Search stations
+                                            </label>
+                                            <input
+                                                autoFocus
+                                                value={stationSearch}
+                                                onChange={(event) => setStationSearch(event.target.value)}
+                                                placeholder="Type a station code or name"
+                                                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground outline-none ring-0 focus:border-primary"
+                                            />
+                                            <p className="mt-2 text-xs text-muted-foreground">
+                                                Selected stations stay at the top of the list.
+                                            </p>
+                                        </div>
+
+                                        <div className="max-h-72 overflow-y-auto p-2">
+                                            {sortedStations.length > 0 ? (
+                                                sortedStations.map((station) => {
+                                                    const checked = selectedStationSet.has(station.station_code);
+
+                                                    return (
+                                                        <label
+                                                            key={station.station_code}
+                                                            onClick={() => {
+                                                                setFormData((prev) => ({
+                                                                    ...prev,
+                                                                    stationCodes: checked
+                                                                        ? prev.stationCodes.filter((code) => code !== station.station_code)
+                                                                        : [...prev.stationCodes, station.station_code],
+                                                                }));
+                                                            }}
+                                                            className={cn(
+                                                                "flex w-full cursor-pointer items-start gap-3 rounded-lg px-3 py-2 text-left transition-colors hover:bg-accent hover:text-accent-foreground",
+                                                                checked && "bg-accent/60",
+                                                            )}
+                                                        >
+                                                            <div className="mt-0.5 inline-flex h-4 w-4 shrink-0 items-center justify-center rounded border border-border bg-background">
+                                                                {checked ? (
+                                                                    <Check className="h-3 w-3 text-primary" strokeWidth={3} />
+                                                                ) : null}
+                                                            </div>
+                                                            <div className="min-w-0 flex-1">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="truncate text-sm font-medium text-foreground">
+                                                                        {station.station_code}
+                                                                    </span>
+                                                                    {checked ? <Check className="h-4 w-4 text-primary" /> : null}
+                                                                </div>
+                                                                <p className="truncate text-sm text-muted-foreground">{station.station_name}</p>
+                                                            </div>
+                                                        </label>
+                                                    );
+                                                })
+                                            ) : (
+                                                <div className="px-3 py-8 text-center text-sm text-muted-foreground">
+                                                    No stations found.
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <div className="border-t border-border p-3 text-xs text-muted-foreground">
+                                            Search by station code or name. Check a row to select or clear it.
+                                        </div>
+                                    </div>
+                                ) : null}
+                            </div>
+                            {selectedStations.length > 0 ? (
+                                <div className="mt-3 flex flex-wrap gap-2">
+                                    {selectedStations.map((station) => (
+                                        <button
+                                            key={station.station_code}
+                                            type="button"
+                                            onClick={() => {
+                                                setFormData((prev) => ({
+                                                    ...prev,
+                                                    stationCodes: prev.stationCodes.filter((code) => code !== station.station_code),
+                                                }));
+                                            }}
+                                            className="inline-flex items-center gap-2 rounded-full border border-border bg-muted/40 px-3 py-1 text-xs font-medium text-foreground transition-colors hover:bg-muted"
+                                        >
+                                            <span>{station.station_code}</span>
+                                            <span className="max-w-40 truncate text-muted-foreground">{station.station_name}</span>
+                                            <X className="h-3 w-3 text-muted-foreground" />
+                                        </button>
+                                    ))}
+                                </div>
+                            ) : null}
+                            <p className="text-xs text-muted-foreground mt-1">
+                                Search by station code or name, then check the stations you want. Selected stations are grouped first.
+                            </p>
                         </div>
 
                         <div>

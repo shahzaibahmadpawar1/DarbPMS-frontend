@@ -12,8 +12,10 @@ export function ContractForm() {
   const { stationId } = useParams();
   const location = useLocation();
   const { accessMode, selectedStation } = useStation();
-  const isReadOnly = accessMode === 'view-only';
-  const taskId = new URLSearchParams(location.search).get("taskId") || "";
+  const searchParams = new URLSearchParams(location.search);
+  const taskId = searchParams.get("taskId") || "";
+  const previewMode = searchParams.get("preview") === "1";
+  const isReadOnly = accessMode === 'view-only' || previewMode;
 
   const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
   const [loading, setLoading] = useState(false);
@@ -380,7 +382,7 @@ export function ContractForm() {
         {isReadOnly && (
           <div className="flex items-center gap-2 px-4 py-2 bg-info/5 text-info rounded-lg border border-info/20">
             <Eye className="w-4 h-4" />
-            <span className="text-sm font-semibold">View Only Mode</span>
+            <span className="text-sm font-semibold">{previewMode ? "Preview Mode" : "View Only Mode"}</span>
           </div>
         )}
       </div>
