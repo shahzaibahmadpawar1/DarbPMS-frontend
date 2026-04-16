@@ -147,7 +147,7 @@ export function ComplaintContactForm() {
                         <div>
                             <h3 className="font-bold text-foreground mb-1">Direct Line to CEO Office</h3>
                             <p className="text-sm text-muted-foreground">
-                                This form creates an executive-review task with all submitted details and attachments.
+                                This form creates a CEO contact task. The CEO can forward it to a department manager, collect progress, and finalize the response.
                             </p>
                         </div>
                     </div>

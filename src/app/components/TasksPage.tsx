@@ -16,6 +16,8 @@ import { departmentOptions, type Department } from "@/services/api";
 type WorkflowTaskStatus =
     | "manager_queue"
     | "assigned"
+    | "complaint_forwarded"
+    | "ceo_rejected"
     | "employee_submitted"
     | "manager_submitted"
     | "under_super_admin_review"
@@ -27,6 +29,7 @@ type WorkflowTaskStatus =
 
 type WorkflowTaskFlow = "contract" | "documents" | "request" | "ceo_contact";
 type RoleViewTab = "manager" | "employee" | "super-admin";
+type TaskStatusFilter = "pending" | "completed";
 
 interface WorkflowTask {
     id: string;
@@ -92,6 +95,16 @@ const isDepartment = (value: unknown): value is Department => {
     return typeof value === "string" && DEPARTMENT_SET.has(value as Department);
 };
 
+const formatApiError = (payload: any, fallback: string): string => {
+    const base = String(payload?.error || payload?.message || fallback).trim() || fallback;
+    const details = String(payload?.details || "").trim();
+    if (!details || details.toLowerCase() === base.toLowerCase()) {
+        return base;
+    }
+
+    return `${base}: ${details}`;
+};
+
 const fetchAllWorkflowTasks = async (token: string): Promise<WorkflowTask[]> => {
     const allTasks: WorkflowTask[] = [];
     let offset = 0;
@@ -122,9 +135,11 @@ const fetchAllWorkflowTasks = async (token: string): Promise<WorkflowTask[]> => 
 const statusLabel: Record<WorkflowTaskStatus, string> = {
     manager_queue: "Manager Queue",
     assigned: "Assigned",
+    complaint_forwarded: "Complaint Forwarded",
+    ceo_rejected: "CEO Rejected",
     employee_submitted: "Employee Submitted",
     manager_submitted: "Manager Submitted",
-    under_super_admin_review: "Under Executive Review",
+    under_super_admin_review: "Under Super Admin Review",
     pending_requester_decision: "Pending Requester Decision",
     approved: "Approved",
     rejected: "Rejected",
@@ -135,6 +150,8 @@ const statusLabel: Record<WorkflowTaskStatus, string> = {
 const statusClass: Record<WorkflowTaskStatus, string> = {
     manager_queue: "bg-warning/10 text-warning border-warning/20",
     assigned: "bg-info/10 text-info border-info/20",
+    complaint_forwarded: "bg-primary/10 text-primary border-primary/20",
+    ceo_rejected: "bg-warning/10 text-warning border-warning/20",
     employee_submitted: "bg-info/10 text-info border-info/20",
     manager_submitted: "bg-primary/10 text-primary border-primary/20",
     under_super_admin_review: "bg-primary/10 text-primary border-primary/20",
@@ -148,9 +165,11 @@ const statusClass: Record<WorkflowTaskStatus, string> = {
 const stageLabel: Record<WorkflowTaskStatus, string> = {
     manager_queue: "Manager queue",
     assigned: "Assigned to user",
+    complaint_forwarded: "Complaint forwarded",
+    ceo_rejected: "CEO rejected",
     employee_submitted: "Employee submitted",
     manager_submitted: "Manager submitted",
-    under_super_admin_review: "Executive review",
+    under_super_admin_review: "Super admin review",
     pending_requester_decision: "Requester decision",
     approved: "Approved",
     rejected: "Rejected",
@@ -186,15 +205,17 @@ export function TasksPage() {
     const [taskHistory, setTaskHistory] = useState<Record<string, { task: WorkflowTask; history: WorkflowHistoryEntry[] }>>({});
     const [expandedHistoryTaskId, setExpandedHistoryTaskId] = useState<string | null>(null);
     const [showOnlyMySubmittedForms, setShowOnlyMySubmittedForms] = useState(false);
+    const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>("pending");
     const [taskLoadError, setTaskLoadError] = useState<string | null>(null);
 
     const canAssign = user?.role === "department_manager" || user?.role === "super_admin" || user?.role === "supervisor";
     const canValidateAsManager = user?.role === "department_manager" || user?.role === "super_admin";
     const isExecutiveReviewer = user?.role === "super_admin" || user?.role === "ceo";
+    const isSuperAdmin = isExecutiveReviewer;
     const isProjectDepartmentManager = user?.role === "department_manager" && user?.department === "project";
 
     const [activeTab, setActiveTab] = useState<RoleViewTab>(() => {
-        if (isExecutiveReviewer) return "super-admin";
+        if (isSuperAdmin) return "super-admin";
         if (canAssign) return "manager";
         return "employee";
     });
@@ -206,7 +227,7 @@ export function TasksPage() {
     }, [location.pathname]);
 
     useEffect(() => {
-        if (isExecutiveReviewer) {
+        if (isSuperAdmin) {
             setActiveTab("super-admin");
             return;
         }
@@ -217,7 +238,7 @@ export function TasksPage() {
         }
 
         setActiveTab("employee");
-    }, [isExecutiveReviewer, canAssign]);
+    }, [isSuperAdmin, canAssign]);
 
     const fetchAssignableUsersByDepartment = useCallback(async (department: Department): Promise<void> => {
         if (!token || (!canAssign && !isExecutiveReviewer)) return;
@@ -307,10 +328,76 @@ export function TasksPage() {
         );
     };
 
+    const getRequestWorkflowSummary = (task: WorkflowTask): { title: string; description: string; className: string } | null => {
+        if (task.flow_type !== "request") {
+            return null;
+        }
+
+        const assignedTo = task.assigned_to_username || "Unassigned";
+        const assignedBy = task.assigned_by_username || task.created_by_username || "Unknown";
+
+        if (task.status === "assigned") {
+            if (task.assigned_to === user?.id) {
+                return {
+                    title: "Received by department manager",
+                    description: `Assigned to ${assignedTo}. You can delegate this request or continue the review flow.`,
+                    className: "bg-info/10 text-info border-info/20",
+                };
+            }
+
+            return {
+                title: "Delegated to assignee",
+                description: `Assigned to ${assignedTo} by ${assignedBy}. Waiting for comments and attachment.`,
+                className: "bg-primary/10 text-primary border-primary/20",
+            };
+        }
+
+        if (task.status === "employee_submitted") {
+            return {
+                title: "Returned to department manager",
+                description: `The assignee sent this back after adding comments or an attachment.`,
+                className: "bg-warning/10 text-warning border-warning/20",
+            };
+        }
+
+        if (task.status === "pending_requester_decision") {
+            return {
+                title: "Waiting for requester decision",
+                description: `The department manager reviewed the response and forwarded it to the requester.`,
+                className: "bg-warning/10 text-warning border-warning/20",
+            };
+        }
+
+        if (task.status === "requester_accepted") {
+            return {
+                title: "Request accepted",
+                description: `The requester approved the final response.`,
+                className: "bg-success/10 text-success border-success/20",
+            };
+        }
+
+        if (task.status === "requester_declined") {
+            return {
+                title: "Request declined",
+                description: `The requester rejected the final response.`,
+                className: "bg-error/10 text-error border-error/20",
+            };
+        }
+
+        return {
+            title: "Request in progress",
+            description: `Assigned to ${assignedTo} and tracked by ${assignedBy}.`,
+            className: "bg-muted text-muted-foreground border-border",
+        };
+    };
+
     const managerTasks = useMemo(() => {
         return tasks.filter((task) => {
-            // For request workflow tasks, show if manager assigned it (even if delegated)
-            if (task.flow_type === "request" && task.assigned_by === user?.id) {
+            // For request workflow tasks, show both received tasks and delegated tasks.
+            if (
+                task.flow_type === "request"
+                && (task.assigned_to === user?.id || task.assigned_by === user?.id)
+            ) {
                 return matchesSearch(task, search);
             }
             // Show unassigned manager queue tasks
@@ -379,7 +466,10 @@ export function TasksPage() {
     const handleAssign = async (taskId: string) => {
         const task = tasks.find((item) => item.id === taskId);
         const requestTaskDelegation = task?.flow_type === "request" && task?.status === "assigned" && task?.assigned_to === user?.id;
-        const canAssignNow = task?.status === "manager_queue" || requestTaskDelegation;
+        const ceoContactForward = isExecutiveReviewer
+            && task?.flow_type === "ceo_contact"
+            && (task?.status === "assigned" || task?.status === "ceo_rejected");
+        const canAssignNow = task?.status === "manager_queue" || requestTaskDelegation || ceoContactForward;
         if (!canAssignNow) {
             alert("Task is already assigned and cannot be reassigned.");
             return;
@@ -492,7 +582,7 @@ export function TasksPage() {
 
         if (!response.ok) {
             const error = await response.json();
-            alert(error?.error || "Failed to review task");
+            alert(formatApiError(error, "Failed to review task"));
             return;
         }
 
@@ -526,7 +616,7 @@ export function TasksPage() {
 
         if (!response.ok) {
             const error = await response.json();
-            alert(error?.error || "Failed to submit manager response");
+            alert(formatApiError(error, "Failed to submit manager response"));
             return;
         }
 
@@ -579,7 +669,7 @@ export function TasksPage() {
 
         if (!response.ok) {
             const error = await response.json();
-            alert(error?.error || "Failed to route task");
+            alert(formatApiError(error, "Failed to route task"));
             return;
         }
 
@@ -697,6 +787,16 @@ export function TasksPage() {
             );
         const isGenericTask = task.flow_type === "request" || task.flow_type === "ceo_contact";
         const isContractTask = task.flow_type === "contract";
+        const showCeoForwardPanel = isExecutiveReviewer
+            && task.flow_type === "ceo_contact"
+            && (task.status === "assigned" || task.status === "ceo_rejected");
+        const showCeoManagerPanel = mode === "manager"
+            && task.flow_type === "ceo_contact"
+            && task.status === "complaint_forwarded"
+            && task.assigned_to === user?.id;
+        const showCeoDecisionPanel = isExecutiveReviewer
+            && task.flow_type === "ceo_contact"
+            && task.status === "manager_submitted";
         const showSuperAdminDecisionPanel = !isGenericTask
             && mode === "super-admin"
             && (
@@ -708,6 +808,7 @@ export function TasksPage() {
         const displayCode = task.project_code || task.id;
         const meta = task.metadata && typeof task.metadata === "object" ? (task.metadata as Record<string, any>) : null;
         const reviewerComment = task.super_admin_comment || task.manager_note;
+        const requestWorkflowSummary = getRequestWorkflowSummary(task);
         return (
             <div key={task.id} className="bg-card/80 rounded-2xl border border-border p-5 space-y-4">
                 <div className="flex flex-wrap items-start justify-between gap-4">
@@ -731,6 +832,14 @@ export function TasksPage() {
                         {statusLabel[task.status]}
                     </span>
                 </div>
+
+                {requestWorkflowSummary && (
+                    <div className={`rounded-xl border px-4 py-3 ${requestWorkflowSummary.className}`}>
+                        <p className="text-[11px] font-black uppercase tracking-wider">Request workflow</p>
+                        <p className="mt-1 text-sm font-semibold text-foreground">{requestWorkflowSummary.title}</p>
+                        <p className="mt-1 text-xs text-muted-foreground">{requestWorkflowSummary.description}</p>
+                    </div>
+                )}
 
                 <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
                     <p>
@@ -875,7 +984,7 @@ export function TasksPage() {
                     </div>
                 )}
 
-                {mode === "manager" && task.flow_type === "request" && task.status === "assigned" && task.assigned_by === user?.id && (
+                {mode === "manager" && task.flow_type === "request" && task.status === "assigned" && task.assigned_to === user?.id && (
                     <div className="border-t border-border pt-4 space-y-3">
                         <p className="text-xs font-bold text-muted-foreground uppercase">Department Manager Response</p>
                         <textarea
@@ -904,7 +1013,7 @@ export function TasksPage() {
                     </div>
                 )}
 
-                {task.flow_type === "request" && task.status === "assigned" && task.assigned_to === user?.id && task.assigned_by !== user?.id && (
+                {mode === "employee" && task.flow_type === "request" && task.status === "assigned" && task.assigned_to === user?.id && task.assigned_by !== user?.id && (
                     <div className="border-t border-border pt-4 space-y-3">
                         <p className="text-xs font-bold text-muted-foreground uppercase">Assigned Task Response</p>
                         <p className="text-sm text-muted-foreground">You can add comments and attachments. Your response will be sent back to the department manager for review.</p>
@@ -952,7 +1061,7 @@ export function TasksPage() {
                     </div>
                 )}
 
-                {mode === "super-admin" && task.flow_type === "ceo_contact" && task.status === "assigned" && (
+                {showCeoDecisionPanel && (
                     <div className="border-t border-border pt-4 space-y-3">
                         <p className="text-xs font-bold text-muted-foreground uppercase">Executive Decision</p>
                         <textarea
@@ -960,16 +1069,43 @@ export function TasksPage() {
                             value={reviewComment[task.id] || ""}
                             onChange={(event) => setReviewComment((prev) => ({ ...prev, [task.id]: event.target.value }))}
                             className="w-full px-3 py-2 border border-border rounded-lg bg-background"
-                            placeholder="Add response to the sender"
+                            placeholder="Add final response to the complainant"
                         />
                         <div className="flex flex-wrap gap-3">
                             <button type="button" onClick={() => handleSuperAdminReview(task.id, "approved")} className="px-4 py-2 bg-success text-white rounded-lg text-sm font-semibold">
                                 <CheckCircle className="w-4 h-4 inline mr-1" /> Approve
                             </button>
                             <button type="button" onClick={() => handleSuperAdminReview(task.id, "rejected")} className="px-4 py-2 bg-error text-white rounded-lg text-sm font-semibold">
-                                <AlertCircle className="w-4 h-4 inline mr-1" /> Reject
+                                <AlertCircle className="w-4 h-4 inline mr-1" /> Reject and Reassign
                             </button>
                         </div>
+                    </div>
+                )}
+
+                {showCeoManagerPanel && (
+                    <div className="border-t border-border pt-4 space-y-3">
+                        <p className="text-xs font-bold text-muted-foreground uppercase">Department Manager Progress</p>
+                        <textarea
+                            rows={2}
+                            value={managerComment[task.id] || ""}
+                            onChange={(e) => setManagerComment((prev) => ({ ...prev, [task.id]: e.target.value }))}
+                            className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                            placeholder="Add comment for CEO review"
+                        />
+                        {!getTaskAttachmentUrl(task) && (
+                            <input
+                                type="file"
+                                onChange={(e) => onTaskFileChange(task.id, e)}
+                                className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                            />
+                        )}
+                        <button
+                            type="button"
+                            onClick={() => handleManagerValidate(task.id)}
+                            className="px-4 py-2 bg-success text-white rounded-lg text-sm font-semibold"
+                        >
+                            <CheckCircle className="w-4 h-4 inline mr-1" /> Send Progress To CEO
+                        </button>
                     </div>
                 )}
 
@@ -992,33 +1128,6 @@ export function TasksPage() {
                             Uploaded by: {task.attachment_uploaded_by_username || "Unknown"}
                             {task.attachment_uploaded_at ? ` on ${new Date(task.attachment_uploaded_at).toLocaleString()}` : ""}
                         </p>
-                    </div>
-                )}
-
-                {task.flow_type === "request" && canEmployeeAct && task.status === "assigned" && (
-                    <div className="border-t border-border pt-4 space-y-3">
-                        <p className="text-xs font-bold text-muted-foreground uppercase">Employee Response</p>
-                        <textarea
-                            rows={2}
-                            value={managerComment[task.id] || ""}
-                            onChange={(e) => setManagerComment((prev) => ({ ...prev, [task.id]: e.target.value }))}
-                            className="w-full px-3 py-2 border border-border rounded-lg bg-background"
-                            placeholder="Add your response notes"
-                        />
-                        {!getTaskAttachmentUrl(task) && (
-                            <input
-                                type="file"
-                                onChange={(e) => onTaskFileChange(task.id, e)}
-                                className="w-full px-3 py-2 border border-border rounded-lg bg-background"
-                            />
-                        )}
-                        <button
-                            type="button"
-                            onClick={() => handleEmployeeSubmit(task.id)}
-                            className="px-4 py-2 bg-info text-white rounded-lg text-sm font-semibold hover:bg-info/90"
-                        >
-                            <Upload className="w-4 h-4 inline mr-1" /> Submit To Manager
-                        </button>
                     </div>
                 )}
 
@@ -1078,7 +1187,7 @@ export function TasksPage() {
 
                         {mode === "manager" && task.workflow_path && task.status === "assigned" && (
                             <div className="space-y-2 lg:col-span-2">
-                                <p className="text-xs font-bold text-muted-foreground uppercase">Attachment For Executive Review (Branch Routing)</p>
+                                <p className="text-xs font-bold text-muted-foreground uppercase">Attachment For Super Admin (Branch Routing)</p>
                                 <input
                                     type="file"
                                     onChange={(e) => onTaskFileChange(task.id, e)}
@@ -1096,7 +1205,7 @@ export function TasksPage() {
                                     onClick={() => handleManagerSubmit(task.id)}
                                     className="px-4 py-2 bg-success text-white rounded-lg text-sm font-semibold"
                                 >
-                                    <Upload className="w-4 h-4 inline mr-1" /> Upload And Submit To Executive Review
+                                    <Upload className="w-4 h-4 inline mr-1" /> Upload And Submit To Super Admin
                                 </button>
                             </div>
                         )}
@@ -1121,49 +1230,40 @@ export function TasksPage() {
                     </div>
                 )}
 
-                {mode === "manager" && canAssign && ((task.status === "manager_queue" && !task.assigned_to) || (task.flow_type === "request" && task.status === "assigned" && task.assigned_by === user?.id)) && (() => {
-                    const chosenDepartment = isProjectDepartmentManager
-                        ? "project"
-                        : (selectedDepartment[task.id] || task.target_department);
+                {((mode === "manager" && canAssign && ((task.status === "manager_queue" && !task.assigned_to) || (task.flow_type === "request" && task.status === "assigned" && task.assigned_to === user?.id)))
+                    || showCeoForwardPanel) && (() => {
+                    const chosenDepartment = selectedDepartment[task.id] || task.target_department;
+                    const forwardToDepartmentManagerOnly = showCeoForwardPanel;
                     const departmentUsers = isDepartment(chosenDepartment)
                         ? (assignableUsersByDepartment[chosenDepartment] || [])
                             .filter((u) => u.department === chosenDepartment)
-                            .filter((u) => !isProjectDepartmentManager || u.role === "supervisor" || u.role === "employee")
+                            .filter((u) => !forwardToDepartmentManagerOnly || u.role === "department_manager")
                         : [];
                     const isDepartmentUsersLoading = isDepartment(chosenDepartment)
                         ? loadingDepartmentUsers[chosenDepartment]
                         : false;
-                    const requestTaskDelegation = task.flow_type === "request" && task.status === "assigned" && task.assigned_by === user?.id;
-                    const isAssignLocked = !requestTaskDelegation && (!!task.assigned_to || task.status !== "manager_queue");
+                    const requestTaskDelegation = task.flow_type === "request" && task.status === "assigned" && task.assigned_to === user?.id;
+                    const isAssignLocked = !requestTaskDelegation && !showCeoForwardPanel && (!!task.assigned_to || task.status !== "manager_queue");
 
                     return (
                     <div className="border-t border-border pt-4 grid grid-cols-1 md:grid-cols-4 gap-3">
-                        {isProjectDepartmentManager ? (
-                            <input
-                                type="text"
-                                value="Project"
-                                readOnly
-                                className="px-3 py-2 border border-border rounded-lg bg-muted text-foreground"
-                            />
-                        ) : (
-                            <select
-                                value={selectedDepartment[task.id] || task.target_department}
-                                onChange={(e) => {
-                                    const nextDepartment = e.target.value as Department;
-                                    setSelectedDepartment((prev) => ({ ...prev, [task.id]: nextDepartment }));
-                                    setSelectedAssignee((prev) => ({ ...prev, [task.id]: "" }));
-                                    void fetchAssignableUsersByDepartment(nextDepartment);
-                                }}
-                                className="px-3 py-2 border border-border rounded-lg bg-background"
-                                disabled={isAssignLocked}
-                            >
-                                {departmentOptions.map((department) => (
-                                    <option key={department.value} value={department.value}>
-                                        {department.label}
-                                    </option>
-                                ))}
-                            </select>
-                        )}
+                        <select
+                            value={selectedDepartment[task.id] || task.target_department}
+                            onChange={(e) => {
+                                const nextDepartment = e.target.value as Department;
+                                setSelectedDepartment((prev) => ({ ...prev, [task.id]: nextDepartment }));
+                                setSelectedAssignee((prev) => ({ ...prev, [task.id]: "" }));
+                                void fetchAssignableUsersByDepartment(nextDepartment);
+                            }}
+                            className="px-3 py-2 border border-border rounded-lg bg-background"
+                            disabled={isAssignLocked}
+                        >
+                            {departmentOptions.map((department) => (
+                                <option key={department.value} value={department.value}>
+                                    {department.label}
+                                </option>
+                            ))}
+                        </select>
                         <select
                             value={selectedAssignee[task.id] || ""}
                             onChange={(e) => setSelectedAssignee((prev) => ({ ...prev, [task.id]: e.target.value }))}
@@ -1206,7 +1306,12 @@ export function TasksPage() {
                         )}
                         {requestTaskDelegation && (
                             <p className="text-xs text-muted-foreground md:col-span-4">
-                                You can delegate this request task once to an employee in your department.
+                                You can delegate this request task to a user in the selected department.
+                            </p>
+                        )}
+                        {showCeoForwardPanel && (
+                            <p className="text-xs text-muted-foreground md:col-span-4">
+                                Forward this complaint to a department manager for resolution.
                             </p>
                         )}
                     </div>
@@ -1221,14 +1326,14 @@ export function TasksPage() {
                             value={managerComment[task.id] || ""}
                             onChange={(e) => setManagerComment((prev) => ({ ...prev, [task.id]: e.target.value }))}
                             className="w-full px-3 py-2 border border-border rounded-lg bg-background"
-                            placeholder="Add validation notes before sending to executive review"
+                            placeholder="Add validation notes before sending to super admin"
                         />
                         <button
                             type="button"
                             onClick={() => handleManagerValidate(task.id)}
                             className="px-4 py-2 bg-success text-white rounded-lg text-sm font-semibold"
                         >
-                            <CheckCircle className="w-4 h-4 inline mr-1" /> Validate And Send To Executive Review
+                            <CheckCircle className="w-4 h-4 inline mr-1" /> Validate And Send To Super Admin
                         </button>
                     </div>
                 )}
@@ -1250,7 +1355,7 @@ export function TasksPage() {
                                 </p>
                             </div>
                         )}
-                        <p className="text-sm font-semibold text-foreground"><ShieldCheck className="w-4 h-4 inline mr-1" /> Executive Decision</p>
+                        <p className="text-sm font-semibold text-foreground"><ShieldCheck className="w-4 h-4 inline mr-1" /> Super Admin Decision</p>
                         <textarea
                             rows={2}
                             value={reviewComment[task.id] || ""}
@@ -1355,7 +1460,7 @@ export function TasksPage() {
             <div className="mb-8">
                 <h1 className="text-4xl font-black text-foreground mb-2 tracking-tight">Workflow Tasks</h1>
                 <p className="text-muted-foreground font-medium">
-                    Role-specific workflow queues for managers, employees, and executive review
+                    Role-specific workflow queues for managers, employees, and super admin
                 </p>
             </div>
 
@@ -1379,7 +1484,7 @@ export function TasksPage() {
                             <p className="text-3xl font-black text-info">{stats.employeeWork}</p>
                         </div>
                         <div className="bg-card/80 rounded-xl border border-border p-5">
-                            <p className="text-sm text-muted-foreground">Executive Review</p>
+                            <p className="text-sm text-muted-foreground">Super Admin Review</p>
                             <p className="text-3xl font-black text-primary">{stats.superAdminReview}</p>
                         </div>
                         <div className="bg-card/80 rounded-xl border border-border p-5">
@@ -1410,7 +1515,7 @@ export function TasksPage() {
                         </div>
 
                         <div className="flex flex-wrap gap-2">
-                            {(canAssign || isExecutiveReviewer) && (
+                            {(canAssign || isSuperAdmin) && (
                                 <button
                                     type="button"
                                     onClick={() => setActiveTab("manager")}
@@ -1446,34 +1551,55 @@ export function TasksPage() {
                                 My Submitted Forms
                             </button>
                         </div>
+
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                onClick={() => setStatusFilter("pending")}
+                                className={`px-4 py-2 rounded-lg border text-sm font-semibold ${statusFilter === "pending" ? "bg-warning text-white border-warning" : "bg-background border-border text-foreground"}`}
+                            >
+                                Pending Tasks
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setStatusFilter("completed")}
+                                className={`px-4 py-2 rounded-lg border text-sm font-semibold ${statusFilter === "completed" ? "bg-success text-white border-success" : "bg-background border-border text-foreground"}`}
+                            >
+                                Completed Tasks
+                            </button>
+                        </div>
                     </div>
 
                     <div className="space-y-6">
-                        <div>
-                            <h2 className="text-lg font-bold text-foreground mb-3">Pending</h2>
-                            <div className="space-y-4">
-                                {pendingTasks.length === 0 ? (
-                                    <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">
-                                        No pending tasks in this view.
-                                    </div>
-                                ) : (
-                                    pendingTasks.map((task) => renderTaskCard(task, activeTab))
-                                )}
+                        {statusFilter === "pending" && (
+                            <div>
+                                <h2 className="text-lg font-bold text-foreground mb-3">Pending</h2>
+                                <div className="space-y-4">
+                                    {pendingTasks.length === 0 ? (
+                                        <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">
+                                            No pending tasks in this view.
+                                        </div>
+                                    ) : (
+                                        pendingTasks.map((task) => renderTaskCard(task, activeTab))
+                                    )}
+                                </div>
                             </div>
-                        </div>
+                        )}
 
-                        <div>
-                            <h2 className="text-lg font-bold text-foreground mb-3">Completed</h2>
-                            <div className="space-y-4">
-                                {completedTasks.length === 0 ? (
-                                    <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">
-                                        No completed tasks in this view.
-                                    </div>
-                                ) : (
-                                    completedTasks.map((task) => renderTaskCard(task, activeTab))
-                                )}
+                        {statusFilter === "completed" && (
+                            <div>
+                                <h2 className="text-lg font-bold text-foreground mb-3">Completed</h2>
+                                <div className="space-y-4">
+                                    {completedTasks.length === 0 ? (
+                                        <div className="bg-card rounded-xl border border-border p-8 text-center text-muted-foreground">
+                                            No completed tasks in this view.
+                                        </div>
+                                    ) : (
+                                        completedTasks.map((task) => renderTaskCard(task, activeTab))
+                                    )}
+                                </div>
                             </div>
-                        </div>
+                        )}
                     </div>
                 </>
             )}

@@ -674,7 +674,7 @@ export function SurveyReportForm() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-muted-foreground mb-1">The Date</label>
+                                    <label className="block text-sm font-medium text-muted-foreground mb-1">Expected Date</label>
                                     <input
                                         type="date"
                                         value={theDate}
