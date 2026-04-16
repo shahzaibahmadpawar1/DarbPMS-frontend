@@ -6,6 +6,10 @@ export function BackToDashboardButton() {
     const navigate = useNavigate();
     const location = useLocation();
     const { accessMode } = useStation();
+    const searchParams = new URLSearchParams(location.search);
+    const backToFromState = typeof (location.state as any)?.backTo === 'string' ? String((location.state as any).backTo) : '';
+    const backToFromQuery = String(searchParams.get('backTo') || '').trim();
+    const explicitBackTo = backToFromState || backToFromQuery;
 
     // Determine the correct dashboard path based on access mode
     const dashboardPath = accessMode === 'admin' ? '/all-stations-dashboard' : '/dashboard';
@@ -21,6 +25,11 @@ export function BackToDashboardButton() {
         <div className="flex gap-2">
             <button
                 onClick={() => {
+                    if (explicitBackTo) {
+                        navigate(explicitBackTo);
+                        return;
+                    }
+
                     if (stationBasePath && location.pathname !== stationBasePath) {
                         navigate(stationBasePath);
                         return;

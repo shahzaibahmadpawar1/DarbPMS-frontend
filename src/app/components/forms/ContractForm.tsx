@@ -22,6 +22,8 @@ export function ContractForm() {
   const [draftId, setDraftId] = useState<string | null>(null);
   const [records, setRecords] = useState<any[]>([]);
   const [currentStation, setCurrentStation] = useState<any>(selectedStation);
+  const [taskInitError, setTaskInitError] = useState("");
+  const [taskStationCode, setTaskStationCode] = useState("");
 
   const [formData, setFormData] = useState({
     contractNo: "",
@@ -123,6 +125,10 @@ export function ContractForm() {
 
   useEffect(() => {
     const hydrateForm = async () => {
+      if (taskId) {
+        return;
+      }
+
       let targetStation = selectedStation;
 
       if (!targetStation && stationId && stationId !== 'new-station') {
@@ -180,6 +186,7 @@ export function ContractForm() {
 
       try {
         setLoading(true);
+        setTaskInitError("");
         const response = await axios.post(
           `${API_BASE_URL}/contracts/from-task/${encodeURIComponent(taskId)}`,
           {},
@@ -189,14 +196,19 @@ export function ContractForm() {
         if (!contract?.id) return;
 
         const stationCode = contract.station_code || "";
-        if (stationCode) {
-          await fetchRecords(stationCode);
+        const routeStationCode = String(stationId || "").trim();
+        if (routeStationCode && stationCode && routeStationCode !== stationCode) {
+          setTaskInitError(`Station mismatch detected. Route station is ${routeStationCode} but task resolved to ${stationCode}.`);
+          return;
         }
+
+        setTaskStationCode(stationCode);
         applyContractRowToForm(contract, stationCode);
         setViewMode("form");
       } catch (error: any) {
         console.error("Error starting contract task:", error);
         const errorMsg = error.response?.data?.error || "Failed to open contract task";
+        setTaskInitError(errorMsg);
         alert(errorMsg);
       } finally {
         setLoading(false);
@@ -250,11 +262,17 @@ export function ContractForm() {
         const bootstrapped = bootstrap.data?.data;
         if (bootstrapped?.id) {
           effectiveDraftId = bootstrapped.id;
+          setTaskStationCode(String(bootstrapped.station_code || "").trim());
           applyContractRowToForm(bootstrapped, bootstrapped.station_code || formData.stationCode || "");
         } else {
           alert("Failed to initialize contract draft from task.");
           return;
         }
+      }
+
+      if (taskId && taskStationCode && String(formData.stationCode || "").trim() !== taskStationCode) {
+        alert("Station code is locked for task-based contracts and cannot be changed.");
+        return;
       }
 
       if (mode === 'submit' && !formData.contractAttachmentUrl) {
@@ -369,6 +387,11 @@ export function ContractForm() {
 
       {viewMode === 'form' ? (
         <form onSubmit={(e) => e.preventDefault()} className="bg-card rounded-xl shadow-xl p-8 card-glow border-t-4 border-primary relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
+          {taskInitError && (
+            <div className="mb-6 rounded-lg border border-destructive/20 bg-destructive/5 p-4 text-sm text-destructive">
+              {taskInitError}
+            </div>
+          )}
           <div className="space-y-8">
             {/* Section 1: Basic Info */}
             <div>
@@ -384,7 +407,7 @@ export function ContractForm() {
                     className="w-full px-3 py-2 border rounded-lg bg-background" disabled={isLocked} /></div>
                 <div><label className="block text-sm font-medium mb-1">Station Code *</label>
                   <input type="text" value={formData.stationCode} onChange={(e) => setFormData({ ...formData, stationCode: e.target.value })}
-                    className="w-full px-3 py-2 border rounded-lg bg-background" required disabled={isLocked || !!selectedStation} /></div>
+                    className="w-full px-3 py-2 border rounded-lg bg-background" required disabled={isLocked || !!selectedStation || Boolean(taskId)} /></div>
                 <div><label className="block text-sm font-medium mb-1">Signature Date</label>
                   <input type="date" value={formData.contractSignatureDate} onChange={(e) => setFormData({ ...formData, contractSignatureDate: e.target.value })}
                     className="w-full px-3 py-2 border rounded-lg bg-background" disabled={isLocked} /></div>

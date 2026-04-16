@@ -589,8 +589,10 @@ export function TasksPage() {
             && (task.status === "assigned" || task.status === "employee_submitted");
         const canOpenContract =
             task.flow_type === "contract"
-            && task.assigned_to === user?.id
-            && task.status === "assigned";
+            && (
+                (task.assigned_to === user?.id && task.status === "assigned")
+                || (mode === "super-admin" && (task.status === "manager_submitted" || task.status === "under_super_admin_review"))
+            );
         const isGenericTask = task.flow_type === "request" || task.flow_type === "ceo_contact";
         const isContractTask = task.flow_type === "contract";
         const displayTitle = task.project_name || task.title;
@@ -639,14 +641,20 @@ export function TasksPage() {
                             <button
                                 type="button"
                                 onClick={() => {
+                                    const backTo = `${location.pathname}${location.search || ""}`;
                                     const inAllStationsLayout = location.pathname.startsWith("/all-stations-");
                                     const stationCodeFromMeta = meta ? String(meta.stationCode || meta.station_code || meta.stationcode || "").trim() : "";
-                                    const stationCode = stationCodeFromMeta || String(task.project_code || "").trim();
-                                    if (inAllStationsLayout && stationCode) {
-                                        navigate(`/station/${encodeURIComponent(stationCode)}/form/contract?taskId=${encodeURIComponent(task.id)}`);
+                                    if (inAllStationsLayout && stationCodeFromMeta) {
+                                        navigate(
+                                            `/station/${encodeURIComponent(stationCodeFromMeta)}/form/contract?taskId=${encodeURIComponent(task.id)}&backTo=${encodeURIComponent(backTo)}`,
+                                            { state: { backTo } },
+                                        );
                                         return;
                                     }
-                                    navigate(`/dashboard/contract?taskId=${encodeURIComponent(task.id)}`);
+                                    navigate(
+                                        `/dashboard/contract?taskId=${encodeURIComponent(task.id)}&backTo=${encodeURIComponent(backTo)}`,
+                                        { state: { backTo } },
+                                    );
                                 }}
                                 className="px-3 py-1.5 rounded-lg border border-primary/20 bg-primary/10 text-primary font-semibold hover:bg-primary/20"
                             >
