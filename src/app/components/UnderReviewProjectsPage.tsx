@@ -344,7 +344,7 @@ export function UnderReviewProjectsPage() {
         }
     };
 
-    const canEditUnderReviewProject = user?.role === 'super_admin';
+    const canEditUnderReviewProject = user?.role === 'super_admin' || user?.role === 'ceo';
 
     const handleEditProject = (project: InvestmentProject) => {
         const formPath = project.department_type === 'franchise'

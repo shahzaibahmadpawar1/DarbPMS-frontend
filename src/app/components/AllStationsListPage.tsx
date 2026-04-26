@@ -89,7 +89,9 @@ export function AllStationsListPage() {
                 }
 
                 const result = await response.json();
-                const mappedStations = (result.data || []).map((s: any) => ({
+                const mappedStations = (result.data || [])
+                    .filter((s: any) => !s?.review_status || String(s.review_status).trim() === 'Approved')
+                    .map((s: any) => ({
                     id: s.id || s.station_code,
                     station_code: s.station_code,
                     name: s.station_name,
@@ -135,7 +137,9 @@ export function AllStationsListPage() {
                     offset += STATIONS_PAGE_SIZE;
                 }
 
-                const mappedStations = allStations.map((s: any) => ({
+                const mappedStations = allStations
+                    .filter((s: any) => !s?.review_status || String(s.review_status).trim() === 'Approved')
+                    .map((s: any) => ({
                     id: s.id,
                     station_code: s.station_code,
                     name: s.station_name,
