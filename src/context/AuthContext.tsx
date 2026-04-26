@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useMemo } from 'react';
 import { authAPI, ApiResponse, Department, UserRole, UserStatus, UserType, normalizeUserRole } from '@/services/api';
+import { ensureLoginBaseline, toIsoOrNow } from '@/utils/sidebarBadgeStorage';
 
 interface User {
     id: string;
@@ -48,8 +49,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const storedUser = localStorage.getItem('auth_user');
 
         if (storedToken && storedUser) {
+            const normalizedUser = normalizeUser(JSON.parse(storedUser));
             setToken(storedToken);
-            setUser(normalizeUser(JSON.parse(storedUser)));
+            setUser(normalizedUser);
+            ensureLoginBaseline(normalizedUser.id);
         }
         setIsLoading(false);
     }, []);
@@ -63,10 +66,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
             if (response.success && response.token && response.user) {
                 const normalizedUser = normalizeUser(response.user);
+                const loginBaseline = toIsoOrNow(response.user.last_login_at);
 
                 // Store token and user in localStorage
                 localStorage.setItem('auth_token', response.token);
                 localStorage.setItem('auth_user', JSON.stringify(normalizedUser));
+                ensureLoginBaseline(normalizedUser.id, loginBaseline);
 
                 // Update state
                 setToken(response.token);

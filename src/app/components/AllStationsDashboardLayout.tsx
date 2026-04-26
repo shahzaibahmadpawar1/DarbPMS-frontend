@@ -23,6 +23,13 @@ import { ChatWidget } from "./ChatWidget";
 import { useTranslation } from "../../utils/translations";
 import { useAuth } from "@/context/AuthContext";
 import { getRoleLabel } from "@/services/api";
+import {
+    getOrInitLastSeenAt,
+    markLastSeenNow,
+    TASKS_LAST_SEEN_SUFFIX,
+    toTimestamp,
+    UNDER_REVIEW_LAST_SEEN_SUFFIX,
+} from "@/utils/sidebarBadgeStorage";
 import { useStation } from "../context/StationContext";
 import { useStationFormAutofill } from "../hooks/useStationFormAutofill";
 import logo from "../../assets/logo.png";
@@ -51,7 +58,7 @@ export function AllStationsDashboardLayout() {
     const [importLoading, setImportLoading] = useState(false);
     const location = useLocation();
     const { t, lang } = useTranslation();
-    const { user } = useAuth();
+    const { user, token } = useAuth();
     const { selectedStation } = useStation();
     const isRTL = lang === 'ar';
     const isDepartmentScopedUser = !!user && user.role !== 'super_admin' && user.role !== 'ceo';
@@ -84,13 +91,13 @@ export function AllStationsDashboardLayout() {
     }, []);
 
     useEffect(() => {
-        const token = localStorage.getItem("auth_token");
-        if (!token) {
+        if (!token || !user?.id) {
             setTaskCount(0);
             return;
         }
 
         let isMounted = true;
+
         const fetchTaskCount = async () => {
             try {
                 const response = await fetch(`${API_BASE_URL}/tasks`, {
@@ -100,7 +107,13 @@ export function AllStationsDashboardLayout() {
 
                 const result = await response.json();
                 if (isMounted) {
-                    setTaskCount(Array.isArray(result?.data) ? result.data.length : 0);
+                    const lastSeenAt = getOrInitLastSeenAt(user.id, TASKS_LAST_SEEN_SUFFIX);
+                    const items = Array.isArray(result?.data) ? result.data : [];
+                    const newItemsCount = items.filter((task: any) => {
+                        const createdAt = toTimestamp(task?.created_at);
+                        return createdAt !== null && createdAt > lastSeenAt;
+                    }).length;
+                    setTaskCount(newItemsCount);
                 }
             } catch {
                 if (isMounted) setTaskCount(0);
@@ -118,16 +131,16 @@ export function AllStationsDashboardLayout() {
             isMounted = false;
             window.removeEventListener("focus", onFocus);
         };
-    }, []);
+    }, [token, user?.id]);
 
     useEffect(() => {
-        const token = localStorage.getItem("auth_token");
-        if (!token) {
+        if (!token || !user?.id) {
             setUnderReviewCount(0);
             return;
         }
 
         let isMounted = true;
+
         const fetchUnderReviewCount = async () => {
             try {
                 const response = await fetch(`${API_BASE_URL}/investment-projects`, {
@@ -137,8 +150,17 @@ export function AllStationsDashboardLayout() {
 
                 const result = await response.json();
                 if (isMounted && Array.isArray(result?.data)) {
-                    const nonApprovedCount = result.data.filter((project: any) => project.review_status !== 'Approved').length;
-                    setUnderReviewCount(nonApprovedCount);
+                    const lastSeenAt = getOrInitLastSeenAt(user.id, UNDER_REVIEW_LAST_SEEN_SUFFIX);
+                    const newItemsCount = result.data.filter((project: any) => {
+                        if (project?.review_status === 'Approved') {
+                            return false;
+                        }
+
+                        const createdAt = toTimestamp(project?.created_at);
+                        return createdAt !== null && createdAt > lastSeenAt;
+                    }).length;
+
+                    setUnderReviewCount(newItemsCount);
                 }
             } catch {
                 if (isMounted) setUnderReviewCount(0);
@@ -156,7 +178,26 @@ export function AllStationsDashboardLayout() {
             isMounted = false;
             window.removeEventListener("focus", onFocus);
         };
-    }, []);
+    }, [token, user?.id]);
+
+    useEffect(() => {
+        if (!user?.id) {
+            return;
+        }
+
+        const markTasksSeen = location.pathname === '/all-stations-tasks';
+        const markUnderReviewSeen = location.pathname === '/all-stations-under-review';
+
+        if (markTasksSeen) {
+            markLastSeenNow(user.id, TASKS_LAST_SEEN_SUFFIX);
+            setTaskCount(0);
+        }
+
+        if (markUnderReviewSeen) {
+            markLastSeenNow(user.id, UNDER_REVIEW_LAST_SEEN_SUFFIX);
+            setUnderReviewCount(0);
+        }
+    }, [location.pathname, user?.id]);
 
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];

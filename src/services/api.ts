@@ -104,6 +104,7 @@ export interface ApiResponse<T = any> {
         user_type: UserType;
         status: UserStatus;
         station_codes?: string[];
+        last_login_at?: string | null;
         created_at: string;
         updated_at: string;
     };
