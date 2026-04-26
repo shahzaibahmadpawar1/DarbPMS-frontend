@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useStation } from "../../context/StationContext";
 import { getDepartmentLabel, getRoleLabel } from "@/services/api";
+import { useSearchParams } from "react-router-dom";
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 const DEPT_PROJECTS_PAGE_SIZE = 200;
 
@@ -34,6 +35,19 @@ const fetchDepartmentProjects = async (
     }
 
     return allProjects;
+};
+
+const fetchDepartmentProjectById = async (token: string, projectId: string): Promise<any | null> => {
+    const response = await fetch(`${API_URL}/investment-projects/${projectId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (!response.ok) {
+        return null;
+    }
+
+    const result = await response.json();
+    return result?.data || null;
 };
 import {
     PlusCircle, BarChart2, FileText, BookOpen,
@@ -203,9 +217,11 @@ function StatCard({ label, value, icon, color, bg }: {
 function NewProjectTab() {
     const { user } = useAuth();
     const { setInvestmentProjectData } = useStation();
+    const [searchParams] = useSearchParams();
     const canCreateRole = !!user && ['super_admin', 'department_manager', 'supervisor'].includes(user.role);
     const canCreateDepartment = user?.role === 'super_admin' || user?.department === 'investment' || user?.department === 'franchise';
     const canCreateProject = canCreateRole && canCreateDepartment;
+    const selectedProjectId = (searchParams.get("projectId") || "").trim();
 
     const [form, setForm] = useState<NewProjectForm>({
         requestType: "", city: "", projectName: "", projectCode: "",
@@ -281,22 +297,34 @@ function NewProjectTab() {
     const departmentType = window.location.pathname.includes('investment') ? 'investment' : 'franchise';
 
     useEffect(() => {
-        const loadLatestSavedProject = async () => {
+        const loadProjectForEditing = async () => {
             if (!token || !canCreateProject) return;
 
             try {
-                const response = await fetch(
-                    `${API_URL}/investment-projects/latest-saved?departmentType=${departmentType}`,
-                    { headers: { 'Authorization': `Bearer ${token}` } }
-                );
+                const savedProject = selectedProjectId
+                    ? await fetchDepartmentProjectById(token, selectedProjectId)
+                    : await (async () => {
+                        const response = await fetch(
+                            `${API_URL}/investment-projects/latest-saved?departmentType=${departmentType}`,
+                            { headers: { 'Authorization': `Bearer ${token}` } }
+                        );
 
-                if (!response.ok) {
+                        if (!response.ok) {
+                            return null;
+                        }
+
+                        const result = await response.json();
+                        return result?.data || null;
+                    })();
+
+                if (!savedProject?.id) {
                     return;
                 }
 
-                const result = await response.json();
-                const savedProject = result?.data;
-                if (!savedProject?.id) {
+                if (savedProject.department_type !== departmentType) {
+                    if (selectedProjectId) {
+                        alert('Selected project belongs to another department form.');
+                    }
                     return;
                 }
 
@@ -331,14 +359,18 @@ function NewProjectTab() {
                     { id: createId(), name: "Drive Through", count: String(savedProject.drive_through || 0), area: String(savedProject.drive_through_area || 0), isDefault: true },
                 ]);
 
-                alert('Loaded your latest saved project draft.');
+                if (selectedProjectId) {
+                    alert('Loaded project for editing.');
+                } else {
+                    alert('Loaded your latest saved project draft.');
+                }
             } catch (error) {
-                console.error('Failed to load latest saved project:', error);
+                console.error('Failed to load project data:', error);
             }
         };
 
-        void loadLatestSavedProject();
-    }, [token, canCreateProject, departmentType]);
+        void loadProjectForEditing();
+    }, [token, canCreateProject, departmentType, selectedProjectId]);
 
     const uploadProjectFile = async (file: File): Promise<string> => {
         if (!token) {
@@ -460,7 +492,7 @@ function NewProjectTab() {
                 uploadedDocuments.push({ label: doc.label, fileName: doc.file.name, fileUrl });
             }
 
-            const body = {
+            const baseBody = {
                 departmentType,
                 ...form,
                 superMarket: mapped.superMarket,
@@ -474,13 +506,17 @@ function NewProjectTab() {
                 retailShopArea: mapped.retailShopArea,
                 driveThroughArea: mapped.driveThroughArea,
                 area: parseFloat(form.area) || 0,
+                submit: isSubmitMode,
+            };
+
+            const body = {
+                ...baseBody,
                 commercialElements: elements,
                 extraCommercialElements,
                 designFileUrl,
                 documentsUrl,
                 autocadUrl,
                 projectDocuments: uploadedDocuments,
-                submit: isSubmitMode,
             };
 
             const endpoint = draftProjectId
@@ -488,13 +524,16 @@ function NewProjectTab() {
                 : `${API_URL}/investment-projects`;
             const method = draftProjectId ? 'PUT' : 'POST';
 
+            // PUT endpoint expects table-backed columns only; avoid sending UI-only metadata.
+            const requestBody = method === 'PUT' ? baseBody : body;
+
             const response = await fetch(endpoint, {
                 method,
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(body)
+                body: JSON.stringify(requestBody)
             });
 
             if (response.ok) {

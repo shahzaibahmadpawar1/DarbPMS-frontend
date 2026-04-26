@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import {
     Clock, CheckCircle, MessageSquare,
     ChevronDown, ChevronUp, ExternalLink, MapPin,
@@ -119,6 +119,7 @@ interface InvestmentProject {
 
 export function UnderReviewProjectsPage() {
     const { user, token } = useAuth();
+    const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [projects, setProjects] = useState<InvestmentProject[]>([]);
     const [workflowSummary, setWorkflowSummary] = useState({
@@ -132,8 +133,6 @@ export function UnderReviewProjectsPage() {
     });
     const [isLoading, setIsLoading] = useState(true);
     const [expandedId, setExpandedId] = useState<string | null>(null);
-    const [comment, setComment] = useState("");
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const projectCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
     const selectedProjectId = searchParams.get("projectId");
 
@@ -227,43 +226,6 @@ export function UnderReviewProjectsPage() {
         }
     }, [token]);
 
-    const handleWorkflowAction = async (projectId: string, action: 'Approve' | 'Reject' | 'Contract' | 'Documents') => {
-        if (!comment.trim()) {
-            alert("Please provide a comment.");
-            return;
-        }
-
-        try {
-            setIsSubmitting(true);
-            const response = await fetch(`${API_URL}/investment-projects/${projectId}/review`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    action,
-                    comment: comment
-                })
-            });
-
-            if (response.ok) {
-                alert(`Action ${action} applied successfully!`);
-                setComment("");
-                setExpandedId(null);
-                fetchProjects();
-            } else {
-                const err = await response.json();
-                alert(`Error: ${err.error || 'Failed to update status'}`);
-            }
-        } catch (err) {
-            console.error("Failed to update status:", err);
-            alert("Failed to update status");
-        } finally {
-            setIsSubmitting(false);
-        }
-    };
-
     const getStatusBadge = (status: string) => {
         switch (status) {
             case 'Pending Review': return "bg-info/10 text-info border-info/20";
@@ -274,8 +236,15 @@ export function UnderReviewProjectsPage() {
         }
     };
 
-    const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'ceo';
-    const canTakeDecision = isSuperAdmin;
+    const canEditUnderReviewProject = user?.role === 'super_admin';
+
+    const handleEditProject = (project: InvestmentProject) => {
+        const formPath = project.department_type === 'franchise'
+            ? '/station/new-station/form/franchise-department'
+            : '/station/new-station/form/investment-department';
+
+        navigate(`${formPath}?projectId=${encodeURIComponent(project.id)}&from=under-review`);
+    };
 
     const filteredProjects = projects;
     const fallbackPending = filteredProjects.filter((project) => project.review_status === 'Pending Review').length;
@@ -514,49 +483,18 @@ export function UnderReviewProjectsPage() {
 
                                     {/* Action Bar */}
                                     <div className="border-t border-border pt-6">
-                                        <div className="mb-4">
-                                            <label className="flex items-center gap-2 text-sm font-bold text-muted-foreground mb-2">
-                                                <MessageSquare className="w-4 h-4" />
-                                                Add Decision Notes
-                                            </label>
-                                            <textarea
-                                                className="w-full bg-background border border-border rounded-xl p-4 text-sm focus:ring-2 focus:ring-primary outline-none"
-                                                rows={3}
-                                                placeholder="Enter final approval or rejection notes..."
-                                                value={comment}
-                                                onChange={(e) => setComment(e.target.value)}
-                                            />
-                                        </div>
-
                                         <div className="flex justify-end gap-3 font-semibold flex-wrap">
-                                            {canTakeDecision && project.review_status === 'Pending Review' && (
-                                                <>
-                                                    <button
-                                                        disabled={isSubmitting}
-                                                        onClick={() => handleWorkflowAction(project.id, 'Approve')}
-                                                        className="px-6 py-2.5 bg-emerald-600 text-white rounded-lg flex items-center gap-2 hover:bg-emerald-700 shadow-lg shadow-emerald-200 transition-all disabled:opacity-50"
-                                                    >
-                                                        <CheckCircle className="w-4 h-4" />
-                                                        Approve
-                                                    </button>
-                                                    <button
-                                                        disabled={isSubmitting}
-                                                        onClick={() => handleWorkflowAction(project.id, 'Reject')}
-                                                        className="px-6 py-2.5 bg-error text-white rounded-lg flex items-center gap-2 hover:bg-error/90 shadow-lg shadow-error/20 transition-all disabled:opacity-50"
-                                                    >
-                                                        <AlertCircle className="w-4 h-4" />
-                                                        Reject
-                                                    </button>
-                                                </>
+                                            {canEditUnderReviewProject && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleEditProject(project)}
+                                                    className="px-6 py-2.5 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-all"
+                                                >
+                                                    Edit Project
+                                                </button>
                                             )}
 
-                                            {!canTakeDecision && (
-                                                <p className="text-sm text-muted-foreground">Final approval is handled in the Tasks workflow for your role.</p>
-                                            )}
-
-                                            {project.review_status === 'Validated' && canTakeDecision && (
-                                                <p className="text-sm text-muted-foreground">Validated projects are finalized from the Tasks workflow.</p>
-                                            )}
+                                            <p className="text-sm text-muted-foreground">Final decisions happen in the Tasks workflow.</p>
                                         </div>
                                     </div>
                                 </div>
