@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
     Clock, CheckCircle, MessageSquare,
@@ -36,6 +36,13 @@ import { useAuth } from "@/context/AuthContext";
 // API endpoints
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 const PROJECTS_PAGE_SIZE = 200;
+const WORKFLOW_TASKS_PAGE_SIZE = 200;
+const ACTIVE_WORKFLOW_BUCKET_STATUSES = new Set([
+    'manager_queue',
+    'assigned',
+    'employee_submitted',
+    'under_super_admin_review',
+]);
 
 const fetchAllInvestmentProjects = async (token: string): Promise<InvestmentProject[]> => {
     const allProjects: InvestmentProject[] = [];
@@ -117,11 +124,47 @@ interface InvestmentProject {
     created_at: string;
 }
 
+interface WorkflowTaskSummary {
+    investment_project_id: string | null;
+    flow_type: string;
+    status: string;
+}
+
+const fetchAllWorkflowTasks = async (token: string): Promise<WorkflowTaskSummary[]> => {
+    const allTasks: WorkflowTaskSummary[] = [];
+    let offset = 0;
+
+    while (true) {
+        const response = await fetch(`${API_URL}/tasks?limit=${WORKFLOW_TASKS_PAGE_SIZE}&offset=${offset}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch workflow tasks');
+        }
+
+        const result = await response.json();
+        const pageItems = Array.isArray(result?.data) ? (result.data as WorkflowTaskSummary[]) : [];
+        allTasks.push(...pageItems);
+
+        if (pageItems.length < WORKFLOW_TASKS_PAGE_SIZE) {
+            break;
+        }
+
+        offset += WORKFLOW_TASKS_PAGE_SIZE;
+    }
+
+    return allTasks;
+};
+
+type ReviewBucketFilter = "all" | "pending" | "validated" | "approved" | "contracted" | "documented" | "rejected";
+
 export function UnderReviewProjectsPage() {
     const { user, token } = useAuth();
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const [projects, setProjects] = useState<InvestmentProject[]>([]);
+    const [workflowTasks, setWorkflowTasks] = useState<WorkflowTaskSummary[]>([]);
     const [workflowSummary, setWorkflowSummary] = useState({
         totalProjects: 0,
         pending: 0,
@@ -133,6 +176,7 @@ export function UnderReviewProjectsPage() {
     });
     const [isLoading, setIsLoading] = useState(true);
     const [expandedId, setExpandedId] = useState<string | null>(null);
+    const [selectedReviewBucket, setSelectedReviewBucket] = useState<ReviewBucketFilter>("all");
     const projectCardRefs = useRef<Record<string, HTMLDivElement | null>>({});
     const selectedProjectId = searchParams.get("projectId");
 
@@ -175,6 +219,24 @@ export function UnderReviewProjectsPage() {
     useEffect(() => {
         fetchProjects();
     }, [token, selectedProjectId]);
+
+    useEffect(() => {
+        const fetchWorkflowTasks = async () => {
+            if (!token) {
+                setWorkflowTasks([]);
+                return;
+            }
+
+            try {
+                const allTasks = await fetchAllWorkflowTasks(token);
+                setWorkflowTasks(allTasks);
+            } catch (err) {
+                console.error('Failed to fetch workflow tasks for under-review filters:', err);
+            }
+        };
+
+        fetchWorkflowTasks();
+    }, [token]);
 
     useEffect(() => {
         if (!selectedProjectId || projects.length === 0) {
@@ -236,6 +298,52 @@ export function UnderReviewProjectsPage() {
         }
     };
 
+    const contractProjectIds = useMemo(() => {
+        return new Set(
+            workflowTasks
+                .filter(
+                    (task) =>
+                        task.investment_project_id
+                        && task.flow_type === 'contract'
+                        && ACTIVE_WORKFLOW_BUCKET_STATUSES.has(task.status),
+                )
+                .map((task) => task.investment_project_id as string),
+        );
+    }, [workflowTasks]);
+
+    const documentedProjectIds = useMemo(() => {
+        return new Set(
+            workflowTasks
+                .filter(
+                    (task) =>
+                        task.investment_project_id
+                        && task.flow_type === 'documents'
+                        && ACTIVE_WORKFLOW_BUCKET_STATUSES.has(task.status),
+                )
+                .map((task) => task.investment_project_id as string),
+        );
+    }, [workflowTasks]);
+
+    const matchesReviewBucket = (project: InvestmentProject, bucket: ReviewBucketFilter) => {
+        switch (bucket) {
+            case "pending":
+                return project.review_status === "Pending Review";
+            case "validated":
+                return project.review_status === "Validated";
+            case "approved":
+                return project.review_status === "Approved";
+            case "rejected":
+                return project.review_status === "Rejected";
+            case "contracted":
+                return contractProjectIds.has(project.id);
+            case "documented":
+                return documentedProjectIds.has(project.id);
+            case "all":
+            default:
+                return true;
+        }
+    };
+
     const canEditUnderReviewProject = user?.role === 'super_admin';
 
     const handleEditProject = (project: InvestmentProject) => {
@@ -246,33 +354,47 @@ export function UnderReviewProjectsPage() {
         navigate(`${formPath}?projectId=${encodeURIComponent(project.id)}&from=under-review`);
     };
 
-    const filteredProjects = projects;
-    const fallbackPending = filteredProjects.filter((project) => project.review_status === 'Pending Review').length;
-    const fallbackValidated = filteredProjects.filter((project) => project.review_status === 'Validated').length;
-    const fallbackApproved = filteredProjects.filter((project) => project.review_status === 'Approved').length;
-    const fallbackRejected = filteredProjects.filter((project) => project.review_status === 'Rejected').length;
+    const filteredProjects = useMemo(() => {
+        return projects.filter((project) => matchesReviewBucket(project, selectedReviewBucket));
+    }, [projects, selectedReviewBucket]);
+
+    const fallbackPending = projects.filter((project) => project.review_status === 'Pending Review').length;
+    const fallbackValidated = projects.filter((project) => project.review_status === 'Validated').length;
+    const fallbackApproved = projects.filter((project) => project.review_status === 'Approved').length;
+    const fallbackRejected = projects.filter((project) => project.review_status === 'Rejected').length;
+    const fallbackContracted = projects.filter((project) => matchesReviewBucket(project, "contracted")).length;
+    const fallbackDocumented = projects.filter((project) => matchesReviewBucket(project, "documented")).length;
+
+    useEffect(() => {
+        if (expandedId && !filteredProjects.some((project) => project.id === expandedId)) {
+            setExpandedId(null);
+        }
+    }, [expandedId, filteredProjects]);
 
     const topCards = [
-        { title: 'Total Projects', value: isLoading ? '...' : (workflowSummary.totalProjects || filteredProjects.length) },
-        { title: 'Pending', value: isLoading ? '...' : (workflowSummary.pending || fallbackPending) },
-        { title: 'Validated', value: isLoading ? '...' : (workflowSummary.validated || fallbackValidated) },
-        { title: 'Approved', value: isLoading ? '...' : (workflowSummary.approved || fallbackApproved) },
-        { title: 'Contracted', value: isLoading ? '...' : workflowSummary.contracted },
-        { title: 'Document', value: isLoading ? '...' : workflowSummary.documented },
-        { title: 'Rejected', value: isLoading ? '...' : (workflowSummary.rejected || fallbackRejected) },
+        { title: 'Total Projects', bucket: 'all', value: isLoading ? '...' : (workflowSummary.totalProjects || projects.length) },
+        { title: 'Pending', bucket: 'pending', value: isLoading ? '...' : (workflowSummary.pending || fallbackPending) },
+        { title: 'Validated', bucket: 'validated', value: isLoading ? '...' : (workflowSummary.validated || fallbackValidated) },
+        { title: 'Approved', bucket: 'approved', value: isLoading ? '...' : (workflowSummary.approved || fallbackApproved) },
+        { title: 'Contracted', bucket: 'contracted', value: isLoading ? '...' : (workflowSummary.contracted || fallbackContracted) },
+        { title: 'Document', bucket: 'documented', value: isLoading ? '...' : (workflowSummary.documented || fallbackDocumented) },
+        { title: 'Rejected', bucket: 'rejected', value: isLoading ? '...' : (workflowSummary.rejected || fallbackRejected) },
     ];
 
     return (
         <div className="p-8">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-7 gap-3 mb-8">
                 {topCards.map((card) => (
-                    <div
+                    <button
                         key={card.title}
-                        className="rounded-xl shadow-md px-5 py-5 card-glow transition-all block relative overflow-hidden border border-border bg-card"
+                        type="button"
+                        onClick={() => setSelectedReviewBucket(card.bucket as ReviewBucketFilter)}
+                        aria-pressed={selectedReviewBucket === card.bucket}
+                        className={`rounded-xl shadow-md px-5 py-5 card-glow transition-all block relative overflow-hidden border bg-card text-left ${selectedReviewBucket === card.bucket ? "border-primary ring-2 ring-primary/20" : "border-border hover:border-primary/40 hover:shadow-lg"}`}
                     >
                         <h3 className="text-[11px] uppercase tracking-wide text-muted-foreground font-bold mb-3">{card.title}</h3>
                         <p className="text-5xl leading-none font-black text-foreground">{card.value}</p>
-                    </div>
+                    </button>
                 ))}
             </div>
 

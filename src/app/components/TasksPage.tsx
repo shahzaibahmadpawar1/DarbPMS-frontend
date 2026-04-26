@@ -30,6 +30,7 @@ type WorkflowTaskStatus =
 type WorkflowTaskFlow = "contract" | "documents" | "request" | "ceo_contact";
 type RoleViewTab = "manager" | "employee" | "super-admin";
 type TaskStatusFilter = "pending" | "completed";
+type TaskCardFilter = "all" | "manager" | "employee" | "super-admin" | "my-forms" | "approved" | "rejected";
 
 interface WorkflowTask {
     id: string;
@@ -204,7 +205,7 @@ export function TasksPage() {
     const [branchAssignee, setBranchAssignee] = useState<Record<string, string>>({});
     const [taskHistory, setTaskHistory] = useState<Record<string, { task: WorkflowTask; history: WorkflowHistoryEntry[] }>>({});
     const [expandedHistoryTaskId, setExpandedHistoryTaskId] = useState<string | null>(null);
-    const [showOnlyMySubmittedForms, setShowOnlyMySubmittedForms] = useState(false);
+    const [selectedTaskCard, setSelectedTaskCard] = useState<TaskCardFilter>("all");
     const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>("pending");
     const [taskLoadError, setTaskLoadError] = useState<string | null>(null);
 
@@ -426,6 +427,10 @@ export function TasksPage() {
         });
     }, [tasks, search]);
 
+    const isSubmittedFormTask = useCallback((task: WorkflowTask) => {
+        return (task.flow_type === "request" || task.flow_type === "ceo_contact") && task.created_by === user?.id;
+    }, [user?.id]);
+
     const stats = useMemo(() => ({
         total: tasks.length,
         managerQueue: tasks.filter((t) => t.status === "manager_queue").length,
@@ -434,6 +439,32 @@ export function TasksPage() {
         approved: tasks.filter((t) => t.status === "approved").length,
         rejected: tasks.filter((t) => t.status === "rejected").length,
     }), [tasks]);
+
+    const visibleTasks = activeTab === "manager"
+        ? managerTasks
+        : activeTab === "employee"
+            ? employeeTasks
+            : superAdminTasks;
+
+    const filteredVisibleTasks = useMemo(() => {
+        switch (selectedTaskCard) {
+            case "manager":
+                return managerTasks.filter((task) => task.status === "manager_queue");
+            case "employee":
+                return employeeTasks.filter((task) => task.status === "assigned" || task.status === "employee_submitted");
+            case "super-admin":
+                return superAdminTasks.filter((task) => task.status === "manager_submitted" || task.status === "under_super_admin_review");
+            case "my-forms":
+                return tasks.filter((task) => isSubmittedFormTask(task) && matchesSearch(task, search));
+            case "approved":
+                return tasks.filter((task) => task.status === "approved" && matchesSearch(task, search));
+            case "rejected":
+                return tasks.filter((task) => task.status === "rejected" && matchesSearch(task, search));
+            case "all":
+            default:
+                return visibleTasks;
+        }
+    }, [employeeTasks, isSubmittedFormTask, managerTasks, search, selectedTaskCard, superAdminTasks, tasks, visibleTasks]);
 
     const uploadFile = async (file: File): Promise<string | null> => {
         if (!token) return null;
@@ -1434,26 +1465,27 @@ export function TasksPage() {
         );
     };
 
-    const visibleTasks = activeTab === "manager"
-        ? managerTasks
-        : activeTab === "employee"
-            ? employeeTasks
-            : superAdminTasks;
-
-    const filteredVisibleTasks = useMemo(() => {
-        if (!showOnlyMySubmittedForms || !user?.id) {
-            return visibleTasks;
-        }
-
-        return visibleTasks.filter((task) => {
-            const isFormTask = task.flow_type === "request" || task.flow_type === "ceo_contact";
-            return isFormTask && task.created_by === user.id;
-        });
-    }, [showOnlyMySubmittedForms, visibleTasks, user?.id]);
-
     const completedStatuses: WorkflowTaskStatus[] = ["approved", "rejected", "requester_accepted", "requester_declined"];
     const pendingTasks = filteredVisibleTasks.filter((task) => !completedStatuses.includes(task.status));
     const completedTasks = filteredVisibleTasks.filter((task) => completedStatuses.includes(task.status));
+
+    const selectTaskCard = (card: TaskCardFilter) => {
+        setSelectedTaskCard(card);
+
+        if (card === "manager") {
+            setActiveTab("manager");
+            return;
+        }
+
+        if (card === "employee") {
+            setActiveTab("employee");
+            return;
+        }
+
+        if (card === "super-admin") {
+            setActiveTab("super-admin");
+        }
+    };
 
     return (
         <div className="max-w-7xl mx-auto">
@@ -1470,31 +1502,67 @@ export function TasksPage() {
                 </div>
             ) : (
                 <>
-                    <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-6">
-                        <div className="bg-card/80 rounded-xl border border-border p-5">
+                    <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mb-6">
+                        <button
+                            type="button"
+                            onClick={() => selectTaskCard("all")}
+                            className={`bg-card/80 rounded-xl border p-5 text-left transition-all ${selectedTaskCard === "all" ? "border-primary ring-2 ring-primary/20 shadow-lg" : "border-border hover:border-primary/40 hover:shadow-md"}`}
+                        >
                             <p className="text-sm text-muted-foreground">Total</p>
                             <p className="text-3xl font-black text-foreground">{stats.total}</p>
-                        </div>
-                        <div className="bg-card/80 rounded-xl border border-border p-5">
-                            <p className="text-sm text-muted-foreground">Manager Queue</p>
-                            <p className="text-3xl font-black text-warning">{stats.managerQueue}</p>
-                        </div>
-                        <div className="bg-card/80 rounded-xl border border-border p-5">
+                        </button>
+                        {(canAssign || isSuperAdmin) && (
+                            <button
+                                type="button"
+                                onClick={() => selectTaskCard("manager")}
+                                className={`bg-card/80 rounded-xl border p-5 text-left transition-all ${selectedTaskCard === "manager" ? "border-warning ring-2 ring-warning/20 shadow-lg" : "border-border hover:border-warning/40 hover:shadow-md"}`}
+                            >
+                                <p className="text-sm text-muted-foreground">Manager Queue</p>
+                                <p className="text-3xl font-black text-warning">{stats.managerQueue}</p>
+                            </button>
+                        )}
+                        <button
+                            type="button"
+                            onClick={() => selectTaskCard("employee")}
+                            className={`bg-card/80 rounded-xl border p-5 text-left transition-all ${selectedTaskCard === "employee" ? "border-info ring-2 ring-info/20 shadow-lg" : "border-border hover:border-info/40 hover:shadow-md"}`}
+                        >
                             <p className="text-sm text-muted-foreground">Employee Workbench</p>
                             <p className="text-3xl font-black text-info">{stats.employeeWork}</p>
-                        </div>
-                        <div className="bg-card/80 rounded-xl border border-border p-5">
-                            <p className="text-sm text-muted-foreground">Super Admin Review</p>
-                            <p className="text-3xl font-black text-primary">{stats.superAdminReview}</p>
-                        </div>
-                        <div className="bg-card/80 rounded-xl border border-border p-5">
+                        </button>
+                        {isExecutiveReviewer && (
+                            <button
+                                type="button"
+                                onClick={() => selectTaskCard("super-admin")}
+                                className={`bg-card/80 rounded-xl border p-5 text-left transition-all ${selectedTaskCard === "super-admin" ? "border-primary ring-2 ring-primary/20 shadow-lg" : "border-border hover:border-primary/40 hover:shadow-md"}`}
+                            >
+                                <p className="text-sm text-muted-foreground">Super Admin Review</p>
+                                <p className="text-3xl font-black text-primary">{stats.superAdminReview}</p>
+                            </button>
+                        )}
+                        <button
+                            type="button"
+                            onClick={() => selectTaskCard("my-forms")}
+                            className={`bg-card/80 rounded-xl border p-5 text-left transition-all ${selectedTaskCard === "my-forms" ? "border-info ring-2 ring-info/20 shadow-lg" : "border-border hover:border-info/40 hover:shadow-md"}`}
+                        >
+                            <p className="text-sm text-muted-foreground">My Submitted Forms</p>
+                            <p className="text-3xl font-black text-info">{tasks.filter(isSubmittedFormTask).length}</p>
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => selectTaskCard("approved")}
+                            className={`bg-card/80 rounded-xl border p-5 text-left transition-all ${selectedTaskCard === "approved" ? "border-success ring-2 ring-success/20 shadow-lg" : "border-border hover:border-success/40 hover:shadow-md"}`}
+                        >
                             <p className="text-sm text-muted-foreground">Approved</p>
                             <p className="text-3xl font-black text-success">{stats.approved}</p>
-                        </div>
-                        <div className="bg-card/80 rounded-xl border border-border p-5">
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => selectTaskCard("rejected")}
+                            className={`bg-card/80 rounded-xl border p-5 text-left transition-all ${selectedTaskCard === "rejected" ? "border-error ring-2 ring-error/20 shadow-lg" : "border-border hover:border-error/40 hover:shadow-md"}`}
+                        >
                             <p className="text-sm text-muted-foreground">Rejected</p>
                             <p className="text-3xl font-black text-error">{stats.rejected}</p>
-                        </div>
+                        </button>
                     </div>
 
                     <div className="bg-card/80 rounded-2xl border border-border p-4 mb-6 space-y-4">
@@ -1512,44 +1580,6 @@ export function TasksPage() {
                                 onChange={(e) => setSearch(e.target.value)}
                                 className="w-full pl-10 pr-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary bg-background"
                             />
-                        </div>
-
-                        <div className="flex flex-wrap gap-2">
-                            {(canAssign || isSuperAdmin) && (
-                                <button
-                                    type="button"
-                                    onClick={() => setActiveTab("manager")}
-                                    className={`px-4 py-2 rounded-lg border text-sm font-semibold ${activeTab === "manager" ? "bg-primary text-white border-primary" : "bg-background border-border text-foreground"}`}
-                                >
-                                    Manager Queue
-                                </button>
-                            )}
-
-                            <button
-                                type="button"
-                                onClick={() => setActiveTab("employee")}
-                                className={`px-4 py-2 rounded-lg border text-sm font-semibold ${activeTab === "employee" ? "bg-primary text-white border-primary" : "bg-background border-border text-foreground"}`}
-                            >
-                                Employee Workbench
-                            </button>
-
-                            {isExecutiveReviewer && (
-                                <button
-                                    type="button"
-                                    onClick={() => setActiveTab("super-admin")}
-                                    className={`px-4 py-2 rounded-lg border text-sm font-semibold ${activeTab === "super-admin" ? "bg-primary text-white border-primary" : "bg-background border-border text-foreground"}`}
-                                >
-                                    Executive Review
-                                </button>
-                            )}
-
-                            <button
-                                type="button"
-                                onClick={() => setShowOnlyMySubmittedForms((prev) => !prev)}
-                                className={`px-4 py-2 rounded-lg border text-sm font-semibold ${showOnlyMySubmittedForms ? "bg-info text-white border-info" : "bg-background border-border text-foreground"}`}
-                            >
-                                My Submitted Forms
-                            </button>
                         </div>
 
                         <div className="flex flex-wrap gap-2">
