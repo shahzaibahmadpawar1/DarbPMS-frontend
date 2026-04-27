@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { Building2, Mail, MessageSquare, Paperclip, Phone, Send, User, Upload } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { Button } from "@/app/components/ui/button";
+import { useLocation, useNavigate } from "react-router-dom";
 
 interface ComplaintFormData {
     senderName: string;
@@ -19,6 +21,8 @@ const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api'
 
 export function ComplaintContactForm() {
     const { token, user } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
 
     const [formData, setFormData] = useState<ComplaintFormData>({
         senderName: user?.username || "",
@@ -138,6 +142,21 @@ export function ComplaintContactForm() {
                     <h1 className="text-3xl font-bold text-foreground">Contact CEO Office</h1>
                     <p className="text-muted-foreground mt-2">Submit complaints, suggestions, or direct messages to the CEO</p>
                 </div>
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                        const inAllStationsLayout = location.pathname.startsWith("/all-stations-");
+                        navigate(
+                            inAllStationsLayout
+                                ? "/all-stations-tasks?view=my-forms&type=ceo_contact"
+                                : "/dashboard/tasks?view=my-forms&type=ceo_contact",
+                        );
+                    }}
+                    className="w-full md:w-auto"
+                >
+                    View history
+                </Button>
             </div>
 
             <form onSubmit={handleSubmit} className="bg-card rounded-xl shadow-xl p-8 card-glow border-t-4 border-primary relative overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">

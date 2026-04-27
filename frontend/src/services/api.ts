@@ -305,4 +305,90 @@ export const usersAPI = {
             }))
             .filter((station: StationOption) => station.station_code.length > 0);
     },
+
+    async getDepartmentManagers(department: Department): Promise<Array<{ id: string; username: string; department: Department | null }>> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_URL}/users/department-managers?department=${encodeURIComponent(department)}`, {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error?.error || error?.message || 'Failed to fetch department managers');
+        }
+        const result = await response.json();
+        return Array.isArray(result?.data) ? result.data : [];
+    },
+};
+
+export const feasibilityAPI = {
+    async submitFeasibility(payload: any): Promise<any> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_URL}/feasibility/submit`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || 'Failed to submit feasibility study');
+        }
+        return result?.data;
+    },
+
+    async submitManagerReview(taskId: string, payload: {
+        suggestions: string;
+        budget: string;
+        timeDuration: string;
+        percentage: string;
+        requirements: string;
+    }): Promise<any> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_URL}/tasks/${encodeURIComponent(taskId)}/feasibility-submit`, {
+            method: 'PATCH',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || 'Failed to submit feasibility review');
+        }
+        return result?.data;
+    },
+
+    async setDepartmentUnlock(taskId: string, payload: { department: string; unlock: boolean }): Promise<any> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_URL}/tasks/${encodeURIComponent(taskId)}/feasibility-unlock`, {
+            method: 'PATCH',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(payload),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || 'Failed to update feasibility unlock');
+        }
+        return result?.data;
+    },
+
+    async getDetails(taskId: string): Promise<any> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_URL}/feasibility/${encodeURIComponent(taskId)}/details`, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || 'Failed to fetch feasibility details');
+        }
+        return result?.data;
+    },
 };

@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useStation } from "../../context/StationContext";
-import { getDepartmentLabel, getRoleLabel } from "@/services/api";
+import { feasibilityAPI, getDepartmentLabel, getRoleLabel, usersAPI, type Department } from "@/services/api";
 import { useSearchParams } from "react-router-dom";
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 const DEPT_PROJECTS_PAGE_SIZE = 200;
@@ -53,11 +53,19 @@ import {
     PlusCircle, BarChart2, FileText, BookOpen,
     TrendingUp, CheckCircle2, XCircle, Clock, Upload, FileCheck,
     Trash2, MapPin, User, Phone, Mail, Save, Send,
-    Layers, ClipboardList
+    Layers, ClipboardList, Download
 } from "lucide-react";
 
 // â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 type ActiveTab = "new-project" | "feasibility" | "reports" | "contracts";
+
+type FeasibilityReviewDepartment = 'project' | 'operation' | 'realestate' | 'investment' | 'finance';
+
+type DepartmentManagerOption = {
+    id: string;
+    username: string;
+    department: Department | null;
+};
 
 interface NewProjectForm {
     requestType: string;
@@ -273,7 +281,7 @@ function NewProjectTab() {
             }
 
             if (target.isDefault && user?.role !== "super_admin") {
-                alert("Only super admin can delete the default station elements.");
+                alert("Only CEO can delete the default station elements.");
                 return prev;
             }
 
@@ -590,7 +598,7 @@ function NewProjectTab() {
         return (
             <div className="bg-card rounded-xl border border-border p-6">
                 <p className="text-sm font-semibold text-destructive">You are not allowed to create new projects.</p>
-                <p className="text-xs text-muted-foreground mt-2">Only super admin, department manager, and supervisor can add new projects.</p>
+                <p className="text-xs text-muted-foreground mt-2">Only CEO, department manager, and supervisor can add new projects.</p>
             </div>
         );
     }
@@ -680,7 +688,7 @@ function NewProjectTab() {
                                     readOnly={lockDefaultName}
                                     onChange={e => updateElement(el.id, "name", e.target.value)}
                                     placeholder={`Element ${idx + 1} name`}
-                                    title={lockDefaultName ? "Only super admin can edit default element names" : ""}
+                                    title={lockDefaultName ? "Only CEO can edit default element names" : ""}
                                     className={`w-full text-sm font-semibold border border-border rounded-lg px-2.5 py-2 bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-primary ${lockDefaultName ? "bg-muted/60 cursor-not-allowed" : ""}`}
                                 />
                                 <button
@@ -688,7 +696,7 @@ function NewProjectTab() {
                                     onClick={() => removeElement(el.id)}
                                     disabled={el.isDefault && user?.role !== "super_admin"}
                                     className="p-2 rounded-lg hover:bg-destructive/10 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent"
-                                    title={el.isDefault && user?.role !== "super_admin" ? "Only super admin can delete default elements" : "Remove element"}
+                                    title={el.isDefault && user?.role !== "super_admin" ? "Only CEO can delete default elements" : "Remove element"}
                                 >
                                     <Trash2 className="w-4 h-4 text-destructive" />
                                 </button>
@@ -845,6 +853,144 @@ function FeasibilityTab({ deptLabel }: { deptLabel: string }) {
     const [stats, setStats] = useState({ total: 0, approved: 0, signed_contract: 0, rejected: 0 });
     const [items, setItems] = useState<any[]>([]);
     const { token } = useAuth();
+    const { user } = useAuth();
+    const [showCreateForm, setShowCreateForm] = useState(false);
+    const [showHistory, setShowHistory] = useState(true);
+    const [expandedHistoryProjectId, setExpandedHistoryProjectId] = useState<string | null>(null);
+    const [historyProjectDetails, setHistoryProjectDetails] = useState<Record<string, any>>({});
+
+    const departmentType = window.location.pathname.includes('investment') ? 'investment' : 'franchise';
+
+    const canCreateRole = !!user && ['super_admin', 'department_manager', 'supervisor'].includes(user.role);
+    const canCreateDepartment = user?.role === 'super_admin' || user?.department === 'investment' || user?.department === 'franchise';
+    const canCreateFeasibility = canCreateRole && canCreateDepartment;
+
+    const [managerOptions, setManagerOptions] = useState<Record<FeasibilityReviewDepartment, DepartmentManagerOption[]>>({
+        project: [],
+        operation: [],
+        realestate: [],
+        investment: [],
+        finance: [],
+    });
+
+    const [selectedManagers, setSelectedManagers] = useState<Record<FeasibilityReviewDepartment, string>>({
+        project: '',
+        operation: '',
+        realestate: '',
+        investment: '',
+        finance: '',
+    });
+
+    const [isLoadingManagers, setIsLoadingManagers] = useState(false);
+    const [managerLoadError, setManagerLoadError] = useState<string | null>(null);
+
+    const feasibilityRequestType = 'Feasibility Study';
+
+    const [form, setForm] = useState<NewProjectForm>({
+        requestType: feasibilityRequestType,
+        city: "",
+        projectName: "",
+        projectCode: "",
+        district: "",
+        area: "",
+        projectStatus: "",
+        contractType: "",
+        googleLocation: "",
+        priorityLevel: "",
+        ownerName: "",
+        ownerContactNo: "",
+        idNo: "",
+        nationalAddress: "",
+        email: "",
+        ownerType: "individual",
+        requestSender: "",
+        orderDate: "",
+    });
+
+    const [elements, setElements] = useState<CommercialElement[]>(
+        DEFAULT_ELEMENT_NAMES.map(name => ({ id: createId(), name, count: "0", area: "", isDefault: true }))
+    );
+    const [projectDocuments, setProjectDocuments] = useState<ProjectDocumentSlot[]>(
+        DEFAULT_DOCUMENT_SLOTS.map(label => ({ id: createId(), label, file: null }))
+    );
+
+    useEffect(() => {
+        if (!user) return;
+
+        const roleLabel = getRoleLabel(user.role);
+        const rawDepartment = getDepartmentLabel(user.department);
+        const userDepartment = rawDepartment === "All Departments" ? "All Departments" : `${rawDepartment} Department`;
+
+        setForm((prev) => ({
+            ...prev,
+            requestType: feasibilityRequestType,
+            requestSender: `${user.username || "User"} (${roleLabel}) - ${userDepartment}`,
+        }));
+    }, [user]);
+
+    const set = (key: keyof NewProjectForm, val: string) => setForm(p => ({ ...p, [key]: val }));
+
+    const updateElement = (id: string, key: keyof Omit<CommercialElement, "id">, value: string) => {
+        setElements(prev => prev.map(el => el.id === id ? { ...el, [key]: value } : el));
+    };
+
+    const addElement = () => {
+        setElements(prev => [...prev, { id: createId(), name: "", count: "0", area: "", isDefault: false }]);
+    };
+
+    const removeElement = (id: string) => {
+        setElements((prev) => {
+            const target = prev.find((el) => el.id === id);
+            if (!target) return prev;
+            if (target.isDefault && user?.role !== "super_admin") {
+                alert("Only CEO can delete the default station elements.");
+                return prev;
+            }
+            return prev.filter((el) => el.id !== id);
+        });
+    };
+
+    const updateDocument = (id: string, patch: Partial<ProjectDocumentSlot>) => {
+        setProjectDocuments(prev => prev.map(doc => doc.id === id ? { ...doc, ...patch } : doc));
+    };
+
+    const addDocumentSlot = () => {
+        setProjectDocuments(prev => [...prev, { id: createId(), label: "", file: null }]);
+    };
+
+    const removeDocumentSlot = (id: string) => {
+        setProjectDocuments(prev => prev.filter(doc => doc.id !== id));
+    };
+
+    const uploadProjectFile = async (file: File): Promise<string> => {
+        if (!token) {
+            throw new Error("Authentication required.");
+        }
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch(`${API_URL}/files/upload`, {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+            body: formData,
+        });
+
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok || !result?.data?.url) {
+            throw new Error(result?.details || result?.error || "Failed to upload document");
+        }
+
+        return result.data.url as string;
+    };
+
+    const fetchDepartmentManagers = async (dept: FeasibilityReviewDepartment): Promise<DepartmentManagerOption[]> => {
+        if (!token) return [];
+        // `usersAPI` reads the same auth_token; token presence is used here to avoid extra calls.
+        return usersAPI.getDepartmentManagers(dept as unknown as Department) as unknown as DepartmentManagerOption[];
+    };
 
     useEffect(() => {
         const fetchFeasibility = async () => {
@@ -853,7 +999,7 @@ function FeasibilityTab({ deptLabel }: { deptLabel: string }) {
                 return;
             }
 
-            const dept = window.location.pathname.includes('investment') ? 'investment' : 'franchise';
+            const dept = departmentType;
             const [statsRes, departmentProjects] = await Promise.all([
                 fetch(`${API_URL}/investment-projects/feasibility-stats?departmentType=${dept}`, { headers: { 'Authorization': `Bearer ${token}` } }),
                 fetchDepartmentProjects(token, dept)
@@ -863,7 +1009,163 @@ function FeasibilityTab({ deptLabel }: { deptLabel: string }) {
             setItems(departmentProjects.filter((p: any) => p.request_type === 'Feasibility Study'));
         };
         fetchFeasibility();
-    }, [token]);
+    }, [token, departmentType]);
+
+    const loadHistoryProjectDetails = async (projectId: string) => {
+        if (!token) return;
+        if (historyProjectDetails[projectId]) return;
+        const project = await fetchDepartmentProjectById(token, projectId);
+        if (!project) return;
+        setHistoryProjectDetails((prev) => ({ ...prev, [projectId]: project }));
+    };
+
+    useEffect(() => {
+        const loadManagers = async () => {
+            if (!token || !showCreateForm) return;
+            setIsLoadingManagers(true);
+            setManagerLoadError(null);
+            try {
+                const [project, operation, realestate, investment, finance] = await Promise.all([
+                    fetchDepartmentManagers('project'),
+                    fetchDepartmentManagers('operation'),
+                    fetchDepartmentManagers('realestate'),
+                    fetchDepartmentManagers('investment'),
+                    fetchDepartmentManagers('finance'),
+                ]);
+
+                setManagerOptions({
+                    project,
+                    operation,
+                    realestate,
+                    investment,
+                    finance,
+                });
+            } catch (err) {
+                console.error('Failed to load department managers:', err);
+                setManagerLoadError('Failed to load department managers.');
+            } finally {
+                setIsLoadingManagers(false);
+            }
+        };
+
+        void loadManagers();
+    }, [token, showCreateForm]);
+
+    const submitFeasibility = async () => {
+        if (!token) {
+            alert('Authentication required.');
+            return;
+        }
+
+        const missing = (Object.entries(selectedManagers) as Array<[FeasibilityReviewDepartment, string]>)
+            .filter(([_, value]) => !String(value || '').trim())
+            .map(([key]) => key);
+        if (missing.length > 0) {
+            alert(`Select managers for: ${missing.join(', ')}`);
+            return;
+        }
+
+        if (!form.projectName.trim() || !form.projectCode.trim()) {
+            alert("Project Name and Project Code are required to submit.");
+            return;
+        }
+
+        try {
+            // Upload documents (optional)
+            let designFileUrl: string | null = null;
+            let documentsUrl: string | null = null;
+            let autocadUrl: string | null = null;
+            for (const slot of projectDocuments) {
+                if (!slot.file) continue;
+                const fileUrl = await uploadProjectFile(slot.file);
+                const label = String(slot.label || '').toLowerCase();
+                if (!designFileUrl && label.includes("design")) {
+                    designFileUrl = fileUrl;
+                } else if (!autocadUrl && (label.includes("cad") || label.includes("dwg") || label.includes("autocad"))) {
+                    autocadUrl = fileUrl;
+                } else if (!documentsUrl) {
+                    documentsUrl = fileUrl;
+                }
+            }
+
+            const normalizeElementName = (name: string) => name.toLowerCase().replace(/[^a-z0-9]/g, "");
+            const mapped = {
+                superMarket: 0,
+                fuelStation: 0,
+                kiosks: 0,
+                retailShop: 0,
+                driveThrough: 0,
+                superMarketArea: 0,
+                fuelStationArea: 0,
+                kiosksArea: 0,
+                retailShopArea: 0,
+                driveThroughArea: 0,
+            };
+
+            for (const el of elements) {
+                const key = normalizeElementName(el.name || '');
+                const count = Number.parseInt(String(el.count || '0'), 10);
+                const area = Number.parseFloat(String(el.area || '0'));
+                if (key.includes('supermarket')) {
+                    mapped.superMarket = Number.isFinite(count) ? count : 0;
+                    mapped.superMarketArea = Number.isFinite(area) ? area : 0;
+                } else if (key.includes('fuelstation')) {
+                    mapped.fuelStation = Number.isFinite(count) ? count : 0;
+                    mapped.fuelStationArea = Number.isFinite(area) ? area : 0;
+                } else if (key.includes('kiosk')) {
+                    mapped.kiosks = Number.isFinite(count) ? count : 0;
+                    mapped.kiosksArea = Number.isFinite(area) ? area : 0;
+                } else if (key.includes('retailshop')) {
+                    mapped.retailShop = Number.isFinite(count) ? count : 0;
+                    mapped.retailShopArea = Number.isFinite(area) ? area : 0;
+                } else if (key.includes('drivethrough')) {
+                    mapped.driveThrough = Number.isFinite(count) ? count : 0;
+                    mapped.driveThroughArea = Number.isFinite(area) ? area : 0;
+                }
+            }
+
+            await feasibilityAPI.submitFeasibility({
+                departmentType,
+                ...form,
+                requestType: feasibilityRequestType,
+                selectedManagers,
+                ...mapped,
+                designFileUrl,
+                documentsUrl,
+                autocadUrl,
+            });
+        } catch (error: any) {
+            alert(`Error: ${String(error?.message || 'Failed to submit feasibility study')}`);
+            return;
+        }
+
+        alert('Feasibility study submitted and routed to department managers.');
+        setShowCreateForm(false);
+        setSelectedManagers({ project: '', operation: '', realestate: '', investment: '', finance: '' });
+        setForm((prev) => ({
+            ...prev,
+            requestType: feasibilityRequestType,
+            city: "",
+            projectName: "",
+            projectCode: "",
+            district: "",
+            area: "",
+            projectStatus: "",
+            contractType: "",
+            googleLocation: "",
+            priorityLevel: "",
+            ownerName: "",
+            ownerContactNo: "",
+            idNo: "",
+            nationalAddress: "",
+            email: "",
+            ownerType: "individual",
+            requestSender: prev.requestSender,
+            orderDate: "",
+        }));
+        setElements(DEFAULT_ELEMENT_NAMES.map(name => ({ id: createId(), name, count: "0", area: "", isDefault: true })));
+        setProjectDocuments(DEFAULT_DOCUMENT_SLOTS.map(label => ({ id: createId(), label, file: null })));
+    };
 
     const statCards = [
         { label: "Total Opportunities", value: stats.total, icon: <TrendingUp className="w-5 h-5" />, color: "text-blue-500", bg: "bg-blue-500/10" },
@@ -884,26 +1186,452 @@ function FeasibilityTab({ deptLabel }: { deptLabel: string }) {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                 {statCards.map(s => <StatCard key={s.label} {...s} />)}
             </div>
-            <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-                <div className="p-5 border-b border-border">
-                    <h3 className="font-bold text-foreground">{deptLabel}  -  Opportunity Assessments</h3>
+            {canCreateFeasibility && (
+                <div className="flex justify-end">
+                    <div className="flex flex-wrap gap-2">
+                        <button
+                            type="button"
+                            onClick={() => setShowHistory((v) => !v)}
+                            className="px-5 py-2.5 rounded-lg text-sm font-semibold border border-border bg-background hover:bg-muted transition-colors"
+                        >
+                            {showHistory ? 'Hide History' : 'History'}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => setShowCreateForm((v) => !v)}
+                            className="btn-primary px-5 py-2.5 rounded-lg text-sm font-semibold"
+                        >
+                            {showCreateForm ? 'Close Feasibility Form' : '+ Create Feasibility Study'}
+                        </button>
+                    </div>
                 </div>
-                <div className="divide-y divide-border">
-                    {items.length === 0 ? (
-                        <div className="p-10 text-center text-muted-foreground">No records found.</div>
-                    ) : items.map((item: any) => (
-                        <div key={item.id} className="flex items-center justify-between px-5 py-4 hover:bg-muted/30 transition-colors">
-                            <div>
-                                <p className="text-sm font-semibold text-foreground">{item.project_name}</p>
-                                <p className="text-xs text-muted-foreground mt-0.5">{item.city}  -  {new Date(item.created_at).toLocaleDateString()}</p>
+            )}
+
+            {showCreateForm && (
+                <div className="bg-card rounded-xl border border-border p-6 shadow-sm space-y-6">
+                    <SectionHeader
+                        icon={<BookOpen className="w-5 h-5" />}
+                        title="Feasibility Study Submission"
+                        subtitle="Request Type is locked to Feasibility Study. Select department managers to route this request."
+                    />
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <Field label="Request Type" required>
+                            <input
+                                type="text"
+                                value={feasibilityRequestType}
+                                disabled
+                                className={`${inputCls} bg-muted cursor-not-allowed`}
+                            />
+                        </Field>
+                        <Field label="Project Name" required>
+                            <input type="text" value={form.projectName} onChange={e => set("projectName", e.target.value)} className={inputCls} placeholder="e.g. North Riyadh Station" />
+                        </Field>
+                        <Field label="Project Code" required>
+                            <input type="text" value={form.projectCode} onChange={e => set("projectCode", e.target.value)} className={inputCls} placeholder="e.g. PRJ-2024-001" />
+                        </Field>
+                        <Field label="City" required>
+                            <input type="text" value={form.city} onChange={e => set("city", e.target.value)} className={inputCls} placeholder="e.g. Riyadh" />
+                        </Field>
+                        <Field label="District">
+                            <input type="text" value={form.district} onChange={e => set("district", e.target.value)} className={inputCls} placeholder="e.g. Al-Malqa" />
+                        </Field>
+                        <Field label="Area/Region">
+                            <input type="text" value={form.area} onChange={e => set("area", e.target.value)} className={inputCls} placeholder="e.g. North Jeddah" />
+                        </Field>
+                        <Field label="Project Status" required>
+                            <select value={form.projectStatus} onChange={e => set("projectStatus", e.target.value)} className={selectCls}>
+                                <option value="">Select Status</option>
+                                {PROJECT_STATUSES.map(s => <option key={s} value={s}>{s}</option>)}
+                            </select>
+                        </Field>
+                        <Field label="Contract Type" required>
+                            <select value={form.contractType} onChange={e => set("contractType", e.target.value)} className={selectCls}>
+                                <option value="">Select Contract Type</option>
+                                {CONTRACT_TYPES.map(c => <option key={c} value={c}>{c}</option>)}
+                            </select>
+                        </Field>
+                        <Field label="Priority Level" required>
+                            <select value={form.priorityLevel} onChange={e => set("priorityLevel", e.target.value)} className={selectCls}>
+                                <option value="">Select Priority</option>
+                                {PRIORITY_LEVELS.map(p => <option key={p} value={p}>{p}</option>)}
+                            </select>
+                        </Field>
+                        <Field label="Order Date" required>
+                            <input type="date" value={form.orderDate} onChange={e => set("orderDate", e.target.value)} className={inputCls} />
+                        </Field>
+                        <Field label="Requester">
+                            <input type="text" value={form.requestSender} className={`${inputCls} bg-muted cursor-not-allowed`} placeholder="Automatically filled" disabled />
+                        </Field>
+                        <Field label="Google Location">
+                            <div className="relative">
+                                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                                <input
+                                    type="text"
+                                    value={form.googleLocation}
+                                    onChange={e => set("googleLocation", e.target.value)}
+                                    className={`${inputCls} pl-9`}
+                                    placeholder="Paste Google Maps link or coordinates"
+                                />
                             </div>
-                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${badgeColor[item.review_status] || "bg-muted text-muted-foreground"}`}>
-                                {item.review_status}
-                            </span>
+                        </Field>
+                    </div>
+
+                    <div className="bg-muted/30 rounded-xl border border-border p-5 space-y-4">
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <p className="text-sm font-bold text-foreground">Station Elements</p>
+                                <p className="text-xs text-muted-foreground">Specify the count and area for each commercial element at the site.</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={addElement}
+                                className="px-4 py-2 rounded-lg text-xs font-bold border border-border bg-background hover:bg-muted transition-colors"
+                            >
+                                + Add Commercial Element
+                            </button>
                         </div>
-                    ))}
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {elements.map((el) => (
+                                <div key={el.id} className="bg-background rounded-xl border border-border p-4 space-y-3">
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="text"
+                                            value={el.name}
+                                            onChange={(e) => updateElement(el.id, "name", e.target.value)}
+                                            disabled={el.isDefault}
+                                            className={`${inputCls} ${el.isDefault ? "bg-muted cursor-not-allowed" : ""}`}
+                                            placeholder="Element name"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => removeElement(el.id)}
+                                            className="p-2 rounded-lg hover:bg-destructive/10"
+                                            title="Remove"
+                                        >
+                                            <Trash2 className="w-4 h-4 text-destructive" />
+                                        </button>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-muted-foreground font-semibold">Count</p>
+                                            <input
+                                                type="number"
+                                                min={0}
+                                                value={el.count}
+                                                onChange={(e) => updateElement(el.id, "count", e.target.value)}
+                                                className={inputCls}
+                                            />
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-xs text-muted-foreground font-semibold">Area (sqm)</p>
+                                            <input
+                                                type="number"
+                                                min={0}
+                                                step="0.01"
+                                                value={el.area}
+                                                onChange={(e) => updateElement(el.id, "area", e.target.value)}
+                                                className={inputCls}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="bg-muted/30 rounded-xl border border-border p-5 space-y-4">
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <p className="text-sm font-bold text-foreground">Project Documents</p>
+                                <p className="text-xs text-muted-foreground">Upload design files, documents, and drawings.</p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={addDocumentSlot}
+                                className="px-4 py-2 rounded-lg text-xs font-bold border border-border bg-background hover:bg-muted transition-colors"
+                            >
+                                + Add Document Slot
+                            </button>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {projectDocuments.map((doc) => (
+                                <div key={doc.id} className="bg-background rounded-xl border border-border p-4 space-y-3">
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="text"
+                                            value={doc.label}
+                                            onChange={(e) => updateDocument(doc.id, { label: e.target.value })}
+                                            className={inputCls}
+                                            placeholder="e.g. Design File"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => removeDocumentSlot(doc.id)}
+                                            className="p-2 rounded-lg hover:bg-destructive/10"
+                                            title="Remove"
+                                        >
+                                            <Trash2 className="w-4 h-4 text-destructive" />
+                                        </button>
+                                    </div>
+                                    <FileUpload
+                                        label={doc.label}
+                                        file={doc.file}
+                                        onChange={(file) => updateDocument(doc.id, { file })}
+                                        onRemoveFile={() => updateDocument(doc.id, { file: null })}
+                                    />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="bg-muted/30 rounded-xl border border-border p-5 space-y-4">
+                        <div>
+                            <p className="text-sm font-bold text-foreground">Owner Information</p>
+                            <p className="text-xs text-muted-foreground">Details about the land/project owner.</p>
+                        </div>
+
+                        <div className="inline-flex rounded-xl border border-border overflow-hidden bg-background">
+                            <button
+                                type="button"
+                                onClick={() => set("ownerType", "individual")}
+                                className={`px-5 py-2 text-xs font-bold ${form.ownerType === "individual" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+                            >
+                                Individual
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => set("ownerType", "company")}
+                                className={`px-5 py-2 text-xs font-bold ${form.ownerType === "company" ? "bg-primary text-primary-foreground" : "hover:bg-muted"}`}
+                            >
+                                Company
+                            </button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <Field label="Owner Name" required>
+                                <input type="text" value={form.ownerName} onChange={e => set("ownerName", e.target.value)} className={inputCls} placeholder="Full name" />
+                            </Field>
+                            <Field label="Owner Contact No" required>
+                                <input type="text" value={form.ownerContactNo} onChange={e => set("ownerContactNo", e.target.value)} className={inputCls} placeholder="+966 5X XXX XXXX" />
+                            </Field>
+                            <Field label="ID No" required>
+                                <input type="text" value={form.idNo} onChange={e => set("idNo", e.target.value)} className={inputCls} placeholder="National ID or CR Number" />
+                            </Field>
+                            <Field label="Email">
+                                <input type="email" value={form.email} onChange={e => set("email", e.target.value)} className={inputCls} placeholder="owner@example.com" />
+                            </Field>
+                            <Field label="National Address" required>
+                                <input type="text" value={form.nationalAddress} onChange={e => set("nationalAddress", e.target.value)} className={inputCls} placeholder="National address code" />
+                            </Field>
+                        </div>
+                    </div>
+
+                    <div className="bg-muted/30 rounded-xl border border-border p-5 space-y-4">
+                        <div className="flex items-center justify-between gap-3">
+                            <div>
+                                <p className="text-sm font-bold text-foreground">Route to Department Managers</p>
+                                <p className="text-xs text-muted-foreground">Select the department manager for each required department.</p>
+                            </div>
+                            {isLoadingManagers && <p className="text-xs text-muted-foreground">Loading managers...</p>}
+                        </div>
+                        {managerLoadError && (
+                            <div className="text-xs text-destructive font-semibold">{managerLoadError}</div>
+                        )}
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {([
+                                ['project', 'Project'],
+                                ['operation', 'Operation'],
+                                ['realestate', 'Realestate'],
+                                ['investment', 'Investment'],
+                                ['finance', 'Finance'],
+                            ] as Array<[FeasibilityReviewDepartment, string]>).map(([dept, label]) => (
+                                <Field key={dept} label={`${label} Department Manager`} required>
+                                    <select
+                                        value={selectedManagers[dept]}
+                                        onChange={(e) => setSelectedManagers((prev) => ({ ...prev, [dept]: e.target.value }))}
+                                        className={selectCls}
+                                    >
+                                        <option value="">Select manager</option>
+                                        {managerOptions[dept].map((m) => (
+                                            <option key={m.id} value={m.id}>
+                                                {m.username}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </Field>
+                            ))}
+                        </div>
+                    </div>
+
+                    <div className="flex justify-end">
+                        <button
+                            type="button"
+                            onClick={() => void submitFeasibility()}
+                            className="btn-primary px-8 py-3 rounded-xl flex items-center gap-2 font-semibold text-sm shadow-lg hover:shadow-primary/25 transition-all"
+                        >
+                            <Send className="w-4 h-4" /> Submit Feasibility Study
+                        </button>
+                    </div>
                 </div>
-            </div>
+            )}
+
+            {showHistory && (
+                <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
+                    <div className="p-5 border-b border-border flex items-center justify-between">
+                        <div>
+                            <h3 className="font-bold text-foreground">{deptLabel}  -  Feasibility History</h3>
+                            <p className="text-xs text-muted-foreground mt-1">Previously submitted feasibility study forms</p>
+                        </div>
+                        <span className="text-xs text-muted-foreground font-semibold">{items.length} records</span>
+                    </div>
+                    <div className="divide-y divide-border">
+                        {items.length === 0 ? (
+                            <div className="p-10 text-center text-muted-foreground">No records found.</div>
+                        ) : items.map((item: any) => {
+                            const isExpanded = expandedHistoryProjectId === item.id;
+                            const details = historyProjectDetails[item.id];
+                            return (
+                                <div key={item.id} className="px-5 py-4 hover:bg-muted/20 transition-colors">
+                                    <div className="flex items-center justify-between gap-4">
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-semibold text-foreground truncate">{item.project_name}</p>
+                                            <p className="text-xs text-muted-foreground mt-0.5">
+                                                {item.project_code} · {item.city} · {new Date(item.created_at).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                        <div className="flex items-center gap-2 flex-shrink-0">
+                                            <span className={`px-3 py-1 rounded-full text-xs font-bold ${badgeColor[item.review_status] || "bg-muted text-muted-foreground"}`}>
+                                                {item.review_status}
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={async () => {
+                                                    const next = isExpanded ? null : item.id;
+                                                    setExpandedHistoryProjectId(next);
+                                                    if (next) {
+                                                        await loadHistoryProjectDetails(item.id);
+                                                    }
+                                                }}
+                                                className="px-3 py-1.5 rounded-lg border border-border bg-background text-foreground text-xs font-semibold hover:bg-muted/40"
+                                            >
+                                                {isExpanded ? 'Hide' : 'View'}
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {isExpanded && details && (
+                                        <div className="mt-4 rounded-xl border border-border bg-background p-4">
+                                            <p className="text-xs font-bold text-muted-foreground uppercase mb-3">Submitted Form Details</p>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
+                                                <p className="text-muted-foreground"><span className="font-semibold text-foreground">Request Type:</span> {details.request_type || '-'}</p>
+                                                <p className="text-muted-foreground"><span className="font-semibold text-foreground">Project Status:</span> {details.project_status || '-'}</p>
+                                                <p className="text-muted-foreground"><span className="font-semibold text-foreground">Contract Type:</span> {details.contract_type || '-'}</p>
+                                                <p className="text-muted-foreground"><span className="font-semibold text-foreground">Area:</span> {details.area ?? '-'}</p>
+                                                <p className="text-muted-foreground"><span className="font-semibold text-foreground">Priority:</span> {details.priority_level || '-'}</p>
+                                                <p className="text-muted-foreground"><span className="font-semibold text-foreground">Order Date:</span> {details.order_date ? String(details.order_date).slice(0, 10) : '-'}</p>
+                                                <p className="text-muted-foreground md:col-span-2 lg:col-span-3"><span className="font-semibold text-foreground">Google Location:</span> {details.google_location || '-'}</p>
+                                                <p className="text-muted-foreground md:col-span-2 lg:col-span-3"><span className="font-semibold text-foreground">Requester:</span> {details.request_sender || '-'}</p>
+                                            </div>
+
+                                            <div className="mt-4 rounded-xl border border-border bg-muted/10 p-4">
+                                                <p className="text-xs font-bold text-muted-foreground uppercase mb-3">Owner Information</p>
+                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
+                                                    <p className="text-muted-foreground"><span className="font-semibold text-foreground">Owner Type:</span> {details.owner_type || '-'}</p>
+                                                    <p className="text-muted-foreground"><span className="font-semibold text-foreground">Owner Name:</span> {details.owner_name || '-'}</p>
+                                                    <p className="text-muted-foreground"><span className="font-semibold text-foreground">Owner Contact No:</span> {details.owner_contact_no || '-'}</p>
+                                                    <p className="text-muted-foreground"><span className="font-semibold text-foreground">ID / CR No:</span> {details.id_no || '-'}</p>
+                                                    <p className="text-muted-foreground"><span className="font-semibold text-foreground">Email:</span> {details.email || '-'}</p>
+                                                    <p className="text-muted-foreground"><span className="font-semibold text-foreground">National Address:</span> {details.national_address || '-'}</p>
+                                                </div>
+                                            </div>
+
+                                            {(Number(details.super_market || 0) > 0
+                                                || Number(details.fuel_station || 0) > 0
+                                                || Number(details.kiosks || 0) > 0
+                                                || Number(details.retail_shop || 0) > 0
+                                                || Number(details.drive_through || 0) > 0
+                                                || Number(details.super_market_area || 0) > 0
+                                                || Number(details.fuel_station_area || 0) > 0
+                                                || Number(details.kiosks_area || 0) > 0
+                                                || Number(details.retail_shop_area || 0) > 0
+                                                || Number(details.drive_through_area || 0) > 0) && (
+                                                    <div className="mt-4 rounded-xl border border-border bg-muted/10 p-4">
+                                                        <p className="text-xs font-bold text-muted-foreground uppercase mb-3">Station Elements</p>
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                                                            {[
+                                                                { label: 'Super Market', count: details.super_market, area: details.super_market_area },
+                                                                { label: 'Fuel Station', count: details.fuel_station, area: details.fuel_station_area },
+                                                                { label: 'Kiosks', count: details.kiosks, area: details.kiosks_area },
+                                                                { label: 'Retail Shop', count: details.retail_shop, area: details.retail_shop_area },
+                                                                { label: 'Drive Through', count: details.drive_through, area: details.drive_through_area },
+                                                            ].map((e) => (
+                                                                <div key={e.label} className="flex items-center justify-between rounded-lg border border-border bg-background px-3 py-2">
+                                                                    <span className="font-semibold text-foreground">{e.label}</span>
+                                                                    <span className="text-muted-foreground">{Number(e.count || 0)} • {Number(e.area || 0)} sqm</span>
+                                                                </div>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                            {(details.design_file_url || details.documents_url || details.autocad_url) && (
+                                                <div className="mt-4 rounded-xl border border-border bg-muted/10 p-4">
+                                                    <p className="text-xs font-bold text-muted-foreground uppercase mb-3">Project Documents</p>
+                                                    {(() => {
+                                                        const toFileHref = (url: any) => {
+                                                            const u = String(url || "").trim();
+                                                            if (!u) return null;
+                                                            if (u.startsWith("http://") || u.startsWith("https://")) return u;
+                                                            if (u.startsWith("/")) return `${API_URL}${u}`;
+                                                            return `${API_URL}/${u}`;
+                                                        };
+                                                        return (
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {details.design_file_url && (
+                                                                    <a
+                                                                        href={toFileHref(details.design_file_url) || undefined}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-lg text-sm font-semibold hover:bg-primary/15 transition-colors"
+                                                                    >
+                                                                        <Download className="w-4 h-4" /> Design File
+                                                                    </a>
+                                                                )}
+                                                                {details.documents_url && (
+                                                                    <a
+                                                                        href={toFileHref(details.documents_url) || undefined}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-lg text-sm font-semibold hover:bg-primary/15 transition-colors"
+                                                                    >
+                                                                        <Download className="w-4 h-4" /> Documents
+                                                                    </a>
+                                                                )}
+                                                                {details.autocad_url && (
+                                                                    <a
+                                                                        href={toFileHref(details.autocad_url) || undefined}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-lg text-sm font-semibold hover:bg-primary/15 transition-colors"
+                                                                    >
+                                                                        <Download className="w-4 h-4" /> AutoCAD (DWG)
+                                                                    </a>
+                                                                )}
+                                                            </div>
+                                                        );
+                                                    })()}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

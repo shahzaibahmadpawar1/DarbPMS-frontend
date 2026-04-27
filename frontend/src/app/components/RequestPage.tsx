@@ -5,6 +5,7 @@ import { departmentOptions, getRoleLabel, type Department } from "@/services/api
 import { getRequestTypesByDepartment, type RequestTypeValue } from "@/app/constants/requestTypes";
 import { Button } from "@/app/components/ui/button";
 import { cn } from "@/app/components/ui/utils";
+import { useLocation, useNavigate } from "react-router-dom";
 
 interface StationOption {
     station_code: string;
@@ -37,6 +38,8 @@ const initialFormState = (requester = "", department = ""): RequestFormData => (
 
 export function RequestPage() {
     const { user, token } = useAuth();
+    const navigate = useNavigate();
+    const location = useLocation();
     const [formData, setFormData] = useState<RequestFormData>(() => initialFormState());
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [stations, setStations] = useState<StationOption[]>([]);
@@ -206,29 +209,26 @@ export function RequestPage() {
     return (
         <div className="p-8">
             <div className="mb-8 flex flex-col gap-3">
-                <div>
-                    <h1 className="text-3xl font-bold text-foreground">Requests</h1>
-                    <p className="text-muted-foreground mt-2">Submit a request to the relevant department manager for review.</p>
-                </div>
-                <div className="grid gap-3 md:grid-cols-3">
-                    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                            <User className="w-4 h-4 text-primary" /> Requester
-                        </div>
-                        <p className="mt-2 text-sm font-semibold text-foreground">{formData.requester || "Ready to submit"}</p>
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold text-foreground">Requests</h1>
+                        <p className="text-muted-foreground mt-2">Submit a request to the relevant department manager for review.</p>
                     </div>
-                    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                            <Building2 className="w-4 h-4 text-primary" /> Department routing
-                        </div>
-                        <p className="mt-2 text-sm font-semibold text-foreground">Task goes to the department manager</p>
-                    </div>
-                    <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
-                        <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
-                            <MessageSquare className="w-4 h-4 text-primary" /> Response tracking
-                        </div>
-                        <p className="mt-2 text-sm font-semibold text-foreground">Approval or rejection appears in your tasks</p>
-                    </div>
+                    <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => {
+                            const inAllStationsLayout = location.pathname.startsWith("/all-stations-");
+                            navigate(
+                                inAllStationsLayout
+                                    ? "/all-stations-tasks?view=my-forms&type=request"
+                                    : "/dashboard/tasks?view=my-forms&type=request",
+                            );
+                        }}
+                        className="w-full md:w-auto"
+                    >
+                        View history
+                    </Button>
                 </div>
             </div>
 

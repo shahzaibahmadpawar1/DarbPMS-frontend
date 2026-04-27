@@ -5,6 +5,7 @@ import {
     AlertCircle,
     CheckCircle,
     Clock,
+    Download,
     FileText,
     Search,
     ShieldCheck,
@@ -27,7 +28,14 @@ type WorkflowTaskStatus =
     | "requester_accepted"
     | "requester_declined";
 
-type WorkflowTaskFlow = "contract" | "documents" | "request" | "ceo_contact";
+type WorkflowTaskFlow = "contract" | "documents" | "request" | "ceo_contact" | "feasibility";
+type FeasibilityInput = {
+    suggestions: string;
+    budget: string;
+    timeDuration: string;
+    percentage: string;
+    requirements: string;
+};
 type RoleViewTab = "manager" | "employee" | "super-admin";
 type TaskStatusFilter = "pending" | "completed";
 type TaskCardFilter = "all" | "manager" | "employee" | "super-admin" | "my-forms" | "approved" | "rejected";
@@ -140,7 +148,7 @@ const statusLabel: Record<WorkflowTaskStatus, string> = {
     ceo_rejected: "CEO Rejected",
     employee_submitted: "Employee Submitted",
     manager_submitted: "Manager Submitted",
-    under_super_admin_review: "Under Super Admin Review",
+    under_super_admin_review: "Under CEO Review",
     pending_requester_decision: "Pending Requester Decision",
     approved: "Approved",
     rejected: "Rejected",
@@ -170,7 +178,7 @@ const stageLabel: Record<WorkflowTaskStatus, string> = {
     ceo_rejected: "CEO rejected",
     employee_submitted: "Employee submitted",
     manager_submitted: "Manager submitted",
-    under_super_admin_review: "Super admin review",
+    under_super_admin_review: "CEO review",
     pending_requester_decision: "Requester decision",
     approved: "Approved",
     rejected: "Rejected",
@@ -183,6 +191,7 @@ const branchLabel: Record<WorkflowTaskFlow, string> = {
     documents: "Document",
     request: "Request",
     ceo_contact: "CEO Contact",
+    feasibility: "Feasibility Study",
 };
 
 export function TasksPage() {
@@ -205,12 +214,18 @@ export function TasksPage() {
     const [branchAssignee, setBranchAssignee] = useState<Record<string, string>>({});
     const [taskHistory, setTaskHistory] = useState<Record<string, { task: WorkflowTask; history: WorkflowHistoryEntry[] }>>({});
     const [expandedHistoryTaskId, setExpandedHistoryTaskId] = useState<string | null>(null);
+    const [expandedFeasibilityTaskId, setExpandedFeasibilityTaskId] = useState<string | null>(null);
+    const [feasibilityDetailsByTaskId, setFeasibilityDetailsByTaskId] = useState<Record<string, any>>({});
     const [selectedTaskCard, setSelectedTaskCard] = useState<TaskCardFilter>("all");
     const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>("pending");
     const [taskLoadError, setTaskLoadError] = useState<string | null>(null);
+    const [submittedType, setSubmittedType] = useState<"all" | "request" | "ceo_contact">("all");
+    const [feasibilityInputs, setFeasibilityInputs] = useState<Record<string, FeasibilityInput>>({});
 
-    const canAssign = user?.role === "department_manager" || user?.role === "super_admin" || user?.role === "supervisor";
-    const canValidateAsManager = user?.role === "department_manager" || user?.role === "super_admin";
+    const canAssign = user?.role === "super_admin"
+        || (user?.role === "department_manager" && String(user?.department || "").trim().toLowerCase() === "project");
+    const canValidateAsManager = user?.role === "super_admin"
+        || (user?.role === "department_manager" && String(user?.department || "").trim().toLowerCase() === "project");
     const isExecutiveReviewer = user?.role === "super_admin" || user?.role === "ceo";
     const isSuperAdmin = isExecutiveReviewer;
     const isProjectDepartmentManager = user?.role === "department_manager" && user?.department === "project";
@@ -240,6 +255,18 @@ export function TasksPage() {
 
         setActiveTab("employee");
     }, [isSuperAdmin, canAssign]);
+
+    useEffect(() => {
+        const params = new URLSearchParams(location.search);
+        const view = String(params.get("view") || "").trim();
+        const type = String(params.get("type") || "").trim();
+        if (view === "my-forms") {
+            setSelectedTaskCard("my-forms");
+            if (type === "request" || type === "ceo_contact" || type === "all") {
+                setSubmittedType(type as "all" | "request" | "ceo_contact");
+            }
+        }
+    }, [location.search]);
 
     const fetchAssignableUsersByDepartment = useCallback(async (department: Department): Promise<void> => {
         if (!token || (!canAssign && !isExecutiveReviewer)) return;
@@ -417,7 +444,8 @@ export function TasksPage() {
         return tasks.filter((task) => {
             const assignedToMe = task.assigned_to === user?.id;
             const createdByMe = task.created_by === user?.id;
-            return (assignedToMe || createdByMe) && matchesSearch(task, search);
+            const isFeasibilityParticipantTask = task.flow_type === ("feasibility" as any);
+            return (assignedToMe || createdByMe || isFeasibilityParticipantTask) && matchesSearch(task, search);
         });
     }, [tasks, user?.id, search]);
 
@@ -455,7 +483,17 @@ export function TasksPage() {
             case "super-admin":
                 return superAdminTasks.filter((task) => task.status === "manager_submitted" || task.status === "under_super_admin_review");
             case "my-forms":
-                return tasks.filter((task) => isSubmittedFormTask(task) && matchesSearch(task, search));
+                return tasks.filter((task) => {
+                    if (!isSubmittedFormTask(task) || !matchesSearch(task, search)) {
+                        return false;
+                    }
+
+                    if (submittedType === "all") {
+                        return true;
+                    }
+
+                    return task.flow_type === submittedType;
+                });
             case "approved":
                 return tasks.filter((task) => task.status === "approved" && matchesSearch(task, search));
             case "rejected":
@@ -464,7 +502,7 @@ export function TasksPage() {
             default:
                 return visibleTasks;
         }
-    }, [employeeTasks, isSubmittedFormTask, managerTasks, search, selectedTaskCard, superAdminTasks, tasks, visibleTasks]);
+    }, [employeeTasks, isSubmittedFormTask, managerTasks, search, selectedTaskCard, submittedType, superAdminTasks, tasks, visibleTasks]);
 
     const uploadFile = async (file: File): Promise<string | null> => {
         if (!token) return null;
@@ -795,6 +833,21 @@ export function TasksPage() {
         }
     };
 
+    const loadFeasibilityDetails = async (taskId: string) => {
+        if (!token) return;
+        if (feasibilityDetailsByTaskId[taskId]) return;
+        const response = await fetch(`${API_URL}/feasibility/${encodeURIComponent(taskId)}/details`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            alert(error?.error || "Failed to load feasibility details");
+            return;
+        }
+        const result = await response.json().catch(() => ({}));
+        setFeasibilityDetailsByTaskId((prev) => ({ ...prev, [taskId]: result?.data || null }));
+    };
+
     const onTaskFileChange = (taskId: string, event: ChangeEvent<HTMLInputElement>) => {
         const selected = event.target.files?.[0] || null;
         setTaskFiles((prev) => ({ ...prev, [taskId]: selected }));
@@ -818,6 +871,7 @@ export function TasksPage() {
             );
         const isGenericTask = task.flow_type === "request" || task.flow_type === "ceo_contact";
         const isContractTask = task.flow_type === "contract";
+        const isFeasibilityTask = task.flow_type === ("feasibility" as any);
         const showCeoForwardPanel = isExecutiveReviewer
             && task.flow_type === "ceo_contact"
             && (task.status === "assigned" || task.status === "ceo_rejected");
@@ -872,18 +926,129 @@ export function TasksPage() {
                     </div>
                 )}
 
+                {isFeasibilityTask && (
+                    <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <p className="text-sm font-bold text-foreground">Feasibility Study Review</p>
+                            <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-primary/10 text-primary border border-primary/20">
+                                {task.target_department?.toString().toUpperCase()}
+                            </span>
+                        </div>
+
+                        {(mode === "manager" || mode === "employee") && task.status === "assigned" && task.assigned_to === user?.id && (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <textarea
+                                    rows={2}
+                                    value={feasibilityInputs[task.id]?.suggestions || ""}
+                                    onChange={(e) => setFeasibilityInputs((prev) => ({
+                                        ...prev,
+                                        [task.id]: { ...(prev[task.id] || { suggestions: "", budget: "", timeDuration: "", percentage: "", requirements: "" }), suggestions: e.target.value }
+                                    }))}
+                                    className="w-full px-3 py-2 border border-border rounded-lg bg-background md:col-span-2"
+                                    placeholder="Suggestions (comments)"
+                                />
+                                <input
+                                    type="number"
+                                    inputMode="decimal"
+                                    value={feasibilityInputs[task.id]?.budget || ""}
+                                    onChange={(e) => setFeasibilityInputs((prev) => ({
+                                        ...prev,
+                                        [task.id]: { ...(prev[task.id] || { suggestions: "", budget: "", timeDuration: "", percentage: "", requirements: "" }), budget: e.target.value }
+                                    }))}
+                                    className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                    placeholder="Budget (numbers only)"
+                                />
+                                <input
+                                    type="text"
+                                    value={feasibilityInputs[task.id]?.timeDuration || ""}
+                                    onChange={(e) => setFeasibilityInputs((prev) => ({
+                                        ...prev,
+                                        [task.id]: { ...(prev[task.id] || { suggestions: "", budget: "", timeDuration: "", percentage: "", requirements: "" }), timeDuration: e.target.value }
+                                    }))}
+                                    className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                    placeholder="Time duration (e.g. 3 months)"
+                                />
+                                <input
+                                    type="number"
+                                    min={0}
+                                    max={100}
+                                    value={feasibilityInputs[task.id]?.percentage || ""}
+                                    onChange={(e) => setFeasibilityInputs((prev) => ({
+                                        ...prev,
+                                        [task.id]: { ...(prev[task.id] || { suggestions: "", budget: "", timeDuration: "", percentage: "", requirements: "" }), percentage: e.target.value }
+                                    }))}
+                                    className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                    placeholder="Percentage (0-100)"
+                                />
+                                <input
+                                    type="text"
+                                    value={feasibilityInputs[task.id]?.requirements || ""}
+                                    onChange={(e) => setFeasibilityInputs((prev) => ({
+                                        ...prev,
+                                        [task.id]: { ...(prev[task.id] || { suggestions: "", budget: "", timeDuration: "", percentage: "", requirements: "" }), requirements: e.target.value }
+                                    }))}
+                                    className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                    placeholder="Requirements"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        try {
+                                            const { feasibilityAPI } = await import("@/services/api");
+                                            const payload = feasibilityInputs[task.id] || { suggestions: "", budget: "", timeDuration: "", percentage: "", requirements: "" };
+                                            await feasibilityAPI.submitManagerReview(task.id, payload);
+                                            await loadData();
+                                        } catch (err: any) {
+                                            alert(String(err?.message || "Failed to submit feasibility review"));
+                                        }
+                                    }}
+                                    className="px-4 py-2 bg-success text-white rounded-lg text-sm font-semibold md:col-span-2"
+                                >
+                                    <CheckCircle className="w-4 h-4 inline mr-1" /> Submit Feasibility Review
+                                </button>
+                                <p className="text-xs text-muted-foreground md:col-span-2">
+                                    Percentage must be 0–100. Budget accepts numbers only.
+                                </p>
+                            </div>
+                        )}
+
+                        {isExecutiveReviewer && task.target_department === "ceo" && (
+                            <div className="space-y-3">
+                                <p className="text-xs text-muted-foreground">
+                                    Manager inputs are stored and will be reviewed as a single card. Use the approve/reject buttons below.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                )}
+
                 <div className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
                     <p>
                         Current assignee: <span className="font-semibold text-foreground">{task.assigned_to_username || "Unassigned"}</span>
                     </p>
                     <div className="flex items-center gap-2">
-                        {task.investment_project_id && (
+                        {task.investment_project_id && !isFeasibilityTask && (
                             <button
                                 type="button"
                                 onClick={() => navigate(`${underReviewPath}?projectId=${task.investment_project_id}`)}
                                 className="px-3 py-1.5 rounded-lg border border-primary/20 bg-primary/10 text-primary font-semibold hover:bg-primary/20"
                             >
                                 Details
+                            </button>
+                        )}
+                        {isFeasibilityTask && (
+                            <button
+                                type="button"
+                                onClick={async () => {
+                                    const nextOpen = expandedFeasibilityTaskId === task.id ? null : task.id;
+                                    setExpandedFeasibilityTaskId(nextOpen);
+                                    if (nextOpen) {
+                                        await loadFeasibilityDetails(task.id);
+                                    }
+                                }}
+                                className="px-3 py-1.5 rounded-lg border border-primary/20 bg-primary/10 text-primary font-semibold hover:bg-primary/20"
+                            >
+                                {expandedFeasibilityTaskId === task.id ? "Hide Details" : "Details"}
                             </button>
                         )}
                         {canOpenContract && (
@@ -926,6 +1091,325 @@ export function TasksPage() {
                         </button>
                     </div>
                 </div>
+
+                {isFeasibilityTask && expandedFeasibilityTaskId === task.id && feasibilityDetailsByTaskId[task.id] && (
+                    <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-4">
+                        <p className="text-sm font-bold text-foreground">Feasibility Study Details</p>
+                        {(() => {
+                            const project = feasibilityDetailsByTaskId[task.id]?.project || {};
+                            const toFileHref = (url: any) => {
+                                const u = String(url || "").trim();
+                                if (!u) return null;
+                                if (u.startsWith("http://") || u.startsWith("https://")) return u;
+                                if (u.startsWith("/")) return `${API_URL}${u}`;
+                                return `${API_URL}/${u}`;
+                            };
+                            const rows: Array<{ label: string; value: any }> = [
+                                { label: "Request Type", value: project.request_type },
+                                { label: "Project Name", value: project.project_name },
+                                { label: "Project Code", value: project.project_code },
+                                { label: "City", value: project.city },
+                                { label: "District", value: project.district },
+                                { label: "Area/Region", value: project.area },
+                                { label: "Project Status", value: project.project_status },
+                                { label: "Contract Type", value: project.contract_type },
+                                { label: "Priority Level", value: project.priority_level },
+                                { label: "Order Date", value: project.order_date ? String(project.order_date).slice(0, 10) : null },
+                                { label: "Requester", value: project.request_sender },
+                                { label: "Google Location", value: project.google_location },
+                            ];
+
+                            return (
+                                <div className="space-y-4">
+                                    <div className="rounded-xl border border-border bg-background overflow-hidden">
+                                        <table className="w-full text-sm">
+                                            <tbody className="divide-y divide-border">
+                                                {rows.map((row) => (
+                                                    <tr key={row.label} className="align-top">
+                                                        <td className="w-[220px] px-3 py-2 text-xs font-bold text-muted-foreground uppercase tracking-wide bg-muted/30">
+                                                            {row.label}
+                                                        </td>
+                                                        <td className="px-3 py-2 text-foreground">
+                                                            {row.value === null || row.value === undefined || String(row.value).trim() === "" ? "-" : String(row.value)}
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <div className="rounded-xl border border-border bg-background p-3 space-y-2">
+                                        <p className="text-xs font-bold text-muted-foreground uppercase">Owner Information</p>
+                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                                            <p className="text-muted-foreground"><span className="font-semibold text-foreground">Owner Type:</span> {project.owner_type || "-"}</p>
+                                            <p className="text-muted-foreground"><span className="font-semibold text-foreground">Owner Name:</span> {project.owner_name || "-"}</p>
+                                            <p className="text-muted-foreground"><span className="font-semibold text-foreground">Owner Contact No:</span> {project.owner_contact_no || "-"}</p>
+                                            <p className="text-muted-foreground"><span className="font-semibold text-foreground">ID / CR No:</span> {project.id_no || "-"}</p>
+                                            <p className="text-muted-foreground"><span className="font-semibold text-foreground">Email:</span> {project.email || "-"}</p>
+                                            <p className="text-muted-foreground"><span className="font-semibold text-foreground">National Address:</span> {project.national_address || "-"}</p>
+                                        </div>
+                                    </div>
+
+                                    {(Number(project.super_market || 0) > 0
+                                        || Number(project.fuel_station || 0) > 0
+                                        || Number(project.kiosks || 0) > 0
+                                        || Number(project.retail_shop || 0) > 0
+                                        || Number(project.drive_through || 0) > 0
+                                        || Number(project.super_market_area || 0) > 0
+                                        || Number(project.fuel_station_area || 0) > 0
+                                        || Number(project.kiosks_area || 0) > 0
+                                        || Number(project.retail_shop_area || 0) > 0
+                                        || Number(project.drive_through_area || 0) > 0) && (
+                                        <div className="rounded-xl border border-border bg-background p-3 space-y-3">
+                                            <p className="text-xs font-bold text-muted-foreground uppercase">Station Elements</p>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                                                {[
+                                                    { label: "Super Market", count: project.super_market, area: project.super_market_area },
+                                                    { label: "Fuel Station", count: project.fuel_station, area: project.fuel_station_area },
+                                                    { label: "Kiosks", count: project.kiosks, area: project.kiosks_area },
+                                                    { label: "Retail Shop", count: project.retail_shop, area: project.retail_shop_area },
+                                                    { label: "Drive Through", count: project.drive_through, area: project.drive_through_area },
+                                                ].map((e) => (
+                                                    <div key={e.label} className="flex items-center justify-between rounded-lg border border-border bg-muted/20 px-3 py-2">
+                                                        <span className="font-semibold text-foreground">{e.label}</span>
+                                                        <span className="text-muted-foreground">
+                                                            {Number(e.count || 0)} • {Number(e.area || 0)} sqm
+                                                        </span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {(project.design_file_url || project.documents_url || project.autocad_url) && (
+                                        <div className="rounded-xl border border-border bg-background p-3 space-y-3">
+                                            <p className="text-xs font-bold text-muted-foreground uppercase">Project Documents</p>
+                                            <div className="flex flex-wrap gap-2">
+                                                {project.design_file_url && (
+                                                    <a
+                                                        href={toFileHref(project.design_file_url) || undefined}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-lg text-sm font-semibold hover:bg-primary/15 transition-colors"
+                                                    >
+                                                        <Download className="w-4 h-4" /> Design File
+                                                    </a>
+                                                )}
+                                                {project.documents_url && (
+                                                    <a
+                                                        href={toFileHref(project.documents_url) || undefined}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-lg text-sm font-semibold hover:bg-primary/15 transition-colors"
+                                                    >
+                                                        <Download className="w-4 h-4" /> Documents
+                                                    </a>
+                                                )}
+                                                {project.autocad_url && (
+                                                    <a
+                                                        href={toFileHref(project.autocad_url) || undefined}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 text-primary rounded-lg text-sm font-semibold hover:bg-primary/15 transition-colors"
+                                                    >
+                                                        <Download className="w-4 h-4" /> AutoCAD (DWG)
+                                                    </a>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })()}
+
+                        <div className="space-y-3">
+                            <p className="text-xs font-bold text-muted-foreground uppercase">Department Inputs</p>
+                            {(() => {
+                                const details = feasibilityDetailsByTaskId[task.id];
+                                const reviews = Array.isArray(details?.reviews) ? details.reviews : [];
+                                const participants = Array.isArray(details?.participants) ? details.participants : [];
+                                const unlockedDepartments: string[] = Array.isArray(details?.task?.metadata?.feasibility?.unlockedDepartments)
+                                    ? details.task.metadata.feasibility.unlockedDepartments.map((d: any) => String(d || '').trim()).filter(Boolean)
+                                    : [];
+                                const myDept = participants.find((p: any) => p.user_id === user?.id)?.department as string | undefined;
+                                // Submitter should be read-only ONLY if they are not one of the 5 department participants.
+                                const isSubmitterView =
+                                    task.created_by === user?.id
+                                    && !(user?.role === "super_admin" || user?.role === "ceo")
+                                    && !myDept;
+                                const editable = !isSubmitterView && !!myDept && (task.status === "assigned" || task.status === "manager_submitted");
+
+                                const getReview = (dept: string) => reviews.find((r: any) => String(r.department) === dept) || null;
+                                const setField = (field: keyof FeasibilityInput, value: string) => {
+                                    setFeasibilityInputs((prev) => ({
+                                        ...prev,
+                                        [task.id]: { ...(prev[task.id] || { suggestions: "", budget: "", timeDuration: "", percentage: "", requirements: "" }), [field]: value },
+                                    }));
+                                };
+
+                                const initial = feasibilityInputs[task.id] || (() => {
+                                    const existing = myDept ? getReview(myDept) : null;
+                                    return {
+                                        suggestions: String(existing?.suggestions || ""),
+                                        budget: existing?.budget != null ? String(existing?.budget) : "",
+                                        timeDuration: String(existing?.time_duration || ""),
+                                        percentage: existing?.percentage != null ? String(existing?.percentage) : "",
+                                        requirements: String(existing?.requirements || ""),
+                                    };
+                                })();
+
+                                if (!feasibilityInputs[task.id] && editable) {
+                                    // Seed local state once for editable user
+                                    queueMicrotask(() => setFeasibilityInputs((prev) => ({ ...prev, [task.id]: initial })));
+                                }
+
+                                const deptOrder = ["project", "operation", "realestate", "investment", "finance"];
+                                return (
+                                    <div className="space-y-3">
+                                        {deptOrder.map((dept) => {
+                                            const review = getReview(dept);
+                                            const isMine = myDept === dept;
+                                            const isUnlocked = unlockedDepartments.includes(dept);
+                                            const canEditSection = isMine && editable && (!review?.submitted_at || isUnlocked);
+                                            return (
+                                                <div key={dept} className="rounded-lg border border-border bg-background p-3 space-y-2">
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <p className="text-sm font-semibold text-foreground">{dept.toUpperCase()}</p>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Manager: {(participants.find((p: any) => p.department === dept)?.username) || "Unassigned"}{" "}
+                                                            {review?.submitted_at ? "• Submitted" : "• Pending"}
+                                                        </p>
+                                                    </div>
+
+                                                    {user?.role === "super_admin" && (
+                                                        <div className="flex items-center justify-end">
+                                                            <button
+                                                                type="button"
+                                                                onClick={async () => {
+                                                                    try {
+                                                                        const { feasibilityAPI } = await import("@/services/api");
+                                                                        await feasibilityAPI.setDepartmentUnlock(task.id, { department: dept, unlock: !isUnlocked });
+                                                                        // Refresh details so the unlocked state updates for everyone
+                                                                        setFeasibilityDetailsByTaskId((prev) => {
+                                                                            const next = { ...prev };
+                                                                            delete next[task.id];
+                                                                            return next;
+                                                                        });
+                                                                        await loadFeasibilityDetails(task.id);
+                                                                        await loadData();
+                                                                    } catch (err: any) {
+                                                                        alert(String(err?.message || "Failed to update unlock"));
+                                                                    }
+                                                                }}
+                                                                className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${
+                                                                    isUnlocked
+                                                                        ? "border-amber-500/30 bg-amber-500/10 text-amber-700 hover:bg-amber-500/15"
+                                                                        : "border-border bg-background text-foreground hover:bg-muted/40"
+                                                                }`}
+                                                            >
+                                                                {isUnlocked ? "Lock section" : "Unlock for re-edit"}
+                                                            </button>
+                                                        </div>
+                                                    )}
+
+                                                    {!canEditSection ? (
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                                                            <p className="text-muted-foreground md:col-span-2"><span className="font-semibold text-foreground">Suggestions:</span> {review?.suggestions || "-"}</p>
+                                                            <p className="text-muted-foreground"><span className="font-semibold text-foreground">Budget:</span> {review?.budget ?? "-"}</p>
+                                                            <p className="text-muted-foreground"><span className="font-semibold text-foreground">Time duration:</span> {review?.time_duration || "-"}</p>
+                                                            <p className="text-muted-foreground"><span className="font-semibold text-foreground">Percentage:</span> {review?.percentage ?? "-"}</p>
+                                                            <p className="text-muted-foreground md:col-span-2"><span className="font-semibold text-foreground">Requirements:</span> {review?.requirements || "-"}</p>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                                            <textarea
+                                                                rows={2}
+                                                                value={feasibilityInputs[task.id]?.suggestions ?? initial.suggestions}
+                                                                onChange={(e) => setField("suggestions", e.target.value)}
+                                                                className="w-full px-3 py-2 border border-border rounded-lg bg-background md:col-span-2"
+                                                                placeholder="Suggestions"
+                                                            />
+                                                            <input
+                                                                type="number"
+                                                                value={feasibilityInputs[task.id]?.budget ?? initial.budget}
+                                                                onChange={(e) => setField("budget", e.target.value)}
+                                                                className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                                                placeholder="Budget"
+                                                            />
+                                                            <input
+                                                                type="text"
+                                                                value={feasibilityInputs[task.id]?.timeDuration ?? initial.timeDuration}
+                                                                onChange={(e) => setField("timeDuration", e.target.value)}
+                                                                className="w-full px-3 py-2 border border-border rounded-lg bg-background"
+                                                                placeholder="Time duration"
+                                                            />
+                                                            <div className="relative">
+                                                                <input
+                                                                    type="number"
+                                                                    min={0}
+                                                                    max={100}
+                                                                    value={feasibilityInputs[task.id]?.percentage ?? initial.percentage}
+                                                                    onChange={(e) => {
+                                                                        const raw = e.target.value;
+                                                                        if (!raw.trim()) {
+                                                                            setField("percentage", "");
+                                                                            return;
+                                                                        }
+                                                                        const parsed = Number.parseInt(raw, 10);
+                                                                        if (!Number.isFinite(parsed)) {
+                                                                            return;
+                                                                        }
+                                                                        const clamped = Math.max(0, Math.min(100, parsed));
+                                                                        setField("percentage", String(clamped));
+                                                                    }}
+                                                                    className="w-full px-3 py-2 pr-8 border border-border rounded-lg bg-background"
+                                                                    placeholder="Percentage"
+                                                                />
+                                                                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-semibold pointer-events-none">
+                                                                    %
+                                                                </span>
+                                                            </div>
+                                                            <input
+                                                                type="text"
+                                                                value={feasibilityInputs[task.id]?.requirements ?? initial.requirements}
+                                                                onChange={(e) => setField("requirements", e.target.value)}
+                                                                className="w-full px-3 py-2 border border-border rounded-lg bg-background md:col-span-2"
+                                                                placeholder="Requirements"
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={async () => {
+                                                                    try {
+                                                                        const { feasibilityAPI } = await import("@/services/api");
+                                                                        const payload = feasibilityInputs[task.id] || initial;
+                                                                        await feasibilityAPI.submitManagerReview(task.id, payload);
+                                                                        // Reload details after submit so everyone sees updated values
+                                                                        setFeasibilityDetailsByTaskId((prev) => {
+                                                                            const next = { ...prev };
+                                                                            delete next[task.id];
+                                                                            return next;
+                                                                        });
+                                                                        await loadFeasibilityDetails(task.id);
+                                                                        await loadData();
+                                                                    } catch (err: any) {
+                                                                        alert(String(err?.message || "Failed to submit feasibility review"));
+                                                                    }
+                                                                }}
+                                                                className="px-4 py-2 bg-success text-white rounded-lg text-sm font-semibold md:col-span-2"
+                                                            >
+                                                                <CheckCircle className="w-4 h-4 inline mr-1" /> Submit My Department Section
+                                                            </button>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                );
+                            })()}
+                        </div>
+                    </div>
+                )}
 
                 {expandedHistoryTaskId === task.id && taskHistory[task.id] && (
                     <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
@@ -1196,7 +1680,14 @@ export function TasksPage() {
                     </div>
                 )}
 
-                {!isGenericTask && !isContractTask && ((canManagerAct && canValidateAsManager) || canEmployeeAct || (mode === "manager" && task.review_status === "Validated" && task.status === "assigned")) && (
+                {!isGenericTask
+                    && !isContractTask
+                    && task.flow_type !== "feasibility"
+                    && (
+                        (canManagerAct && canValidateAsManager)
+                        || canEmployeeAct
+                        || (mode === "manager" && task.review_status === "Validated" && task.status === "assigned")
+                    ) && (
                     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                         {canManagerAct && canValidateAsManager && task.review_status !== "Validated" && (
                             <div className="space-y-2">
@@ -1218,7 +1709,7 @@ export function TasksPage() {
 
                         {mode === "manager" && task.workflow_path && task.status === "assigned" && (
                             <div className="space-y-2 lg:col-span-2">
-                                <p className="text-xs font-bold text-muted-foreground uppercase">Attachment For Super Admin (Branch Routing)</p>
+                                <p className="text-xs font-bold text-muted-foreground uppercase">Attachment For CEO (Branch Routing)</p>
                                 <input
                                     type="file"
                                     onChange={(e) => onTaskFileChange(task.id, e)}
@@ -1236,7 +1727,7 @@ export function TasksPage() {
                                     onClick={() => handleManagerSubmit(task.id)}
                                     className="px-4 py-2 bg-success text-white rounded-lg text-sm font-semibold"
                                 >
-                                    <Upload className="w-4 h-4 inline mr-1" /> Upload And Submit To Super Admin
+                                    <Upload className="w-4 h-4 inline mr-1" /> Upload And Submit To CEO
                                 </button>
                             </div>
                         )}
@@ -1357,14 +1848,14 @@ export function TasksPage() {
                             value={managerComment[task.id] || ""}
                             onChange={(e) => setManagerComment((prev) => ({ ...prev, [task.id]: e.target.value }))}
                             className="w-full px-3 py-2 border border-border rounded-lg bg-background"
-                            placeholder="Add validation notes before sending to super admin"
+                            placeholder="Add validation notes before sending to CEO"
                         />
                         <button
                             type="button"
                             onClick={() => handleManagerValidate(task.id)}
                             className="px-4 py-2 bg-success text-white rounded-lg text-sm font-semibold"
                         >
-                            <CheckCircle className="w-4 h-4 inline mr-1" /> Validate And Send To Super Admin
+                            <CheckCircle className="w-4 h-4 inline mr-1" /> Validate And Send To CEO
                         </button>
                     </div>
                 )}
@@ -1386,7 +1877,7 @@ export function TasksPage() {
                                 </p>
                             </div>
                         )}
-                        <p className="text-sm font-semibold text-foreground"><ShieldCheck className="w-4 h-4 inline mr-1" /> Super Admin Decision</p>
+                        <p className="text-sm font-semibold text-foreground"><ShieldCheck className="w-4 h-4 inline mr-1" /> CEO Decision</p>
                         <textarea
                             rows={2}
                             value={reviewComment[task.id] || ""}
@@ -1492,7 +1983,7 @@ export function TasksPage() {
             <div className="mb-8">
                 <h1 className="text-4xl font-black text-foreground mb-2 tracking-tight">Workflow Tasks</h1>
                 <p className="text-muted-foreground font-medium">
-                    Role-specific workflow queues for managers, employees, and super admin
+                    Role-specific workflow queues for managers, employees, and CEO
                 </p>
             </div>
 
@@ -1535,7 +2026,7 @@ export function TasksPage() {
                                 onClick={() => selectTaskCard("super-admin")}
                                 className={`bg-card/80 rounded-xl border p-5 text-left transition-all ${selectedTaskCard === "super-admin" ? "border-primary ring-2 ring-primary/20 shadow-lg" : "border-border hover:border-primary/40 hover:shadow-md"}`}
                             >
-                                <p className="text-sm text-muted-foreground">Super Admin Review</p>
+                                <p className="text-sm text-muted-foreground">CEO Review</p>
                                 <p className="text-3xl font-black text-primary">{stats.superAdminReview}</p>
                             </button>
                         )}
@@ -1598,6 +2089,44 @@ export function TasksPage() {
                                 Completed Tasks
                             </button>
                         </div>
+
+                        {selectedTaskCard === "my-forms" && (
+                            <div className="flex flex-wrap gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setSubmittedType("all")}
+                                    className={`px-4 py-2 rounded-lg border text-sm font-semibold ${
+                                        submittedType === "all"
+                                            ? "bg-info text-white border-info"
+                                            : "bg-background border-border text-foreground"
+                                    }`}
+                                >
+                                    All
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setSubmittedType("request")}
+                                    className={`px-4 py-2 rounded-lg border text-sm font-semibold ${
+                                        submittedType === "request"
+                                            ? "bg-info text-white border-info"
+                                            : "bg-background border-border text-foreground"
+                                    }`}
+                                >
+                                    Requests
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setSubmittedType("ceo_contact")}
+                                    className={`px-4 py-2 rounded-lg border text-sm font-semibold ${
+                                        submittedType === "ceo_contact"
+                                            ? "bg-info text-white border-info"
+                                            : "bg-background border-border text-foreground"
+                                    }`}
+                                >
+                                    CEO Complaints
+                                </button>
+                            </div>
+                        )}
                     </div>
 
                     <div className="space-y-6">

@@ -13,6 +13,134 @@ import { isStationTypeFilterValue, STATION_TYPE_QUERY_KEY } from "../constants/s
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 const STATIONS_PAGE_SIZE = 200;
+const PROJECTS_PAGE_SIZE = 200;
+const TASKS_PAGE_SIZE = 200;
+const ACTIVE_BRANCH_STATUSES = new Set([
+    'manager_queue',
+    'assigned',
+    'employee_submitted',
+    'manager_submitted',
+    'under_super_admin_review',
+] as const);
+
+type InvestmentProjectVisibility = {
+    id: string;
+    project_code: string | null;
+    station_code: string | null;
+    workflow_path: string | null;
+    review_status: string | null;
+};
+
+type WorkflowTaskVisibility = {
+    investment_project_id: string | null;
+    flow_type: string | null;
+    status: string | null;
+};
+
+const fetchAllInvestmentProjectsForVisibility = async (token: string): Promise<InvestmentProjectVisibility[]> => {
+    const allProjects: InvestmentProjectVisibility[] = [];
+    let offset = 0;
+
+    while (true) {
+        const params = new URLSearchParams({
+            limit: String(PROJECTS_PAGE_SIZE),
+            offset: String(offset),
+        });
+        const response = await fetch(`${API_BASE_URL}/investment-projects?${params.toString()}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(response.statusText || 'Failed to fetch projects');
+        }
+
+        const result = await response.json();
+        const pageItems = Array.isArray(result?.data) ? (result.data as InvestmentProjectVisibility[]) : [];
+        allProjects.push(...pageItems);
+
+        if (pageItems.length < PROJECTS_PAGE_SIZE) {
+            break;
+        }
+
+        offset += PROJECTS_PAGE_SIZE;
+    }
+
+    return allProjects;
+};
+
+const fetchAllWorkflowTasksForVisibility = async (token: string): Promise<WorkflowTaskVisibility[]> => {
+    const allTasks: WorkflowTaskVisibility[] = [];
+    let offset = 0;
+
+    while (true) {
+        const response = await fetch(`${API_BASE_URL}/tasks?limit=${TASKS_PAGE_SIZE}&offset=${offset}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(response.statusText || 'Failed to fetch workflow tasks');
+        }
+
+        const result = await response.json();
+        const pageItems = Array.isArray(result?.data) ? (result.data as WorkflowTaskVisibility[]) : [];
+        allTasks.push(...pageItems);
+
+        if (pageItems.length < TASKS_PAGE_SIZE) {
+            break;
+        }
+
+        offset += TASKS_PAGE_SIZE;
+    }
+
+    return allTasks;
+};
+
+const computeHiddenStationCodes = (
+    projects: InvestmentProjectVisibility[],
+    tasks: WorkflowTaskVisibility[],
+): Set<string> => {
+    const hidden = new Set<string>();
+    const projectJoinCodeById = new Map<string, string>();
+
+    for (const project of projects) {
+        const workflowPath = String(project.workflow_path || '').trim().toLowerCase();
+        const joinCode = String(project.station_code || project.project_code || '').trim();
+        if (joinCode) {
+            projectJoinCodeById.set(project.id, joinCode);
+        }
+
+        // Hide if explicitly routed to contract/doc and not yet approved.
+        if (workflowPath === 'contract' || workflowPath === 'documents') {
+            const reviewStatus = String(project.review_status || '').trim();
+            if (reviewStatus !== 'Approved' && joinCode) {
+                hidden.add(joinCode);
+            }
+        }
+    }
+
+    // Also hide if any active contract/doc workflow task exists.
+    for (const task of tasks) {
+        const projectId = String(task.investment_project_id || '').trim();
+        if (!projectId) continue;
+
+        const flowType = String(task.flow_type || '').trim().toLowerCase();
+        if (!(flowType === 'contract' || flowType === 'documents')) continue;
+
+        const status = String(task.status || '').trim();
+        if (!ACTIVE_BRANCH_STATUSES.has(status as any)) continue;
+
+        const joinCode = projectJoinCodeById.get(projectId);
+        if (joinCode) hidden.add(joinCode);
+    }
+
+    return hidden;
+};
 
 const bucketLabels: Record<string, string> = {
     'total-stations': 'Total Stations',
@@ -71,6 +199,12 @@ export function AllStationsListPage() {
         }
 
         try {
+            const [projects, tasks] = await Promise.all([
+                fetchAllInvestmentProjectsForVisibility(token),
+                fetchAllWorkflowTasksForVisibility(token),
+            ]);
+            const hiddenStationCodes = computeHiddenStationCodes(projects, tasks);
+
             if (activeBucket) {
                 const bucketParams = new URLSearchParams({ bucket: activeBucket });
                 if (selectedStationType) {
@@ -91,6 +225,7 @@ export function AllStationsListPage() {
                 const result = await response.json();
                 const mappedStations = (result.data || [])
                     .filter((s: any) => !s?.review_status || String(s.review_status).trim() === 'Approved')
+                    .filter((s: any) => !hiddenStationCodes.has(String(s?.station_code || s?.stationCode || s?.display_code || '').trim()))
                     .map((s: any) => ({
                     id: s.id || s.station_code,
                     station_code: s.station_code,
@@ -139,6 +274,7 @@ export function AllStationsListPage() {
 
                 const mappedStations = allStations
                     .filter((s: any) => !s?.review_status || String(s.review_status).trim() === 'Approved')
+                    .filter((s: any) => !hiddenStationCodes.has(String(s?.station_code || '').trim()))
                     .map((s: any) => ({
                     id: s.id,
                     station_code: s.station_code,

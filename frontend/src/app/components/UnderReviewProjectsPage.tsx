@@ -324,14 +324,24 @@ export function UnderReviewProjectsPage() {
         );
     }, [workflowTasks]);
 
+    const hasNonFeasibilityWorkflow = useMemo(() => {
+        const map = new Map<string, boolean>();
+        workflowTasks.forEach((task) => {
+            if (!task.investment_project_id) return;
+            const projectId = task.investment_project_id;
+            const isNonFeasibility = task.flow_type !== 'feasibility';
+            if (!isNonFeasibility) return;
+            map.set(projectId, true);
+        });
+        return map;
+    }, [workflowTasks]);
+
     const matchesReviewBucket = (project: InvestmentProject, bucket: ReviewBucketFilter) => {
         switch (bucket) {
             case "pending":
                 return project.review_status === "Pending Review";
             case "validated":
                 return project.review_status === "Validated";
-            case "approved":
-                return project.review_status === "Approved";
             case "rejected":
                 return project.review_status === "Rejected";
             case "contracted":
@@ -355,12 +365,16 @@ export function UnderReviewProjectsPage() {
     };
 
     const filteredProjects = useMemo(() => {
-        return projects.filter((project) => matchesReviewBucket(project, selectedReviewBucket));
-    }, [projects, selectedReviewBucket]);
+        return projects
+            .filter((project) => project.review_status !== "Approved")
+            // Hide feasibility submissions from Under-Review until CEO approval starts standard workflow
+            // (CEO approval creates the initial non-feasibility workflow task).
+            .filter((project) => project.request_type !== "Feasibility Study" || hasNonFeasibilityWorkflow.get(project.id) === true)
+            .filter((project) => matchesReviewBucket(project, selectedReviewBucket));
+    }, [projects, selectedReviewBucket, hasNonFeasibilityWorkflow]);
 
     const fallbackPending = projects.filter((project) => project.review_status === 'Pending Review').length;
     const fallbackValidated = projects.filter((project) => project.review_status === 'Validated').length;
-    const fallbackApproved = projects.filter((project) => project.review_status === 'Approved').length;
     const fallbackRejected = projects.filter((project) => project.review_status === 'Rejected').length;
     const fallbackContracted = projects.filter((project) => matchesReviewBucket(project, "contracted")).length;
     const fallbackDocumented = projects.filter((project) => matchesReviewBucket(project, "documented")).length;
@@ -375,7 +389,6 @@ export function UnderReviewProjectsPage() {
         { title: 'Total Projects', bucket: 'all', value: isLoading ? '...' : (workflowSummary.totalProjects || projects.length) },
         { title: 'Pending', bucket: 'pending', value: isLoading ? '...' : (workflowSummary.pending || fallbackPending) },
         { title: 'Validated', bucket: 'validated', value: isLoading ? '...' : (workflowSummary.validated || fallbackValidated) },
-        { title: 'Approved', bucket: 'approved', value: isLoading ? '...' : (workflowSummary.approved || fallbackApproved) },
         { title: 'Contracted', bucket: 'contracted', value: isLoading ? '...' : (workflowSummary.contracted || fallbackContracted) },
         { title: 'Document', bucket: 'documented', value: isLoading ? '...' : (workflowSummary.documented || fallbackDocumented) },
         { title: 'Rejected', bucket: 'rejected', value: isLoading ? '...' : (workflowSummary.rejected || fallbackRejected) },
