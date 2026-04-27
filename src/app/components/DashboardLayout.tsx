@@ -1,0 +1,285 @@
+﻿import { useState, useEffect } from "react";
+import { Link, Outlet, useLocation } from "react-router-dom";
+import {
+  FileText,
+  Menu,
+  X,
+  Activity,
+  LogOut,
+  MessageCircle,
+  PlusCircle,
+  ClipboardList,
+  Inbox,
+  Clock,
+} from "lucide-react";
+import { BackToDashboardButton } from "./BackToDashboardButton";
+import { LanguageSwitcher } from "./LanguageSwitcher";
+import { BrandName } from "./BrandName";
+import { ChatWidget } from "./ChatWidget";
+import { useStation } from "../context/StationContext";
+import { useTranslation } from "../../utils/translations";
+import { useStationFormAutofill } from "../hooks/useStationFormAutofill";
+import logo from "../../assets/logo.png";
+
+interface NavItem {
+  title: string;
+  titleKey?: "analytics" | "tasks" | "reports" | "contactCEO";
+  path: string;
+  icon: React.ReactNode;
+}
+
+const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+
+export function DashboardLayout() {
+  // Start open on desktop (>= 1024px), closed on mobile
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return window.innerWidth >= 1024;
+    }
+    return false;
+  });
+  const [chatOpen, setChatOpen] = useState(false);
+  const [taskCount, setTaskCount] = useState(0);
+  const location = useLocation();
+  const { t, lang } = useTranslation();
+  const isRTL = lang === 'ar';
+
+  const { selectedStation } = useStation();
+  const stationName = selectedStation?.name || "Location N101";
+  useStationFormAutofill({
+    pathname: location.pathname,
+    stationCode: selectedStation?.station_code,
+  });
+
+  // Update sidebar state on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setSidebarOpen(true);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token");
+    if (!token) {
+      setTaskCount(0);
+      return;
+    }
+
+    let isMounted = true;
+    const fetchTaskCount = async () => {
+      try {
+        const response = await fetch(`${API_URL}/tasks`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!response.ok) return;
+
+        const result = await response.json();
+        if (isMounted) {
+          setTaskCount(Array.isArray(result?.data) ? result.data.length : 0);
+        }
+      } catch {
+        if (isMounted) setTaskCount(0);
+      }
+    };
+
+    fetchTaskCount();
+
+    const onFocus = () => {
+      fetchTaskCount();
+    };
+    window.addEventListener("focus", onFocus);
+
+    return () => {
+      isMounted = false;
+      window.removeEventListener("focus", onFocus);
+    };
+  }, []);
+
+  const navigation: NavItem[] = [
+    { title: stationName, path: "/dashboard", icon: <img src={logo} alt="" className="w-5 h-5 object-contain brightness-0 invert" /> },
+    { title: "", titleKey: "analytics", path: "/dashboard/executive-analytics", icon: <Activity className="w-5 h-5" /> },
+    { title: "", titleKey: "tasks", path: "/dashboard/tasks", icon: <ClipboardList className="w-5 h-5" /> },
+    { title: "", titleKey: "reports", path: "/dashboard/reports", icon: <FileText className="w-5 h-5" /> },
+    { title: "Requests", path: "/dashboard/requests", icon: <Inbox className="w-5 h-5" /> },
+    { title: "Under Review Projects", path: "/dashboard/under-review", icon: <Clock className="w-5 h-5" /> },
+    { title: "", titleKey: "contactCEO", path: "/dashboard/contact-ceo", icon: <MessageCircle className="w-5 h-5" /> },
+  ];
+
+  const handleChatClick = () => {
+    setChatOpen(!chatOpen);
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-muted via-background to-muted flex relative overflow-hidden">
+      {/* Animated mesh gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-secondary/5 pointer-events-none"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.05),transparent_50%)] pointer-events-none"></div>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,hsl(var(--secondary)/0.05),transparent_50%)] pointer-events-none"></div>
+
+      {/* Content wrapper */}
+      <div className="relative z-0 flex w-full">
+        {/* Sidebar */}
+        <aside
+          className={`
+            ${sidebarOpen ? "w-72 lg:w-72" : "w-72 lg:w-16"}
+            ${sidebarOpen ? "translate-x-0" : `${isRTL ? 'translate-x-full' : '-translate-x-full'} lg:translate-x-0`}
+            transition-all duration-300 sidebar-gradient text-white flex flex-col 
+            fixed inset-y-0
+            ${isRTL ? 'right-0' : 'left-0'}
+            z-50 lg:z-10 shadow-2xl backdrop-blur-xl ${isRTL ? 'lg:rounded-l-[2.5rem]' : 'lg:rounded-r-[2.5rem]'} overflow-hidden hover:shadow-[0_0_80px_hsl(var(--primary)/0.3)]
+          `}
+          style={{
+            boxShadow: '0 0 60px hsl(var(--primary) / 0.2), 0 0 120px hsl(var(--secondary) / 0.1)'
+          }}
+        >
+          {/* Logo & Toggle */}
+          <div className="p-4 flex items-center justify-between border-b border-white/20 backdrop-blur-sm">
+            {sidebarOpen ? (
+              <div className="flex items-center gap-2">
+                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center p-1.5 shadow-lg">
+                  <img src={logo} alt="Darb Logo" className="w-full h-full object-contain" />
+                </div>
+                <div>
+                  <h1 className="font-bold text-base lg:text-lg text-white drop-shadow-lg"><BrandName /></h1>
+                  <p className="text-xs text-white/80 truncate max-w-[150px]">{stationName}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center p-1.5 shadow-lg">
+                <img src={logo} alt="Darb Logo" className="w-full h-full object-contain" />
+              </div>
+            )}
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors backdrop-blur-sm"
+            >
+              {sidebarOpen ? (
+                <X className="w-5 h-5 text-white" />
+              ) : (
+                <Menu className="w-5 h-5 text-white" />
+              )}
+            </button>
+          </div>
+
+          {/* Navigation */}
+          <nav className={`flex-1 overflow-y-auto ${sidebarOpen ? 'p-4' : 'p-2'} space-y-2`}>
+            {navigation.map((item) => (
+              <Link
+                key={item.path}
+                to={item.path}
+                onClick={() => window.innerWidth < 1024 && setSidebarOpen(false)}
+                className={`flex items-center ${sidebarOpen ? 'gap-3 px-4' : 'justify-center px-2'} py-3 rounded-lg transition-all duration-200 ${location.pathname === item.path
+                  ? "bg-primary text-white shadow-lg"
+                  : "text-white/80 hover:bg-white/15 hover:text-white"
+                  } relative`}
+                title={!sidebarOpen ? (item.titleKey ? t(item.titleKey) : item.title) : undefined}
+              >
+                {item.icon}
+                {sidebarOpen && (
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-sm font-medium truncate">{item.titleKey ? t(item.titleKey) : item.title}</span>
+                    {item.titleKey === "tasks" && taskCount > 0 && (
+                      <span className="min-w-5 h-5 px-1.5 bg-info text-info-foreground rounded-full flex items-center justify-center text-[10px] font-bold leading-none shadow-sm">
+                        {taskCount > 99 ? "99+" : taskCount}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </Link>
+            ))}
+            <button
+              onClick={handleChatClick}
+              className={`w-full flex items-center ${sidebarOpen ? 'gap-3 px-4' : 'justify-center px-2'} py-3 rounded-lg transition-all duration-200 text-white/80 hover:bg-white/15 hover:text-white relative`}
+              title={!sidebarOpen ? t("chat") : undefined}
+            >
+              <MessageCircle className="w-5 h-5" />
+              {sidebarOpen && (
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-sm font-medium truncate">{t("chat")}</span>
+                  <span className="min-w-5 h-5 px-1.5 bg-info text-info-foreground rounded-full flex items-center justify-center text-[10px] font-bold leading-none shadow-sm">
+                    3
+                  </span>
+                </div>
+              )}
+            </button>
+          </nav>
+
+          {/* Logout Section */}
+          <div className={`${sidebarOpen ? 'p-4' : 'p-2'} border-t border-white/20`}>
+            <Link
+              to="/login"
+              className={`flex items-center ${sidebarOpen ? 'gap-3 px-4 mx-2' : 'justify-center px-2'} py-3 rounded-lg text-white/80 hover:bg-white/15 hover:text-white transition-all duration-200`}
+              title={!sidebarOpen ? t("logout") : undefined}
+            >
+              <LogOut className="w-5 h-5" />
+              {sidebarOpen && <span className="text-sm font-medium">{t("logout")}</span>}
+            </Link>
+          </div>
+        </aside>
+
+        {/* Mobile overlay */}
+        {sidebarOpen && (
+          <div
+            className={`fixed inset-y-0 ${isRTL ? 'right-72 left-0' : 'left-72 right-0'} bg-black/50 z-40 lg:hidden`}
+            onClick={() => setSidebarOpen(false)}
+          ></div>
+        )}
+
+        {/* Main Content */}
+        <main
+          className={`flex-1 ${isRTL
+            ? (sidebarOpen ? "lg:mr-72" : "lg:mr-16")
+            : (sidebarOpen ? "lg:ml-72" : "lg:ml-16")
+            } transition-all duration-300`}
+        >
+          {/* Mobile Header with Hamburger */}
+          <div className="lg:hidden bg-card/80 backdrop-blur-xl mx-2 my-2 rounded-lg border border-border px-2 sm:px-4 py-2 sm:py-3 sticky top-2 z-10 shadow-lg flex items-center justify-between gap-2">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-1.5 sm:p-2 hover:bg-muted rounded-lg transition-colors flex-shrink-0"
+            >
+              <Menu className="w-5 h-5" />
+            </button>
+            <h2 className="text-xs sm:text-sm font-bold truncate flex-1 min-w-0">{stationName}</h2>
+            <LanguageSwitcher />
+          </div>
+
+          {/* Desktop Header */}
+          <header className="hidden lg:flex bg-card/80 backdrop-blur-xl m-4 rounded-2xl border border-border px-4 md:px-6 lg:px-8 py-4 sticky top-4 z-10 shadow-lg shadow-primary/10 items-center justify-between flex-wrap gap-4">
+            <BackToDashboardButton />
+            <div className="flex items-center gap-2 md:gap-4">
+              <Link
+                to="/dashboard/station-information"
+                className="flex items-center gap-2 px-3 md:px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-xs md:text-sm"
+              >
+                <PlusCircle className="w-4 h-4" />
+                <span className="hidden sm:inline">Add New Project</span>
+                <span className="sm:hidden">Add</span>
+              </Link>
+              <LanguageSwitcher />
+            </div>
+          </header>
+
+          {/* Page Content */}
+          <div className="p-2 sm:p-4 md:p-6">
+            <Outlet />
+          </div>
+        </main>
+      </div>
+
+      {/* Chat Widget */}
+      <ChatWidget isOpen={chatOpen} onClose={() => setChatOpen(false)} />
+    </div>
+  );
+}
+
+
+
+
+
+

@@ -1,0 +1,294 @@
+import { useEffect, useState } from "react";
+import { Save, List, Eye, FileCheck, Send } from "lucide-react";
+import { FormRecordsList } from "../FormRecordsList";
+import { useStation } from "../../context/StationContext";
+import { useResolvedStationCode } from "../../hooks/useResolvedStationCode";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
+
+function LicenseField({ label, name, value, type = "text", onChange, disabled }: {
+  label: string; name: string; value: string; type?: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void; disabled: boolean;
+}) {
+  return (
+    <div>
+      <label className="block text-sm font-semibold text-muted-foreground mb-1">{label}</label>
+      {name === "licenseStatus" ? (
+        <select name={name} value={value} onChange={onChange} disabled={disabled}
+          className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground">
+          <option value="">Select Status</option>
+          <option value="active">Active</option>
+          <option value="expired">Expired</option>
+          <option value="pending">Pending Renewal</option>
+        </select>
+      ) : (
+        <input type={type} name={name} value={value} onChange={onChange} disabled={disabled}
+          className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground" />
+      )}
+    </div>
+  );
+}
+
+export function EnvironmentalLicenseForm() {
+  const { accessMode } = useStation();
+  const resolvedStationCode = useResolvedStationCode();
+  const isReadOnly = accessMode === 'view-only';
+  const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
+  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [draftId, setDraftId] = useState<string | null>(null);
+
+  const [formData, setFormData] = useState({
+    issuanceNo: isReadOnly ? "ENV-2024-88029" : "",
+    issuanceDate: isReadOnly ? "2024-05-10" : "",
+    licenseExpiryDate: isReadOnly ? "2025-05-10" : "",
+    numberOfDays: isReadOnly ? "365" : "",
+    licenseStatus: isReadOnly ? "active" : "",
+    facilityName: isReadOnly ? "Location N101 Main Station" : "",
+    ownerName: isReadOnly ? "Darb Al Sultan Petroleum" : "",
+    address: isReadOnly ? "King Fahd Road, Al-Malqa, Riyadh" : "",
+    facilityNo: isReadOnly ? "FAC-7721" : "",
+    geographicLocation: isReadOnly ? "24.8210° N, 46.6120° E" : "",
+    commercialRegister: isReadOnly ? "1010293848" : "",
+    workArea: isReadOnly ? "Fuel Station Operations & Retail" : "",
+    businessType: isReadOnly ? "Industrial" : "",
+    orderNumber: isReadOnly ? "ORD-9921" : "",
+    orderDate: isReadOnly ? "2024-04-15" : "",
+    phone: isReadOnly ? "+966 11 293 8484" : "",
+    fax: isReadOnly ? "+966 11 293 8485" : "",
+    mailBox: isReadOnly ? "P.O. Box 8821" : "",
+    boxCode: isReadOnly ? "11492" : "",
+    city: isReadOnly ? "Riyadh" : "",
+    issued: isReadOnly ? "NCEC" : "",
+    stationCode: isReadOnly ? "N101" : "",
+    officeCode: isReadOnly ? "OFF-201" : "",
+  });
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  useEffect(() => {
+    if (!resolvedStationCode || isReadOnly) return;
+    setFormData((prev) => ({ ...prev, stationCode: prev.stationCode || resolvedStationCode }));
+  }, [resolvedStationCode, isReadOnly]);
+
+  useEffect(() => {
+    const loadLatestSaved = async () => {
+      try {
+        const token = localStorage.getItem("auth_token");
+        if (!token || isReadOnly) return;
+
+        const stationCode = formData.stationCode || resolvedStationCode || "";
+        const params = new URLSearchParams();
+        if (stationCode) params.set("stationCode", stationCode);
+
+        const response = await fetch(`${API_BASE_URL}/government-licenses/environmental/latest-saved?${params.toString()}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const result = await response.json();
+        const saved = result?.data;
+        if (!response.ok || !saved?.id) return;
+
+        setDraftId(saved.id);
+        setFormData({
+          issuanceNo: saved.issuance_no || "",
+          issuanceDate: saved.issuance_date ? String(saved.issuance_date).slice(0, 10) : "",
+          licenseExpiryDate: saved.license_expiry_date ? String(saved.license_expiry_date).slice(0, 10) : "",
+          numberOfDays: saved.number_of_days != null ? String(saved.number_of_days) : "",
+          licenseStatus: saved.license_status || "",
+          facilityName: saved.facility_name || "",
+          ownerName: saved.owner_name || "",
+          address: saved.address || "",
+          facilityNo: saved.facility_no || "",
+          geographicLocation: saved.geographic_location || "",
+          commercialRegister: saved.commercial_register || "",
+          workArea: saved.work_area || "",
+          businessType: saved.business_type || "",
+          orderNumber: saved.order_number || "",
+          orderDate: saved.order_date ? String(saved.order_date).slice(0, 10) : "",
+          phone: saved.phone || "",
+          fax: saved.fax || "",
+          mailBox: saved.mail_box || "",
+          boxCode: saved.box_code || "",
+          city: saved.city || "",
+          issued: saved.issued || "",
+          stationCode: saved.station_code || stationCode,
+          officeCode: saved.office_code || "",
+        });
+      } catch (error) {
+        console.error("Error loading latest saved environmental license:", error);
+      }
+    };
+
+    void loadLatestSaved();
+  }, [resolvedStationCode, isReadOnly]);
+
+  const persistEnvironmentalLicense = async (mode: 'save' | 'submit') => {
+    const token = localStorage.getItem("auth_token");
+    const stationCode = formData.stationCode || resolvedStationCode;
+
+    if (!token) {
+      alert("Authentication required. Please login again.");
+      return;
+    }
+
+    if (!stationCode) {
+      alert("Station Code is required.");
+      return;
+    }
+
+    if (mode === 'submit') setSubmitting(true); else setLoading(true);
+
+    try {
+      const payload = {
+        ...formData,
+        stationCode,
+        submit: mode === 'submit',
+      };
+
+      const response = draftId
+        ? await fetch(`${API_BASE_URL}/government-licenses/environmental/${draftId}`, {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          })
+        : await fetch(`${API_BASE_URL}/government-licenses/environmental`, {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+          });
+
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result?.error || `Failed to ${mode} Environmental license`);
+      }
+
+      if (result?.data?.id) {
+        setDraftId(result.data.id);
+      }
+
+      if (mode === 'submit') {
+        alert("Environmental License submitted successfully!");
+        setDraftId(null);
+      } else {
+        alert("Environmental License saved successfully! You can continue later.");
+      }
+    } catch (error: any) {
+      alert(error?.message || `Failed to ${mode} Environmental License`);
+    } finally {
+      setLoading(false);
+      setSubmitting(false);
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await persistEnvironmentalLicense('save');
+  };
+
+  const mockRecords = [
+    { "Issuance No": "ENV-2024-88", "Facility Name": "Darb Riyadh", "City": "Riyadh", "Expiry Date": "2025-06-30", "Status": "Active" },
+    { "Issuance No": "ENV-2024-92", "Facility Name": "Jeddah Station", "City": "Jeddah", "Expiry Date": "2025-08-15", "Status": "Active" },
+  ];
+
+  const fields: { label: string; name: string; type?: string }[] = [
+    { label: "Issuance No", name: "issuanceNo" },
+    { label: "Issuance Date", name: "issuanceDate", type: "date" },
+    { label: "License Expiry Date", name: "licenseExpiryDate", type: "date" },
+    { label: "Number of Days", name: "numberOfDays", type: "number" },
+    { label: "License Status", name: "licenseStatus" },
+    { label: "Facility Name", name: "facilityName" },
+    { label: "Owner Name", name: "ownerName" },
+    { label: "Address", name: "address" },
+    { label: "Facility No", name: "facilityNo" },
+    { label: "Geographic Location", name: "geographicLocation" },
+    { label: "Commercial Register", name: "commercialRegister" },
+    { label: "Work Area", name: "workArea" },
+    { label: "Business Type", name: "businessType" },
+    { label: "Order Number", name: "orderNumber" },
+    { label: "Order Date", name: "orderDate", type: "date" },
+    { label: "Phone", name: "phone" },
+    { label: "FAX", name: "fax" },
+    { label: "Mail Box", name: "mailBox" },
+    { label: "Box Code", name: "boxCode" },
+    { label: "City", name: "city" },
+    { label: "Issued", name: "issued" },
+    { label: "Station Code", name: "stationCode" },
+    { label: "Office Code", name: "officeCode" },
+  ];
+
+  return (
+    <div className="p-8">
+      <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground">Environmental License</h1>
+          <p className="text-muted-foreground mt-2">Manage environmental compliance and impact assessments</p>
+        </div>
+        {isReadOnly ? (
+          <div className="flex items-center gap-2 px-4 py-2 bg-info/5 text-info rounded-lg border border-info/20">
+            <Eye className="w-4 h-4" /><span className="text-sm font-semibold">View Only Mode</span>
+          </div>
+        ) : (
+          <div className="flex bg-muted p-1 rounded-xl w-fit">
+            <button onClick={() => setViewMode('form')}
+              className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'form' ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+              <FileCheck className="w-4 h-4" /><span>New Entry</span>
+            </button>
+            <button onClick={() => setViewMode('records')}
+              className={`flex items-center gap-2 px-6 py-2 rounded-lg font-semibold transition-all ${viewMode === 'records' ? 'bg-card text-primary shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>
+              <List className="w-4 h-4" /><span>View Records</span>
+            </button>
+          </div>
+        )}
+      </div>
+
+      {viewMode === 'form' ? (
+        <form onSubmit={handleSubmit}
+          className="bg-card rounded-xl shadow-xl p-8 card-glow border-t-4 border-primary animate-in fade-in slide-in-from-bottom-4 duration-500">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            {fields.map(f => (
+              <LicenseField key={f.name} label={f.label} name={f.name} value={(formData as any)[f.name]}
+                type={f.type} onChange={handleChange} disabled={isReadOnly} />
+            ))}
+          </div>
+          {!isReadOnly && (
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => void persistEnvironmentalLicense('save')}
+                disabled={loading || submitting}
+                className="px-6 py-3 rounded-lg border border-border text-foreground hover:bg-muted flex items-center gap-2 disabled:opacity-50"
+              >
+                <Save className="w-5 h-5" />
+                {loading ? "Saving..." : "Save"}
+              </button>
+              <button
+                type="button"
+                onClick={() => void persistEnvironmentalLicense('submit')}
+                disabled={loading || submitting}
+                className="btn-primary px-6 py-3 rounded-lg flex items-center gap-2 transition-all shadow-lg hover:shadow-primary/20 disabled:opacity-50"
+              >
+                <Send className="w-5 h-5" />
+                {submitting ? "Submitting..." : "Submit"}
+              </button>
+            </div>
+          )}
+        </form>
+      ) : (
+        <FormRecordsList
+          title="Environmental Licenses"
+          columns={["Issuance No", "Facility Name", "City", "Expiry Date", "Status"]}
+          records={mockRecords}
+        />
+      )}
+    </div>
+  );
+}

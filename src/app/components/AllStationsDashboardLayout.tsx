@@ -1,0 +1,506 @@
+﻿import { useState, useEffect } from "react";
+import { Link, Outlet, useLocation } from "react-router-dom";
+import {
+    LayoutDashboard,
+    Activity,
+    Menu,
+    X,
+    LogOut,
+    MessageCircle,
+    FileText,
+    PlusCircle,
+    ClipboardList,
+    Upload,
+    Inbox,
+    Clock,
+    Users,
+    Building2,
+} from "lucide-react";
+import { BackToDashboardButton } from "./BackToDashboardButton";
+import { LanguageSwitcher } from "./LanguageSwitcher";
+import { BrandName } from "./BrandName";
+import { ChatWidget } from "./ChatWidget";
+import { useTranslation } from "../../utils/translations";
+import { useAuth } from "@/context/AuthContext";
+import { getRoleLabel } from "@/services/api";
+import {
+    getOrInitLastSeenAt,
+    markLastSeenNow,
+    TASKS_LAST_SEEN_SUFFIX,
+    toTimestamp,
+    UNDER_REVIEW_LAST_SEEN_SUFFIX,
+} from "@/utils/sidebarBadgeStorage";
+import { useStation } from "../context/StationContext";
+import { useStationFormAutofill } from "../hooks/useStationFormAutofill";
+import logo from "../../assets/logo.png";
+import * as XLSX from 'xlsx';
+import axios from "axios";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
+
+interface NavItem {
+    titleKey: "dashboard" | "analytics" | "stations" | "departments" | "tasks" | "reports" | "contactCEO" | "requests" | "underReview" | "users" | "investmentDept" | "franchiseDept";
+    path: string;
+    icon: React.ReactNode;
+}
+
+export function AllStationsDashboardLayout() {
+    // Start open on desktop (>= 1024px), closed on mobile
+    const [sidebarOpen, setSidebarOpen] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return window.innerWidth >= 1024;
+        }
+        return false;
+    });
+    const [chatOpen, setChatOpen] = useState(false);
+    const [taskCount, setTaskCount] = useState(0);
+    const [underReviewCount, setUnderReviewCount] = useState(0);
+    const [importLoading, setImportLoading] = useState(false);
+    const location = useLocation();
+    const { t, lang } = useTranslation();
+    const { user, token } = useAuth();
+    const { selectedStation } = useStation();
+    const isRTL = lang === 'ar';
+    const isDepartmentScopedUser = !!user && user.role !== 'super_admin' && user.role !== 'ceo';
+    const canCreateDepartmentProject = !!user && ['super_admin', 'department_manager', 'supervisor'].includes(user.role);
+    const isInvestmentUser = isDepartmentScopedUser && canCreateDepartmentProject && user?.department === 'investment';
+    const isFranchiseUser = isDepartmentScopedUser && canCreateDepartmentProject && user?.department === 'franchise';
+    const isDeptUser = isDepartmentScopedUser;
+    const canShowDepartmentAddButton = !!user
+        && ['department_manager', 'supervisor'].includes(user.role)
+        && (user.department === 'investment' || user.department === 'franchise');
+    const addProjectPath = user?.department === 'franchise'
+        ? '/station/new-station/form/franchise-department'
+        : '/station/new-station/form/investment-department';
+    useStationFormAutofill({
+        pathname: location.pathname,
+        stationCode: selectedStation?.station_code,
+    });
+
+
+    // Update sidebar state on window resize
+    useEffect(() => {
+        const handleResize = () => {
+            if (window.innerWidth >= 1024) {
+                setSidebarOpen(true);
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, []);
+
+    useEffect(() => {
+        if (!token || !user?.id) {
+            setTaskCount(0);
+            return;
+        }
+
+        let isMounted = true;
+
+        const fetchTaskCount = async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/tasks`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!response.ok) return;
+
+                const result = await response.json();
+                if (isMounted) {
+                    const lastSeenAt = getOrInitLastSeenAt(user.id, TASKS_LAST_SEEN_SUFFIX);
+                    const items = Array.isArray(result?.data) ? result.data : [];
+                    const newItemsCount = items.filter((task: any) => {
+                        const createdAt = toTimestamp(task?.created_at);
+                        return createdAt !== null && createdAt > lastSeenAt;
+                    }).length;
+                    setTaskCount(newItemsCount);
+                }
+            } catch {
+                if (isMounted) setTaskCount(0);
+            }
+        };
+
+        fetchTaskCount();
+
+        const onFocus = () => {
+            fetchTaskCount();
+        };
+        window.addEventListener("focus", onFocus);
+
+        return () => {
+            isMounted = false;
+            window.removeEventListener("focus", onFocus);
+        };
+    }, [token, user?.id]);
+
+    useEffect(() => {
+        if (!token || !user?.id) {
+            setUnderReviewCount(0);
+            return;
+        }
+
+        let isMounted = true;
+
+        const fetchUnderReviewCount = async () => {
+            try {
+                const response = await fetch(`${API_BASE_URL}/investment-projects`, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+                if (!response.ok) return;
+
+                const result = await response.json();
+                if (isMounted && Array.isArray(result?.data)) {
+                    const lastSeenAt = getOrInitLastSeenAt(user.id, UNDER_REVIEW_LAST_SEEN_SUFFIX);
+                    const newItemsCount = result.data.filter((project: any) => {
+                        if (project?.review_status === 'Approved') {
+                            return false;
+                        }
+
+                        const createdAt = toTimestamp(project?.created_at);
+                        return createdAt !== null && createdAt > lastSeenAt;
+                    }).length;
+
+                    setUnderReviewCount(newItemsCount);
+                }
+            } catch {
+                if (isMounted) setUnderReviewCount(0);
+            }
+        };
+
+        fetchUnderReviewCount();
+
+        const onFocus = () => {
+            fetchUnderReviewCount();
+        };
+        window.addEventListener("focus", onFocus);
+
+        return () => {
+            isMounted = false;
+            window.removeEventListener("focus", onFocus);
+        };
+    }, [token, user?.id]);
+
+    useEffect(() => {
+        if (!user?.id) {
+            return;
+        }
+
+        const markTasksSeen = location.pathname === '/all-stations-tasks';
+        const markUnderReviewSeen = location.pathname === '/all-stations-under-review';
+
+        if (markTasksSeen) {
+            markLastSeenNow(user.id, TASKS_LAST_SEEN_SUFFIX);
+            setTaskCount(0);
+        }
+
+        if (markUnderReviewSeen) {
+            markLastSeenNow(user.id, UNDER_REVIEW_LAST_SEEN_SUFFIX);
+            setUnderReviewCount(0);
+        }
+    }, [location.pathname, user?.id]);
+
+    const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        setImportLoading(true);
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const data = new Uint8Array(e.target?.result as ArrayBuffer);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheetName = workbook.SheetNames[0];
+                const worksheet = workbook.Sheets[firstSheetName];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+
+                if (jsonData.length === 0) {
+                    alert("The file seems to be empty or has no data rows.");
+                    return;
+                }
+
+                // Helper to find value by case-insensitive name
+                const getValue = (row: any, ...keys: string[]) => {
+                    const rowKeys = Object.keys(row);
+                    for (const key of keys) {
+                        const targetKey = rowKeys.find(rk =>
+                            rk.toLowerCase().replace(/[^a-z0-9]/g, '') ===
+                            key.toLowerCase().replace(/[^a-z0-9]/g, '')
+                        );
+                        if (targetKey !== undefined) return row[targetKey];
+                    }
+                    return undefined;
+                };
+
+                // Map Excel columns to backend fields
+                const mappedData = jsonData.map((row: any) => ({
+                    stationCode: getValue(row, 'stationCode', 'station_code', 'Station Code', 'Code'),
+                    stationName: getValue(row, 'stationName', 'station_name', 'Station Name', 'Name'),
+                    areaRegion: getValue(row, 'areaRegion', 'area_region', 'Area/Region', 'Region'),
+                    city: getValue(row, 'city', 'City'),
+                    district: getValue(row, 'district', 'District'),
+                    street: getValue(row, 'street', 'Street'),
+                    geographicLocation: getValue(row, 'geographicLocation', 'geographic_location', 'Geographic Location', 'Location'),
+                    stationTypeCode: getValue(row, 'stationTypeCode', 'station_type_code', 'Station Type Code', 'Type'),
+                    stationStatusCode: getValue(row, 'stationStatusCode', 'station_status_code', 'Station Status Code', 'Status')
+                }));
+
+                const token = localStorage.getItem('auth_token');
+                const response = await axios.post(`${API_BASE_URL}/stations/bulk`, mappedData, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+
+                const { successCount, errorCount, errors } = response.data;
+                let message = `Import Processed ${jsonData.length} rows.\n\nSuccessfully Imported: ${successCount}\nErrors: ${errorCount}`;
+
+                if (errorCount > 0) {
+                    message += "\n\nError details (first 3):\n" +
+                        errors.slice(0, 3).map((err: any) => `- ${err.stationCode}: ${err.error}`).join('\n');
+                }
+
+                alert(message);
+                if (successCount > 0) window.location.reload();
+            } catch (error: any) {
+                console.error("Import failed:", error);
+                alert(`Import Failed: ${error.response?.data?.error || error.message}`);
+            } finally {
+                setImportLoading(false);
+                if (event.target) event.target.value = '';
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    };
+
+    const navigation: NavItem[] = isDeptUser
+        ? [
+            { titleKey: "dashboard", path: "/all-stations-dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
+            ...(isInvestmentUser ? [{ titleKey: "investmentDept" as const, path: "/station/new-station/form/investment-department", icon: <FileText className="w-5 h-5" /> }] : []),
+            ...(isFranchiseUser ? [{ titleKey: "franchiseDept" as const, path: "/station/new-station/form/franchise-department", icon: <FileText className="w-5 h-5" /> }] : []),
+            { titleKey: "underReview", path: "/all-stations-under-review", icon: <Clock className="w-5 h-5" /> },
+                     { titleKey: "stations", path: "/all-stations-list", icon: <img src={logo} alt="" className="w-5 h-5 object-contain brightness-0 invert" /> },
+                     { titleKey: "requests", path: "/all-stations-requests", icon: <Inbox className="w-5 h-5" /> },
+                     { titleKey: "tasks", path: "/all-stations-tasks", icon: <ClipboardList className="w-5 h-5" /> },
+                     { titleKey: "reports", path: "/all-stations-reports", icon: <FileText className="w-5 h-5" /> },
+                     { titleKey: "contactCEO", path: "/all-stations-contact-ceo", icon: <MessageCircle className="w-5 h-5" /> },
+          ]
+        : [
+            { titleKey: "dashboard", path: "/all-stations-dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
+            { titleKey: "analytics", path: "/all-stations-analytics", icon: <Activity className="w-5 h-5" /> },
+            { titleKey: "stations", path: "/all-stations-list", icon: <img src={logo} alt="" className="w-5 h-5 object-contain brightness-0 invert" /> },
+            { titleKey: "departments", path: "/all-stations-departments", icon: <Building2 className="w-5 h-5" /> },
+            { titleKey: "requests", path: "/all-stations-requests", icon: <Inbox className="w-5 h-5" /> },
+            { titleKey: "underReview", path: "/all-stations-under-review", icon: <Clock className="w-5 h-5" /> },
+            { titleKey: "tasks", path: "/all-stations-tasks", icon: <ClipboardList className="w-5 h-5" /> },
+            { titleKey: "reports", path: "/all-stations-reports", icon: <FileText className="w-5 h-5" /> },
+            { titleKey: "contactCEO", path: "/all-stations-contact-ceo", icon: <MessageCircle className="w-5 h-5" /> },
+                        ...((user?.role === 'super_admin' || user?.role === 'ceo') ? [{ titleKey: "users" as const, path: "/all-stations-users", icon: <Users className="w-5 h-5" /> }] : []),
+          ];
+
+    const handleChatClick = () => {
+        setChatOpen(!chatOpen);
+    };
+
+    return (
+        <div className="min-h-screen bg-gradient-to-br from-muted via-background to-muted flex relative">
+            <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-secondary/5 pointer-events-none"></div>
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.05),transparent_50%)] pointer-events-none"></div>
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,hsl(var(--secondary)/0.05),transparent_50%)] pointer-events-none"></div>
+
+            <div className="relative z-0 flex w-full">
+                <aside
+                    className={`
+                        ${sidebarOpen ? "w-72 lg:w-72" : "w-72 lg:w-16"}
+                        ${sidebarOpen ? "translate-x-0" : `${isRTL ? 'translate-x-full' : '-translate-x-full'} lg:translate-x-0`}
+                        transition-all duration-300 sidebar-gradient text-sidebar-foreground flex flex-col 
+                        fixed inset-y-0
+                        ${isRTL ? 'right-0' : 'left-0'}
+                        z-50 lg:z-10 shadow-2xl backdrop-blur-xl ${isRTL ? 'lg:rounded-l-[2.5rem]' : 'lg:rounded-r-[2.5rem]'} overflow-hidden hover:shadow-[0_0_80px_hsl(var(--primary)/0.3)]
+                    `}
+                    style={{
+                        boxShadow: '0 0 60px hsl(var(--primary) / 0.2), 0 0 120px hsl(var(--secondary) / 0.1)'
+                    }}
+                >
+                    <div className="p-4 flex items-center justify-between border-b border-white/20 backdrop-blur-sm">
+                        {sidebarOpen ? (
+                            <div className="flex items-center gap-2">
+                                <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center p-1.5 shadow-lg">
+                                    <img src={logo} alt="Darb Logo" className="w-full h-full object-contain" />
+                                </div>
+                                <div>
+                                    <h1 className="font-bold text-base lg:text-lg text-white drop-shadow-lg"><BrandName /></h1>
+                                    <p className="text-xs text-white/80">{t("allStations")}</p>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center p-1.5 shadow-lg">
+                                <img src={logo} alt="Darb Logo" className="w-full h-full object-contain" />
+                            </div>
+                        )}
+                        <button
+                            onClick={() => setSidebarOpen(!sidebarOpen)}
+                            className="p-2 hover:bg-white/10 rounded-lg transition-colors backdrop-blur-sm"
+                        >
+                            {sidebarOpen ? (
+                                <X className="w-5 h-5 text-white" />
+                            ) : (
+                                <Menu className="w-5 h-5 text-white" />
+                            )}
+                        </button>
+                    </div>
+
+                    <nav className={`flex-1 overflow-y-auto ${sidebarOpen ? 'p-4' : 'p-2'} space-y-2`}>
+                        {navigation.map((item) => (
+                            <Link
+                                key={item.path}
+                                to={item.path}
+                                onClick={() => window.innerWidth < 1024 && setSidebarOpen(false)}
+                                className={`flex items-center ${sidebarOpen ? 'gap-3 px-4' : 'justify-center px-2'} py-3 rounded-lg transition-all duration-200 ${location.pathname === item.path
+                                    ? "bg-primary text-white shadow-lg"
+                                    : "text-white/80 hover:bg-white/15 hover:text-white"
+                                    } relative`}
+                                title={!sidebarOpen ? t(item.titleKey) : undefined}
+                            >
+                                {item.icon}
+                                {sidebarOpen && (
+                                    <div className="flex items-center gap-2 min-w-0">
+                                        <span className="text-sm font-medium truncate">{t(item.titleKey)}</span>
+                                        {item.titleKey === "tasks" && taskCount > 0 && (
+                                            <span className="min-w-5 h-5 px-1.5 bg-info text-info-foreground rounded-full flex items-center justify-center text-[10px] font-bold leading-none shadow-sm">
+                                                {taskCount > 99 ? "99+" : taskCount}
+                                            </span>
+                                        )}
+                                        {item.titleKey === "underReview" && underReviewCount > 0 && (
+                                            <span className="min-w-5 h-5 px-1.5 bg-info text-info-foreground rounded-full flex items-center justify-center text-[10px] font-bold leading-none shadow-sm">
+                                                {underReviewCount > 99 ? "99+" : underReviewCount}
+                                            </span>
+                                        )}
+                                    </div>
+                                )}
+                            </Link>
+                        ))}
+                        <button
+                            onClick={handleChatClick}
+                            className={`w-full flex items-center ${sidebarOpen ? 'gap-3 px-4' : 'justify-center px-2'} py-3 rounded-lg transition-all duration-200 text-white/80 hover:bg-white/15 hover:text-white relative`}
+                            title={!sidebarOpen ? t("chat") : undefined}
+                        >
+                            <MessageCircle className="w-5 h-5" />
+                            {sidebarOpen && (
+                                <div className="flex items-center gap-2 min-w-0">
+                                    <span className="text-sm font-medium truncate">{t("chat")}</span>
+                                    <span className="min-w-5 h-5 px-1.5 bg-info text-info-foreground rounded-full flex items-center justify-center text-[10px] font-bold leading-none shadow-sm">
+                                        3
+                                    </span>
+                                </div>
+                            )}
+                        </button>
+                    </nav>
+
+                    <div className={`${sidebarOpen ? 'p-4' : 'p-2'} border-t border-white/20`}>
+                        <Link
+                            to="/login"
+                            className={`flex items-center ${sidebarOpen ? 'gap-3 px-4 mx-2' : 'justify-center px-2'} py-3 rounded-lg text-white/80 hover:bg-white/15 hover:text-white transition-all duration-200`}
+                            title={!sidebarOpen ? t("logout") : undefined}
+                        >
+                            <LogOut className="w-5 h-5" />
+                            {sidebarOpen && <span className="text-sm font-medium">{t("logout")}</span>}
+                        </Link>
+                    </div>
+                </aside>
+
+                {sidebarOpen && (
+                    <div
+                        className={`fixed inset-y-0 ${isRTL ? 'right-72 left-0' : 'left-72 right-0'} bg-black/50 z-40 lg:hidden`}
+                        onClick={() => setSidebarOpen(false)}
+                    ></div>
+                )}
+
+                <main
+                    className={`flex-1 ${isRTL
+                        ? (sidebarOpen ? "lg:mr-72" : "lg:mr-16")
+                        : (sidebarOpen ? "lg:ml-72" : "lg:ml-16")
+                        } transition-all duration-300 relative z-0 overflow-auto`}
+                >
+                    {/* Mobile Header */}
+                    <div className="lg:hidden bg-card/80 backdrop-blur-xl mx-2 my-2 rounded-lg border border-border px-2 sm:px-4 py-2 sm:py-3 sticky top-2 z-10 shadow-lg flex items-center justify-between gap-2">
+                        <button
+                            onClick={() => setSidebarOpen(true)}
+                            className="p-1.5 sm:p-2 hover:bg-muted rounded-lg transition-colors flex-shrink-0"
+                        >
+                            <Menu className="w-5 h-5" />
+                        </button>
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <h2 className="text-xs sm:text-sm font-bold truncate">{t("allStations")}</h2>
+                            {user && (
+                                <span className="hidden sm:inline text-[10px] bg-primary/10 text-primary px-2 py-0.5 rounded-full font-semibold flex-shrink-0">
+                                    {getRoleLabel(user.role)}
+                                </span>
+                            )}
+                        </div>
+                        <LanguageSwitcher />
+                    </div>
+
+                    {/* Desktop Header */}
+                    <header className="hidden lg:flex bg-card/80 backdrop-blur-xl m-4 rounded-2xl border border-border px-4 md:px-6 lg:px-8 py-4 sticky top-4 z-10 shadow-lg shadow-primary/10 items-center justify-between flex-wrap gap-4">
+                        <BackToDashboardButton />
+                        <div className="flex items-center gap-2 md:gap-4">
+                            {/* User info badge */}
+                            {user && (
+                                <div className="flex items-center gap-2 px-3 py-1.5 bg-primary/8 border border-primary/20 rounded-lg">
+                                    <div className="w-7 h-7 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
+                                        <span className="text-xs font-bold text-white uppercase">{user.username[0]}</span>
+                                    </div>
+                                    <div className="leading-none">
+                                        <p className="text-xs font-semibold text-foreground">{user.username}</p>
+                                        <p className="text-[10px] text-muted-foreground">Role: {getRoleLabel(user.role)}</p>
+                                    </div>
+                                </div>
+                            )}
+                            {!isDeptUser && (
+                                <label
+                                    className={`flex items-center gap-2 px-3 md:px-4 py-2 border-2 border-primary/20 text-primary rounded-lg hover:bg-primary/5 transition-all duration-200 font-semibold text-xs md:text-sm cursor-pointer ${importLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                >
+                                    <Upload className="w-4 h-4" />
+                                    <span className="hidden sm:inline">{importLoading ? 'Importing...' : t("importStations")}</span>
+                                    <input
+                                        type="file"
+                                        accept=".xlsx, .xls, .csv"
+                                        onChange={handleFileUpload}
+                                        className="hidden"
+                                        disabled={importLoading}
+                                    />
+                                </label>
+                            )}
+                            {!isDeptUser && user?.role === 'super_admin' && (
+                                <Link
+                                    to="/station/new-station/form/investment-department"
+                                    className="flex items-center gap-2 px-3 md:px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-xs md:text-sm"
+                                >
+                                    <PlusCircle className="w-4 h-4" />
+                                    <span className="hidden sm:inline">{t("addNewProject")}</span>
+                                    <span className="sm:hidden">{t("addNewProject").split(" ")[0]}</span>
+                                </Link>
+                            )}
+                            {canShowDepartmentAddButton && (
+                                <Link
+                                    to={addProjectPath}
+                                    className="flex items-center gap-2 px-3 md:px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-xs md:text-sm"
+                                >
+                                    <PlusCircle className="w-4 h-4" />
+                                    <span className="hidden sm:inline">{t("addNewProject")}</span>
+                                    <span className="sm:hidden">{t("addNewProject").split(" ")[0]}</span>
+                                </Link>
+                            )}
+                            <LanguageSwitcher />
+                        </div>
+                    </header>
+
+                    <div className="p-2 sm:p-4 md:p-6 lg:p-8">
+                        <Outlet />
+                    </div>
+                </main>
+            </div>
+
+            <ChatWidget isOpen={chatOpen} onClose={() => setChatOpen(false)} />
+        </div>
+    );
+}
+

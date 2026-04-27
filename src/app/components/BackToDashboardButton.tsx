@@ -1,0 +1,62 @@
+﻿import { useNavigate, useLocation } from "react-router-dom";
+import { Home, ArrowLeft } from "lucide-react";
+import { useStation } from "../context/StationContext";
+
+export function BackToDashboardButton() {
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { accessMode } = useStation();
+    const searchParams = new URLSearchParams(location.search);
+    const backToFromState = typeof (location.state as any)?.backTo === 'string' ? String((location.state as any).backTo) : '';
+    const backToFromQuery = String(searchParams.get('backTo') || '').trim();
+    const explicitBackTo = backToFromState || backToFromQuery;
+
+    // Determine the correct dashboard path based on access mode
+    const dashboardPath = accessMode === 'admin' ? '/all-stations-dashboard' : '/dashboard';
+    const stationMatch = location.pathname.match(/^\/station\/([^/]+)/);
+    const stationBasePath = stationMatch ? `/station/${stationMatch[1]}` : null;
+
+    // Don't show the button if we're already on the dashboard
+    if (location.pathname === dashboardPath) {
+        return null;
+    }
+
+    return (
+        <div className="flex gap-2">
+            <button
+                onClick={() => {
+                    if (explicitBackTo) {
+                        navigate(explicitBackTo);
+                        return;
+                    }
+
+                    if (stationBasePath && location.pathname !== stationBasePath) {
+                        navigate(stationBasePath);
+                        return;
+                    }
+                    navigate(-1);
+                }}
+                className="flex items-center gap-2 px-4 py-2 text-muted-foreground hover:text-primary hover:bg-muted rounded-lg transition-all duration-200 border border-border hover:border-primary"
+                title="Go back to previous page"
+            >
+                <ArrowLeft className="w-4 h-4" />
+                <span className="text-sm font-medium">Back</span>
+            </button>
+
+            <button
+                onClick={() => navigate(dashboardPath)}
+                className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                title="Return to dashboard"
+            >
+                <Home className="w-4 h-4" />
+                <span className="text-sm font-medium">Dashboard</span>
+            </button>
+        </div>
+    );
+}
+
+
+
+
+
+
