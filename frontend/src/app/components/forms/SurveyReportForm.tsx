@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useEffect } from "react";
-import { Save, PlusCircle, Eye, Trash2, Upload, X } from "lucide-react";
+import { Save, PlusCircle, Eye, Trash2, Upload, X, History } from "lucide-react";
+import { appSettingsAPI } from "@/services/api";
 import { useStation } from "../../context/StationContext";
 import { useResolvedStationCode } from "../../hooks/useResolvedStationCode";
 
@@ -60,6 +61,24 @@ interface StoredAttachment {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
+const FALLBACK_STATUS_OPTIONS: Array<{ value: string; label: string }> = [
+    { value: "1", label: "Active" },
+    { value: "2", label: "Inactive" },
+    { value: "3", label: "Under Construction" },
+    { value: "4", label: "Under Development" },
+    { value: "5", label: "Pending" },
+];
+
+const FALLBACK_STAGE_OPTIONS: Array<{ value: string; label: string }> = [
+    { value: "operating license", label: "operating license" },
+    { value: "electricity connection", label: "electricity connection" },
+    { value: "automation", label: "automation" },
+    { value: "cameras", label: "cameras" },
+    { value: "finishing stage", label: "finishing stage" },
+    { value: "it works", label: "it works" },
+    { value: "other", label: "other" },
+];
+
 const normalizeStoredAttachment = (value: any): StoredAttachment | null => {
     if (!value) {
         return null;
@@ -112,6 +131,14 @@ export function SurveyReportForm() {
     const resolvedStationCode = useResolvedStationCode();
     const isReadOnly = accessMode === 'view-only';
     const [isSaving, setIsSaving] = useState(false);
+    const [historyViewActive, setHistoryViewActive] = useState(false);
+    const [historyModalOpen, setHistoryModalOpen] = useState(false);
+    const [historyEntries, setHistoryEntries] = useState<Array<{ id: string; created_at: string }>>([]);
+    const [historyListLoading, setHistoryListLoading] = useState(false);
+    const [statusOptions, setStatusOptions] = useState(FALLBACK_STATUS_OPTIONS);
+    const [stageOptions, setStageOptions] = useState(FALLBACK_STAGE_OPTIONS);
+
+    const inputsDisabled = isReadOnly || historyViewActive;
 
     // Project Completion Rate Report
     const [projectStartDate, setProjectStartDate] = useState(isReadOnly ? "2024-01-15" : "");
@@ -267,6 +294,27 @@ export function SurveyReportForm() {
     };
 
     useEffect(() => {
+        setHistoryViewActive(false);
+    }, [resolvedStationCode, selectedStation?.station_code]);
+
+    useEffect(() => {
+        const token = localStorage.getItem('auth_token');
+        if (!token) return;
+
+        const loadDropdowns = async () => {
+            try {
+                const { stationStatusOptions, stageOptions } = await appSettingsAPI.getSurveyDropdowns();
+                if (stationStatusOptions.length) setStatusOptions(stationStatusOptions);
+                if (stageOptions.length) setStageOptions(stageOptions);
+            } catch (error) {
+                console.error('Failed to load survey dropdown options:', error);
+            }
+        };
+
+        void loadDropdowns();
+    }, []);
+
+    useEffect(() => {
         const stationCode = resolvedStationCode || selectedStation?.station_code;
         if (!stationCode) return;
 
@@ -293,11 +341,97 @@ export function SurveyReportForm() {
             }
         };
 
-        loadSurvey();
+        void loadSurvey();
     }, [resolvedStationCode, selectedStation?.station_code]);
+
+    const loadLatestSurveyForStation = async () => {
+        const stationCode = resolvedStationCode || selectedStation?.station_code;
+        if (!stationCode) return;
+        const token = localStorage.getItem('auth_token');
+        if (!token) return;
+        try {
+            const response = await fetch(`${API_BASE_URL}/survey-reports/station/${encodeURIComponent(stationCode)}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json',
+                },
+            });
+            if (!response.ok) return;
+            const result = await response.json();
+            const payload = result?.data?.payload;
+            if (payload) {
+                applyPayload(payload);
+            }
+        } catch (error) {
+            console.error('Failed to load survey report:', error);
+        }
+    };
+
+    const openHistoryModal = async () => {
+        const stationCode = resolvedStationCode || selectedStation?.station_code;
+        if (!stationCode) return;
+        const token = localStorage.getItem('auth_token');
+        if (!token) return;
+        setHistoryModalOpen(true);
+        setHistoryListLoading(true);
+        try {
+            const response = await fetch(
+                `${API_BASE_URL}/survey-reports/station/${encodeURIComponent(stationCode)}/history`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                },
+            );
+            const result = await response.json();
+            if (response.ok && Array.isArray(result?.data)) {
+                setHistoryEntries(result.data);
+            } else {
+                setHistoryEntries([]);
+            }
+        } catch {
+            setHistoryEntries([]);
+        } finally {
+            setHistoryListLoading(false);
+        }
+    };
+
+    const openHistoryVersion = async (versionId: string) => {
+        const stationCode = resolvedStationCode || selectedStation?.station_code;
+        if (!stationCode) return;
+        const token = localStorage.getItem('auth_token');
+        if (!token) return;
+        try {
+            const response = await fetch(
+                `${API_BASE_URL}/survey-reports/station/${encodeURIComponent(stationCode)}/history/${encodeURIComponent(versionId)}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                },
+            );
+            const result = await response.json();
+            if (!response.ok || !result?.data?.payload) return;
+            applyPayload(result.data.payload);
+            setHistoryViewActive(true);
+            setHistoryModalOpen(false);
+        } catch (error) {
+            console.error('Failed to load survey version:', error);
+        }
+    };
+
+    const exitHistoryPreview = async () => {
+        setHistoryViewActive(false);
+        await loadLatestSurveyForStation();
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (historyViewActive) {
+            return;
+        }
         const stationCode = resolvedStationCode || selectedStation?.station_code;
         if (!stationCode) {
             alert('Station code is required to save survey report.');
@@ -398,6 +532,8 @@ export function SurveyReportForm() {
                 return;
             }
 
+            setHistoryViewActive(false);
+            await loadLatestSurveyForStation();
             alert('Survey Report saved successfully!');
         } catch (error) {
             console.error('Error saving survey report:', error);
@@ -576,13 +712,38 @@ export function SurveyReportForm() {
                         <p className="text-muted-foreground mt-2 text-sm sm:text-base">Comprehensive project completion rate and survey documentation</p>
                     </div>
 
-                    {isReadOnly && (
-                        <div className="flex items-center gap-2 px-4 py-2 bg-info/5 text-info rounded-lg border border-info/20">
-                            <Eye className="w-4 h-4" />
-                            <span className="text-sm font-semibold">View Only Mode</span>
-                        </div>
-                    )}
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+                        {(resolvedStationCode || selectedStation?.station_code) && (
+                            <button
+                                type="button"
+                                onClick={() => void openHistoryModal()}
+                                className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-border bg-background hover:bg-muted text-sm font-semibold text-foreground"
+                            >
+                                <History className="w-4 h-4" />
+                                History
+                            </button>
+                        )}
+                        {isReadOnly && (
+                            <div className="flex items-center gap-2 px-4 py-2 bg-info/5 text-info rounded-lg border border-info/20">
+                                <Eye className="w-4 h-4" />
+                                <span className="text-sm font-semibold">View Only Mode</span>
+                            </div>
+                        )}
+                    </div>
                 </div>
+
+                {historyViewActive && (
+                    <div className="mb-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-lg border border-warning/30 bg-warning/5 px-4 py-3 text-sm text-foreground">
+                        <span>You are viewing a past saved version (read-only). Use &quot;Back to latest&quot; to continue editing the current report.</span>
+                        <button
+                            type="button"
+                            onClick={() => void exitHistoryPreview()}
+                            className="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90"
+                        >
+                            Back to latest
+                        </button>
+                    </div>
+                )}
 
                 <form onSubmit={handleSubmit} className="bg-card rounded-xl shadow-xl p-4 sm:p-6 md:p-8 card-glow border-t-4 border-primary relative animate-in fade-in slide-in-from-bottom-4 duration-500">
 
@@ -602,7 +763,7 @@ export function SurveyReportForm() {
                                         onChange={(e) => setProjectStartDate(e.target.value)}
                                         className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
                                         required
-                                        disabled={isReadOnly}
+                                        disabled={inputsDisabled}
                                     />
                                 </div>
                                 <div>
@@ -615,7 +776,7 @@ export function SurveyReportForm() {
                                         onChange={(e) => setProjectDeliveryDate(e.target.value)}
                                         className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
                                         required
-                                        disabled={isReadOnly}
+                                        disabled={inputsDisabled}
                                     />
                                 </div>
                                 <div>
@@ -626,7 +787,7 @@ export function SurveyReportForm() {
                                         onChange={(e) => setTypeOfContract(e.target.value)}
                                         className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
                                         placeholder="e.g., employment"
-                                        disabled={isReadOnly}
+                                        disabled={inputsDisabled}
                                     />
                                 </div>
                                 <div>
@@ -637,7 +798,7 @@ export function SurveyReportForm() {
                                         onChange={(e) => setReportNumber(e.target.value)}
                                         className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
                                         placeholder="e.g., 154/1/2025"
-                                        disabled={isReadOnly}
+                                        disabled={inputsDisabled}
                                     />
                                 </div>
                                 <div>
@@ -648,7 +809,7 @@ export function SurveyReportForm() {
                                         onChange={(e) => setProjectName(e.target.value)}
                                         className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
                                         placeholder="e.g., Prince Fawaz - Jeddah"
-                                        disabled={isReadOnly}
+                                        disabled={inputsDisabled}
                                     />
                                 </div>
                                 <div>
@@ -659,7 +820,7 @@ export function SurveyReportForm() {
                                         onChange={(e) => setCity(e.target.value)}
                                         className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
                                         placeholder="e.g., Jeddah"
-                                        disabled={isReadOnly}
+                                        disabled={inputsDisabled}
                                     />
                                 </div>
                                 <div>
@@ -670,7 +831,7 @@ export function SurveyReportForm() {
                                         onChange={(e) => setLocation(e.target.value)}
                                         className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
                                         placeholder="Google Maps URL or address"
-                                        disabled={isReadOnly}
+                                        disabled={inputsDisabled}
                                     />
                                 </div>
                                 <div>
@@ -680,7 +841,7 @@ export function SurveyReportForm() {
                                         value={theDate}
                                         onChange={(e) => setTheDate(e.target.value)}
                                         className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
-                                        disabled={isReadOnly}
+                                        disabled={inputsDisabled}
                                     />
                                 </div>
                             </div>
@@ -692,7 +853,7 @@ export function SurveyReportForm() {
                                 <h2 className="text-xl font-semibold text-foreground border-b border-border pb-2 bg-primary/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3 flex-1">
                                     Project Components
                                 </h2>
-                                {!isReadOnly && (
+                                {!inputsDisabled && (
                                     <button
                                         type="button"
                                         onClick={addProjectComponent}
@@ -709,7 +870,7 @@ export function SurveyReportForm() {
                                         <tr className="bg-muted/50">
                                             <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Area</th>
                                             <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Building</th>
-                                            {!isReadOnly && <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Actions</th>}
+                                            {!inputsDisabled && <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Actions</th>}
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -721,7 +882,7 @@ export function SurveyReportForm() {
                                                         value={component.area}
                                                         onChange={(e) => updateProjectComponent(component.id, 'area', e.target.value)}
                                                         className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted"
-                                                        disabled={isReadOnly}
+                                                        disabled={inputsDisabled}
                                                     />
                                                 </td>
                                                 <td className="border border-border px-2 py-2">
@@ -730,10 +891,10 @@ export function SurveyReportForm() {
                                                         value={component.building}
                                                         onChange={(e) => updateProjectComponent(component.id, 'building', e.target.value)}
                                                         className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted"
-                                                        disabled={isReadOnly}
+                                                        disabled={inputsDisabled}
                                                     />
                                                 </td>
-                                                {!isReadOnly && (
+                                                {!inputsDisabled && (
                                                     <td className="border border-border px-2 py-2 text-center">
                                                         <button
                                                             type="button"
@@ -757,7 +918,7 @@ export function SurveyReportForm() {
                                 <h2 className="text-xl font-semibold text-foreground border-b border-border pb-2 bg-primary/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3 flex-1">
                                     Mosque
                                 </h2>
-                                {!isReadOnly && (
+                                {!inputsDisabled && (
                                     <button
                                         type="button"
                                         onClick={addMosqueArea}
@@ -777,7 +938,7 @@ export function SurveyReportForm() {
                                             <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Prayer Room Type</th>
                                             <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Prayer Room Number</th>
                                             <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Toilet Type</th>
-                                            {!isReadOnly && <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Actions</th>}
+                                            {!inputsDisabled && <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Actions</th>}
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -789,7 +950,7 @@ export function SurveyReportForm() {
                                                         value={area.area}
                                                         onChange={(e) => updateMosqueArea(area.id, 'area', e.target.value)}
                                                         className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted"
-                                                        disabled={isReadOnly}
+                                                        disabled={inputsDisabled}
                                                     />
                                                 </td>
                                                 <td className="border border-border px-2 py-2">
@@ -797,7 +958,7 @@ export function SurveyReportForm() {
                                                         value={area.availability}
                                                         onChange={(e) => updateMosqueArea(area.id, 'availability', e.target.value)}
                                                         className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted"
-                                                        disabled={isReadOnly}
+                                                        disabled={inputsDisabled}
                                                     >
                                                         <option value="">Select</option>
                                                         <option value="available">Available</option>
@@ -809,7 +970,7 @@ export function SurveyReportForm() {
                                                         value={area.prayerRoomType}
                                                         onChange={(e) => updateMosqueArea(area.id, 'prayerRoomType', e.target.value)}
                                                         className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted"
-                                                        disabled={isReadOnly}
+                                                        disabled={inputsDisabled}
                                                     >
                                                         <option value="">Select</option>
                                                         <option value="Men's Prayer Room">Men's Prayer Room</option>
@@ -822,7 +983,7 @@ export function SurveyReportForm() {
                                                         value={area.prayerRoomNumber}
                                                         onChange={(e) => updateMosqueArea(area.id, 'prayerRoomNumber', e.target.value)}
                                                         className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted"
-                                                        disabled={isReadOnly}
+                                                        disabled={inputsDisabled}
                                                     />
                                                 </td>
                                                 <td className="border border-border px-2 py-2">
@@ -830,14 +991,14 @@ export function SurveyReportForm() {
                                                         value={area.toiletType}
                                                         onChange={(e) => updateMosqueArea(area.id, 'toiletType', e.target.value)}
                                                         className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted"
-                                                        disabled={isReadOnly}
+                                                        disabled={inputsDisabled}
                                                     >
                                                         <option value="">Select</option>
                                                         <option value="Men's Toilet">Men's Toilet</option>
                                                         <option value="Women's Toilet">Women's Toilet</option>
                                                     </select>
                                                 </td>
-                                                {!isReadOnly && (
+                                                {!inputsDisabled && (
                                                     <td className="border border-border px-2 py-2 text-center">
                                                         <button
                                                             type="button"
@@ -861,7 +1022,7 @@ export function SurveyReportForm() {
                                 <h2 className="text-xl font-semibold text-foreground border-b border-border pb-2 bg-primary/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3 flex-1">
                                     Fuel Pumps
                                 </h2>
-                                {!isReadOnly && (
+                                {!inputsDisabled && (
                                     <button
                                         type="button"
                                         onClick={addFuelPump}
@@ -878,7 +1039,7 @@ export function SurveyReportForm() {
                                         <tr className="bg-muted/50">
                                             <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Number</th>
                                             <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Size</th>
-                                            {!isReadOnly && <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Actions</th>}
+                                            {!inputsDisabled && <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Actions</th>}
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -890,7 +1051,7 @@ export function SurveyReportForm() {
                                                         value={pump.number}
                                                         onChange={(e) => updateFuelPump(pump.id, 'number', e.target.value)}
                                                         className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted"
-                                                        disabled={isReadOnly}
+                                                        disabled={inputsDisabled}
                                                     />
                                                 </td>
                                                 <td className="border border-border px-2 py-2">
@@ -899,10 +1060,10 @@ export function SurveyReportForm() {
                                                         value={pump.size}
                                                         onChange={(e) => updateFuelPump(pump.id, 'size', e.target.value)}
                                                         className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted"
-                                                        disabled={isReadOnly}
+                                                        disabled={inputsDisabled}
                                                     />
                                                 </td>
-                                                {!isReadOnly && (
+                                                {!inputsDisabled && (
                                                     <td className="border border-border px-2 py-2 text-center">
                                                         <button
                                                             type="button"
@@ -926,7 +1087,7 @@ export function SurveyReportForm() {
                                 <h2 className="text-xl font-semibold text-foreground border-b border-border pb-2 bg-primary/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3 flex-1">
                                     Fuel Tanks
                                 </h2>
-                                {!isReadOnly && (
+                                {!inputsDisabled && (
                                     <button
                                         type="button"
                                         onClick={addFuelTank}
@@ -944,7 +1105,7 @@ export function SurveyReportForm() {
                                             <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Product Type</th>
                                             <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Number</th>
                                             <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Size</th>
-                                            {!isReadOnly && <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Actions</th>}
+                                            {!inputsDisabled && <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Actions</th>}
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -955,7 +1116,7 @@ export function SurveyReportForm() {
                                                         value={tank.productType}
                                                         onChange={(e) => updateFuelTank(tank.id, 'productType', e.target.value)}
                                                         className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted"
-                                                        disabled={isReadOnly}
+                                                        disabled={inputsDisabled}
                                                     >
                                                         <option value="">Select</option>
                                                         <option value="Diesel">Diesel</option>
@@ -970,7 +1131,7 @@ export function SurveyReportForm() {
                                                         value={tank.number}
                                                         onChange={(e) => updateFuelTank(tank.id, 'number', e.target.value)}
                                                         className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted"
-                                                        disabled={isReadOnly}
+                                                        disabled={inputsDisabled}
                                                     />
                                                 </td>
                                                 <td className="border border-border px-2 py-2">
@@ -979,10 +1140,10 @@ export function SurveyReportForm() {
                                                         value={tank.size}
                                                         onChange={(e) => updateFuelTank(tank.id, 'size', e.target.value)}
                                                         className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted"
-                                                        disabled={isReadOnly}
+                                                        disabled={inputsDisabled}
                                                     />
                                                 </td>
-                                                {!isReadOnly && (
+                                                {!inputsDisabled && (
                                                     <td className="border border-border px-2 py-2 text-center">
                                                         <button
                                                             type="button"
@@ -1021,7 +1182,7 @@ export function SurveyReportForm() {
                                                 View
                                             </button>
                                         )}
-                                        {!isReadOnly && (
+                                        {!inputsDisabled && (
                                             <label className="cursor-pointer flex-shrink-0">
                                                 <input
                                                     type="file"
@@ -1060,7 +1221,7 @@ export function SurveyReportForm() {
                                                 View
                                             </button>
                                         )}
-                                        {!isReadOnly && (
+                                        {!inputsDisabled && (
                                             <label className="cursor-pointer flex-shrink-0">
                                                 <input
                                                     type="file"
@@ -1084,7 +1245,7 @@ export function SurveyReportForm() {
                                 <h2 className="text-xl font-semibold text-foreground border-b border-border pb-2 bg-primary/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3 flex-1">
                                     Project Completion Stages
                                 </h2>
-                                {!isReadOnly && (
+                                {!inputsDisabled && (
                                     <button
                                         type="button"
                                         onClick={addCompletionStage}
@@ -1104,7 +1265,7 @@ export function SurveyReportForm() {
                                             <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Completion Rate</th>
                                             <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Remarks</th>
                                             <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Attachment</th>
-                                            {!isReadOnly && <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Actions</th>}
+                                            {!inputsDisabled && <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Actions</th>}
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -1116,16 +1277,14 @@ export function SurveyReportForm() {
                                                             value={stage.stage}
                                                             onChange={(e) => updateCompletionStage(stage.id, 'stage', e.target.value)}
                                                             className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted"
-                                                            disabled={isReadOnly}
+                                                            disabled={inputsDisabled}
                                                         >
                                                             <option value="">Select Stage</option>
-                                                            <option value="operating license">operating license</option>
-                                                            <option value="electricity connection">electricity connection</option>
-                                                            <option value="automation">automation</option>
-                                                            <option value="cameras">cameras</option>
-                                                            <option value="finishing stage">finishing stage</option>
-                                                            <option value="it works">it works</option>
-                                                            <option value="other">other</option>
+                                                            {stageOptions.map((opt) => (
+                                                                <option key={opt.value} value={opt.value}>
+                                                                    {opt.label}
+                                                                </option>
+                                                            ))}
                                                         </select>
                                                         {stage.stage === 'other' && (
                                                             <input
@@ -1134,7 +1293,7 @@ export function SurveyReportForm() {
                                                                 onChange={(e) => updateCompletionStage(stage.id, 'customStage', e.target.value)}
                                                                 className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted"
                                                                 placeholder="Enter custom stage"
-                                                                disabled={isReadOnly}
+                                                                disabled={inputsDisabled}
                                                             />
                                                         )}
                                                     </div>
@@ -1145,7 +1304,7 @@ export function SurveyReportForm() {
                                                         value={stage.condition}
                                                         onChange={(e) => updateCompletionStage(stage.id, 'condition', e.target.value)}
                                                         className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted"
-                                                        disabled={isReadOnly}
+                                                        disabled={inputsDisabled}
                                                     />
                                                 </td>
                                                 <td className="border border-border px-2 py-2">
@@ -1155,7 +1314,7 @@ export function SurveyReportForm() {
                                                         onChange={(e) => updateCompletionStage(stage.id, 'completionRate', e.target.value)}
                                                         className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted"
                                                         placeholder="e.g., 100.00%"
-                                                        disabled={isReadOnly}
+                                                        disabled={inputsDisabled}
                                                     />
                                                 </td>
                                                 <td className="border border-border px-2 py-2">
@@ -1164,12 +1323,12 @@ export function SurveyReportForm() {
                                                         onChange={(e) => updateCompletionStage(stage.id, 'remarks', e.target.value)}
                                                         className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted min-h-[70px]"
                                                         placeholder="Add comment or remark"
-                                                        disabled={isReadOnly}
+                                                        disabled={inputsDisabled}
                                                     />
                                                 </td>
                                                 <td className="border border-border px-2 py-2">
                                                     <div className="flex flex-col gap-2">
-                                                        {!isReadOnly && (
+                                                        {!inputsDisabled && (
                                                             <label className="cursor-pointer w-fit">
                                                                 <input
                                                                     type="file"
@@ -1196,12 +1355,12 @@ export function SurveyReportForm() {
                                                         {!stage.attachment && (stage as any).attachmentName && (
                                                             <span className="text-xs text-muted-foreground truncate">{(stage as any).attachmentName}</span>
                                                         )}
-                                                        {!stage.attachment && isReadOnly && (
+                                                        {!stage.attachment && inputsDisabled && (
                                                             <span className="text-xs text-muted-foreground">No attachment</span>
                                                         )}
                                                     </div>
                                                 </td>
-                                                {!isReadOnly && (
+                                                {!inputsDisabled && (
                                                     <td className="border border-border px-2 py-2 text-center">
                                                         <button
                                                             type="button"
@@ -1231,14 +1390,14 @@ export function SurveyReportForm() {
                                         value={stationStatusCode}
                                         onChange={(e) => setStationStatusCode(e.target.value)}
                                         className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
-                                        disabled={isReadOnly}
+                                        disabled={inputsDisabled}
                                     >
                                         <option value="">Select Status</option>
-                                        <option value="1">Active</option>
-                                        <option value="2">Inactive</option>
-                                        <option value="3">Under Construction</option>
-                                        <option value="4">Under Development</option>
-                                        <option value="5">Pending</option>
+                                        {statusOptions.map((opt) => (
+                                            <option key={opt.value} value={opt.value}>
+                                                {opt.label}
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
                                 <div>
@@ -1247,16 +1406,14 @@ export function SurveyReportForm() {
                                         value={stationStatusStage}
                                         onChange={(e) => setStationStatusStage(e.target.value)}
                                         className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
-                                        disabled={isReadOnly}
+                                        disabled={inputsDisabled}
                                     >
                                         <option value="">Select Stage</option>
-                                        <option value="operating license">operating license</option>
-                                        <option value="electricity connection">electricity connection</option>
-                                        <option value="automation">automation</option>
-                                        <option value="cameras">cameras</option>
-                                        <option value="finishing stage">finishing stage</option>
-                                        <option value="it works">it works</option>
-                                        <option value="other">other</option>
+                                        {stageOptions.map((opt) => (
+                                            <option key={opt.value} value={opt.value}>
+                                                {opt.label}
+                                            </option>
+                                        ))}
                                     </select>
                                 </div>
                                 <div>
@@ -1266,7 +1423,7 @@ export function SurveyReportForm() {
                                         value={stationStatusCondition}
                                         onChange={(e) => setStationStatusCondition(e.target.value)}
                                         className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
-                                        disabled={isReadOnly}
+                                        disabled={inputsDisabled}
                                     />
                                 </div>
                                 <div>
@@ -1277,7 +1434,7 @@ export function SurveyReportForm() {
                                         onChange={(e) => setStationStatusCompletionRate(e.target.value)}
                                         className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
                                         placeholder="e.g., 100.00%"
-                                        disabled={isReadOnly}
+                                        disabled={inputsDisabled}
                                     />
                                 </div>
                                 {stationStatusStage === 'other' && (
@@ -1289,14 +1446,14 @@ export function SurveyReportForm() {
                                             onChange={(e) => setStationStatusCustomStage(e.target.value)}
                                             className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
                                             placeholder="Enter custom stage"
-                                            disabled={isReadOnly}
+                                            disabled={inputsDisabled}
                                         />
                                     </div>
                                 )}
                                 <div>
                                     <label className="block text-sm font-medium text-muted-foreground mb-1">Attachment</label>
                                     <div className="flex items-center gap-2 min-h-[42px]">
-                                        {!isReadOnly && (
+                                        {!inputsDisabled && (
                                             <label className="cursor-pointer">
                                                 <input
                                                     type="file"
@@ -1331,7 +1488,7 @@ export function SurveyReportForm() {
                                         onChange={(e) => setStationStatusRemarks(e.target.value)}
                                         className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground min-h-[120px]"
                                         placeholder="Add remarks, e.g., why station is pending..."
-                                        disabled={isReadOnly}
+                                        disabled={inputsDisabled}
                                     />
                                 </div>
                             </div>
@@ -1347,7 +1504,7 @@ export function SurveyReportForm() {
                                 onChange={(e) => setProjectObstacles(e.target.value)}
                                 className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground min-h-[120px]"
                                 placeholder="Describe any obstacles encountered during the project..."
-                                disabled={isReadOnly}
+                                disabled={inputsDisabled}
                             />
                         </div>
 
@@ -1361,7 +1518,7 @@ export function SurveyReportForm() {
                                 onChange={(e) => setVisitNote(e.target.value)}
                                 className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground min-h-[120px]"
                                 placeholder="Add notes from site visit..."
-                                disabled={isReadOnly}
+                                disabled={inputsDisabled}
                             />
                         </div>
 
@@ -1371,7 +1528,7 @@ export function SurveyReportForm() {
                                 <h2 className="text-xl font-semibold text-foreground border-b border-border pb-2 bg-primary/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3 flex-1">
                                     Project Photos
                                 </h2>
-                                {!isReadOnly && (
+                                {!inputsDisabled && (
                                     <label className="cursor-pointer">
                                         <input
                                             type="file"
@@ -1387,7 +1544,7 @@ export function SurveyReportForm() {
                                     </label>
                                 )}
                             </div>
-                            {!isReadOnly && (
+                            {!inputsDisabled && (
                                 <label className="cursor-pointer">
                                     <input
                                         type="file"
@@ -1413,7 +1570,7 @@ export function SurveyReportForm() {
                                                     className="w-full h-32 object-cover rounded-lg border border-border"
                                                 />
                                                 <>
-                                                    {!isReadOnly && (
+                                                    {!inputsDisabled && (
                                                         <button
                                                             type="button"
                                                             onClick={() => removePhoto(index)}
@@ -1422,7 +1579,7 @@ export function SurveyReportForm() {
                                                             <X className="w-4 h-4" />
                                                         </button>
                                                     )}
-                                                    {!isReadOnly && (
+                                                    {!inputsDisabled && (
                                                         <label className="absolute bottom-2 right-2 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity">
                                                             <input
                                                                 type="file"
@@ -1465,7 +1622,7 @@ export function SurveyReportForm() {
                                 )
                             }
                         </div>
-                        {!isReadOnly && (
+                        {!inputsDisabled && (
                             <div className="flex justify-end mt-8">
                                 <button
                                     type="submit"
@@ -1478,6 +1635,48 @@ export function SurveyReportForm() {
                             </div>
                         )}
                 </form>
+
+                {historyModalOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50" role="dialog" aria-modal="true">
+                        <div className="bg-card rounded-xl border border-border shadow-xl max-w-lg w-full max-h-[80vh] flex flex-col">
+                            <div className="p-4 border-b border-border flex items-center justify-between gap-3">
+                                <h3 className="text-lg font-bold text-foreground">Survey report history</h3>
+                                <button
+                                    type="button"
+                                    onClick={() => setHistoryModalOpen(false)}
+                                    className="p-2 rounded-lg hover:bg-muted text-muted-foreground"
+                                    aria-label="Close"
+                                >
+                                    <X className="w-5 h-5" />
+                                </button>
+                            </div>
+                            <div className="p-4 overflow-y-auto flex-1">
+                                {historyListLoading ? (
+                                    <p className="text-sm text-muted-foreground">Loading…</p>
+                                ) : historyEntries.length === 0 ? (
+                                    <p className="text-sm text-muted-foreground">No saved versions yet.</p>
+                                ) : (
+                                    <ul className="space-y-2">
+                                        {historyEntries.map((entry) => (
+                                            <li key={entry.id}>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => void openHistoryVersion(entry.id)}
+                                                    className="w-full text-left px-3 py-2 rounded-lg border border-border hover:bg-muted/50 text-sm"
+                                                >
+                                                    <span className="font-mono text-xs text-muted-foreground">#{entry.id}</span>
+                                                    <span className="block font-medium text-foreground">
+                                                        {new Date(entry.created_at).toLocaleString()}
+                                                    </span>
+                                                </button>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

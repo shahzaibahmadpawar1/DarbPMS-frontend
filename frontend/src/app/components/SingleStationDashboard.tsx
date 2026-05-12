@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useStation } from "../context/StationContext";
-import { Activity, AlertCircle, CheckCircle2, CheckCircle, XCircle } from "lucide-react";
+import { Activity, AlertCircle, CheckCircle2, CheckCircle, XCircle, TrendingUp } from "lucide-react";
 import logo from "../../assets/logo.png";
 import { stationSections } from "../data/formSections";
 

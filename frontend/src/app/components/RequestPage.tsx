@@ -211,7 +211,7 @@ export function RequestPage() {
             <div className="mb-8 flex flex-col gap-3">
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
-                        <h1 className="text-3xl font-bold text-foreground">Requests</h1>
+                        <h1 className="text-3xl font-bold text-foreground">New Request</h1>
                         <p className="text-muted-foreground mt-2">Submit a request to the relevant department manager for review.</p>
                     </div>
                     <Button

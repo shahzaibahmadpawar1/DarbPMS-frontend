@@ -1,7 +1,9 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useStation } from "../../context/StationContext";
 import { feasibilityAPI, getDepartmentLabel, getRoleLabel, usersAPI, type Department } from "@/services/api";
+import { canCreateInvestmentOpportunityOrProject, isCommitteeOpinionOnlyWorkflowUser } from "@/utils/investmentPermissions";
+import { resolveWorkflowDeptTabFromQuery } from "@/utils/investmentDepartmentNav";
 import { useSearchParams } from "react-router-dom";
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 const DEPT_PROJECTS_PAGE_SIZE = 200;
@@ -50,14 +52,21 @@ const fetchDepartmentProjectById = async (token: string, projectId: string): Pro
     return result?.data || null;
 };
 import {
-    PlusCircle, BarChart2, FileText, BookOpen,
+    BarChart2, FileText, BookOpen,
     TrendingUp, CheckCircle2, XCircle, Clock, Upload, FileCheck,
     Trash2, MapPin, User, Phone, Mail, Save, Send,
     Layers, ClipboardList, Download
 } from "lucide-react";
+import { InvestmentOpportunitiesTabWithFocus } from "./InvestmentOpportunitiesTab";
+import { InvestmentFeasibilityStudyTab } from "./InvestmentFeasibilityStudyTab";
+import { InvestmentOpinionsTab } from "./InvestmentOpinionsTab";
 
 // â”€â”€â”€ Types â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-type ActiveTab = "new-project" | "feasibility" | "reports" | "contracts";
+type ActiveTab =
+    | "new-project"
+    | "opportunities"
+    | "investment-feasibility"
+    | "opinions";
 
 type FeasibilityReviewDepartment = 'project' | 'operation' | 'realestate' | 'investment' | 'finance';
 
@@ -849,7 +858,7 @@ function NewProjectTab() {
 }
 
 // â”€â”€â”€ Feasibility Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-function FeasibilityTab({ deptLabel }: { deptLabel: string }) {
+export function FeasibilityTab({ deptLabel }: { deptLabel: string }) {
     const [stats, setStats] = useState({ total: 0, approved: 0, signed_contract: 0, rejected: 0 });
     const [items, setItems] = useState<any[]>([]);
     const { token } = useAuth();
@@ -1637,7 +1646,7 @@ function FeasibilityTab({ deptLabel }: { deptLabel: string }) {
 }
 
 // â”€â”€â”€ Reports Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-function ReportsTab({ deptLabel }: { deptLabel: string }) {
+export function ReportsTab({ deptLabel }: { deptLabel: string }) {
     const [attachments, setAttachments] = useState<Record<string, File | null>>({
         q1Report: null, q2Report: null, q3Report: null, annualReport: null,
     });
@@ -1695,7 +1704,7 @@ function ReportsTab({ deptLabel }: { deptLabel: string }) {
 }
 
 // â”€â”€â”€ Contracts Tab â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-function ContractsTab({ deptLabel }: { deptLabel: string }) {
+export function ContractsTab({ deptLabel }: { deptLabel: string }) {
     const [stats, setStats] = useState({ total: 0, contracted: 0, need_contract: 0 });
     const [items, setItems] = useState<any[]>([]);
     const { token } = useAuth();
@@ -1765,31 +1774,70 @@ interface DeptPageProps {
 }
 
 export function InvestmentFranchiseDepartmentPage({ title, description }: DeptPageProps) {
-    const [activeTab, setActiveTab] = useState<ActiveTab>("new-project");
+    const [searchParams, setSearchParams] = useSearchParams();
+    const [focusOpportunityId, setFocusOpportunityId] = useState<string | null>(null);
     const { user } = useAuth();
-    const canCreateRole = !!user && ['super_admin', 'department_manager', 'supervisor'].includes(user.role);
-    const canCreateDepartment = user?.role === 'super_admin' || user?.department === 'investment' || user?.department === 'franchise';
-    const canCreateProject = canCreateRole && canCreateDepartment;
+    const canCreateProject = canCreateInvestmentOpportunityOrProject(user);
+    const committeeOpinionOnlyWorkflow = isCommitteeOpinionOnlyWorkflowUser(user);
 
-    const tabs = [
-        ...(canCreateProject ? [{ id: "new-project" as ActiveTab, label: "New Project", icon: <PlusCircle className="w-4 h-4" /> }] : []),
-        { id: "feasibility" as ActiveTab, label: "Feasibility Study & Opportunity Assessment", icon: <BookOpen className="w-4 h-4" /> },
-        { id: "reports" as ActiveTab, label: "Reports & Analysis", icon: <BarChart2 className="w-4 h-4" /> },
-        { id: "contracts" as ActiveTab, label: "Contracts", icon: <FileText className="w-4 h-4" /> },
-    ];
+    const departmentType = window.location.pathname.includes('investment') ? 'investment' : 'franchise';
+
+    const activeTab = useMemo(
+        () => resolveWorkflowDeptTabFromQuery(searchParams.get("tab"), canCreateProject, committeeOpinionOnlyWorkflow) as ActiveTab,
+        [searchParams, canCreateProject, committeeOpinionOnlyWorkflow],
+    );
+
+    const setTab = useCallback(
+        (tab: ActiveTab) => {
+            const defaultTab = resolveWorkflowDeptTabFromQuery(null, canCreateProject, committeeOpinionOnlyWorkflow);
+            const next = new URLSearchParams(searchParams);
+            if (tab === defaultTab) next.delete("tab");
+            else next.set("tab", String(tab));
+            setSearchParams(next, { replace: true });
+        },
+        [searchParams, setSearchParams, canCreateProject, committeeOpinionOnlyWorkflow],
+    );
 
     useEffect(() => {
-        if (!canCreateProject && activeTab === 'new-project') {
-            setActiveTab('feasibility');
+        if (!canCreateProject && searchParams.get("tab") === "new-project") {
+            const next = new URLSearchParams(searchParams);
+            next.delete("tab");
+            setSearchParams(next, { replace: true });
         }
-    }, [canCreateProject, activeTab]);
+    }, [canCreateProject, searchParams, setSearchParams]);
+
+    useEffect(() => {
+        if (!committeeOpinionOnlyWorkflow) return;
+        const tab = searchParams.get("tab");
+        if (tab === "new-project" || tab === "investment-feasibility") {
+            const next = new URLSearchParams(searchParams);
+            next.delete("tab");
+            setSearchParams(next, { replace: true });
+        }
+    }, [committeeOpinionOnlyWorkflow, searchParams, setSearchParams]);
 
     const renderContent = () => {
         switch (activeTab) {
             case "new-project": return <NewProjectTab />;
-            case "feasibility": return <FeasibilityTab deptLabel={title} />;
-            case "reports": return <ReportsTab deptLabel={title} />;
-            case "contracts": return <ContractsTab deptLabel={title} />;
+            case "opportunities":
+                return (
+                    <InvestmentOpportunitiesTabWithFocus
+                        departmentType={departmentType}
+                        focusOpportunityId={focusOpportunityId}
+                        onFocused={() => setFocusOpportunityId(null)}
+                    />
+                );
+            case "investment-feasibility": return <InvestmentFeasibilityStudyTab departmentType={departmentType} />;
+            case "opinions":
+                return (
+                    <InvestmentOpinionsTab
+                        departmentType={departmentType}
+                        onOpenOpportunity={(opportunityId) => {
+                            setFocusOpportunityId(opportunityId);
+                            setTab("opportunities");
+                        }}
+                    />
+                );
         }
     };
 
@@ -1800,25 +1848,6 @@ export function InvestmentFranchiseDepartmentPage({ title, description }: DeptPa
                 <p className="text-muted-foreground mt-1">{description}</p>
             </div>
 
-            {/* Tab Navigation */}
-            <div className="flex flex-wrap gap-2 mb-6 bg-muted/50 p-1.5 rounded-xl">
-                {tabs.map((tab) => (
-                    <button
-                        key={tab.id}
-                        onClick={() => setActiveTab(tab.id)}
-                        className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 ${activeTab === tab.id
-                            ? "bg-card text-primary shadow-sm border border-border"
-                            : "text-muted-foreground hover:text-foreground hover:bg-card/50"
-                            }`}
-                    >
-                        {tab.icon}
-                        <span className="hidden sm:inline">{tab.label}</span>
-                        <span className="sm:hidden">{tab.label.split(" ")[0]}</span>
-                    </button>
-                ))}
-            </div>
-
-            {/* Content */}
             <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                 {renderContent()}
             </div>

@@ -61,6 +61,13 @@ const RequestPage = lazy(() => import("@/app/components/RequestPage").then((m) =
 const UnderReviewProjectsPage = lazy(() => import("@/app/components/UnderReviewProjectsPage").then((m) => ({ default: m.UnderReviewProjectsPage })));
 const UsersPage = lazy(() => import("@/app/components/UsersPage").then((m) => ({ default: m.UsersPage })));
 const ActivityHistoryPage = lazy(() => import("@/app/components/ActivityHistoryPage").then((m) => ({ default: m.ActivityHistoryPage })));
+const RecentActivitiesPage = lazy(() => import("@/app/components/RecentActivitiesPage").then((m) => ({ default: m.RecentActivitiesPage })));
+const AdminSettingsPage = lazy(() => import("@/app/components/AdminSettingsPage").then((m) => ({ default: m.AdminSettingsPage })));
+const LegalWorkflowPage = lazy(() => import("@/app/components/LegalWorkflowPage").then((m) => ({ default: m.LegalWorkflowPage })));
+const ProjectWorkflowPage = lazy(() => import("@/app/components/ProjectWorkflowPage").then((m) => ({ default: m.ProjectWorkflowPage })));
+const PreOpeningPage = lazy(() => import("@/app/components/PreOpeningPage").then((m) => ({ default: m.PreOpeningPage })));
+const SubmittedApprovedRequestsPage = lazy(() => import("@/app/components/SubmittedApprovedRequestsPage").then((m) => ({ default: m.SubmittedApprovedRequestsPage })));
+const OpeningSoonProjectsPage = lazy(() => import("@/app/components/OpeningSoonProjectsPage").then((m) => ({ default: m.OpeningSoonProjectsPage })));
 
 const RouteFallback = () => (
   <div className="min-h-screen flex items-center justify-center">
@@ -80,12 +87,13 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/mode-selection" element={<ProtectedRoute><ModeSelectionPage /></ProtectedRoute>} />
             <Route path="/select-station" element={<ProtectedRoute><StationSelectionPage /></ProtectedRoute>} />
-            <Route path="/add-new-project" element={<ProtectedRoute><Navigate to="/station/new-station/form/investment-department" replace /></ProtectedRoute>} />
+            <Route path="/add-new-project" element={<ProtectedRoute><Navigate to="/station/new-station/form/investment-department?tab=new-project" replace /></ProtectedRoute>} />
 
             {/* All Stations Dashboard */}
             {/* All Stations Dashboard & Analytics */}
             <Route element={<ProtectedRoute><AllStationsDashboardLayout /></ProtectedRoute>}>
               <Route path="/all-stations-dashboard" element={<Dashboard />} />
+              <Route path="/all-stations-recent-activities" element={<RecentActivitiesPage />} />
               <Route path="/all-stations-analytics" element={<ExecutiveDashboard />} />
               <Route path="/all-stations-list" element={<AllStationsListPage />} />
               <Route path="/all-stations-departments" element={<DepartmentsPage />} />
@@ -93,9 +101,15 @@ function App() {
               <Route path="/all-stations-reports" element={<ReportsPage />} />
               <Route path="/station/:stationId/analytics" element={<StationAnalyticsPage />} />
               <Route path="/all-stations-requests" element={<RequestPage />} />
+              <Route path="/all-stations-order-requests-submitted" element={<SubmittedApprovedRequestsPage />} />
+              <Route path="/all-stations-opening-soon-projects" element={<OpeningSoonProjectsPage />} />
               <Route path="/all-stations-under-review" element={<UnderReviewProjectsPage />} />
               <Route path="/all-stations-contact-ceo" element={<ComplaintContactForm />} />
               <Route path="/all-stations-users" element={<UsersPage />} />
+              <Route path="/all-stations-settings" element={<AdminSettingsPage />} />
+              <Route path="/all-stations-legal" element={<LegalWorkflowPage />} />
+              <Route path="/all-stations-project" element={<ProjectWorkflowPage />} />
+              <Route path="/all-stations-pre-opening" element={<PreOpeningPage />} />
               <Route path="/all-stations-activity-history" element={<ActivityHistoryPage />} />
               <Route path="/station/:stationId" element={<StationFormsPage />} />
 

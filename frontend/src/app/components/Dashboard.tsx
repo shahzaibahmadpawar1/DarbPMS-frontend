@@ -19,26 +19,12 @@ import {
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000/api';
 
-type ActivityScope = 'mine' | 'all';
-
-interface ActivityRecord {
-  id: string;
-  actor_name?: string | null;
-  action?: string;
-  entity_type?: string;
-  summary?: string;
-  created_at?: string;
-}
-
 export function Dashboard() {
-  const { token, user } = useAuth();
+  const { token } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const stationTypeParam = searchParams.get(STATION_TYPE_QUERY_KEY);
   const stationType = isStationTypeFilterValue(stationTypeParam) ? stationTypeParam : '';
   const [dashStats, setDashStats] = useState<any>(null);
-  const [activities, setActivities] = useState<ActivityRecord[]>([]);
-  const [activityScope, setActivityScope] = useState<ActivityScope>('mine');
-  const [activitiesLoading, setActivitiesLoading] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
@@ -78,41 +64,9 @@ export function Dashboard() {
     fetchStats();
   }, [token, stationType]);
 
-  const canViewAllActivity = user?.role === 'super_admin' || user?.role === 'ceo';
-
-  useEffect(() => {
-    if (!token) return;
-
-    const effectiveScope: ActivityScope = canViewAllActivity ? activityScope : 'mine';
-
-    const fetchActivities = async () => {
-      setActivitiesLoading(true);
-      try {
-        const response = await fetch(`${API_URL}/dashboard/activities?scope=${effectiveScope}&limit=20`, {
-          headers: { 'Authorization': `Bearer ${token}` },
-        });
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch activities');
-        }
-
-        const data = await response.json();
-        setActivities(Array.isArray(data?.data) ? data.data : []);
-      } catch (err) {
-        console.error('Failed to fetch dashboard activities:', err);
-        setActivities([]);
-      } finally {
-        setActivitiesLoading(false);
-      }
-    };
-
-    fetchActivities();
-  }, [token, activityScope, canViewAllActivity]);
-
   const s = dashStats?.stations || {};
   const projects = dashStats?.projects || {};
   const workflow = dashStats?.workflow || {};
-  const recentActivities = activities;
   const stationsList: any[] = dashStats?.stationsList || [];
   const stationCards = [
     {
@@ -318,65 +272,6 @@ export function Dashboard() {
                 <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
                   <div className="h-full bg-primary rounded-full w-full opacity-30" />
                 </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
-
-      {/* Recent Activities */}
-      <div className="bg-card rounded-xl shadow-xl p-8 mb-12 card-glow relative overflow-hidden">
-        <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-          <h2 className="text-xl font-bold text-foreground">Recent Activities</h2>
-          <div className="flex items-center gap-2">
-            {canViewAllActivity && (
-              <div className="flex items-center gap-1 rounded-lg border border-border p-1 bg-muted/30">
-                <button
-                  type="button"
-                  className={`px-3 py-1 text-xs rounded-md transition-colors ${activityScope === 'mine' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'}`}
-                  onClick={() => setActivityScope('mine')}
-                >
-                  My Activity
-                </button>
-                <button
-                  type="button"
-                  className={`px-3 py-1 text-xs rounded-md transition-colors ${activityScope === 'all' ? 'bg-primary text-white' : 'text-muted-foreground hover:text-foreground'}`}
-                  onClick={() => setActivityScope('all')}
-                >
-                  All Users
-                </button>
-              </div>
-            )}
-            <Link to="/all-stations-activity-history" className="text-sm font-semibold text-primary hover:underline">
-              History
-            </Link>
-          </div>
-        </div>
-        <div className="space-y-4">
-          {activitiesLoading ? (
-            <div className="p-10 text-center text-muted-foreground border border-dashed border-border rounded-lg bg-muted/30">
-              Loading recent activities...
-            </div>
-          ) : recentActivities.length === 0 ? (
-            <div className="p-10 text-center text-muted-foreground border border-dashed border-border rounded-lg bg-muted/30">
-              No recent activities recorded.
-            </div>
-          ) : (
-            recentActivities.map((activity, index) => (
-              <div
-                key={index}
-                className="flex items-center justify-between p-4 border border-border rounded-xl hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10 transition-all bg-card/50 backdrop-blur-sm"
-              >
-                <div>
-                  <p className="font-medium text-foreground">{activity.summary || activity.action || 'Activity recorded'}</p>
-                  <p className="text-sm text-muted-foreground capitalize">
-                    {activity.entity_type?.replace(/_/g, ' ') || 'general'}
-                    {activity.actor_name ? ` | ${activity.actor_name}` : ''}
-                  </p>
-                </div>
-                <span className="text-sm text-muted-foreground">
-                  {activity.created_at ? new Date(activity.created_at).toLocaleString() : ''}
-                </span>
               </div>
             ))
           )}

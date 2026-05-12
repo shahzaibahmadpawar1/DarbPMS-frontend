@@ -223,3 +223,46 @@ nav::-webkit-scrollbar-thumb:hover {
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
+
+/* ========================================
+   PRINT - Investment detail modals
+   ======================================== */
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+
+  .investment-print-overlay,
+  .investment-print-overlay * {
+    visibility: visible !important;
+  }
+
+  .investment-print-overlay {
+    position: static !important;
+    inset: auto !important;
+    display: block !important;
+    background: #fff !important;
+    padding: 0 !important;
+  }
+
+  .investment-print-shell {
+    width: 100% !important;
+    max-width: none !important;
+    max-height: none !important;
+    overflow: visible !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+  }
+
+  .investment-print-body {
+    max-height: none !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}

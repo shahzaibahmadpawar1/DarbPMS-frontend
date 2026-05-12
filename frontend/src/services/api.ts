@@ -86,6 +86,11 @@ export function getDepartmentLabel(department: Department | null): string {
     return departmentLabelMap[department] || department;
 }
 
+/** Sidebar / permissions: treat Legal department case-insensitively (API may vary). */
+export function isLegalDepartment(department: unknown): boolean {
+    return String(department ?? '').trim().toLowerCase() === 'legal';
+}
+
 // API Response types
 export interface ApiResponse<T = any> {
     success: boolean;
@@ -318,6 +323,327 @@ export const usersAPI = {
         const result = await response.json();
         return Array.isArray(result?.data) ? result.data : [];
     },
+
+    async search(query: string, limit = 50, department?: Department): Promise<Array<{ id: string; username: string; role: UserRole; department: Department | null; email?: string | null }>> {
+        const token = localStorage.getItem('auth_token');
+        const deptParam = department ? `&department=${encodeURIComponent(department)}` : '';
+        const url = `${API_URL}/users/search?query=${encodeURIComponent(query || '')}&limit=${encodeURIComponent(String(limit))}${deptParam}`;
+        const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${token}` },
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || 'Failed to search users');
+        }
+        return Array.isArray(result?.data) ? result.data : [];
+    },
+};
+
+export const investmentWorkflowAPI = {
+    withDepartment(url: string, departmentType?: "investment" | "franchise"): string {
+        if (!departmentType) return url;
+        const sep = url.includes("?") ? "&" : "?";
+        return `${url}${sep}departmentType=${encodeURIComponent(departmentType)}`;
+    },
+    async listRegions(): Promise<any[]> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_URL}/investment/locations/regions`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || 'Failed to fetch regions');
+        }
+        return Array.isArray(result?.data) ? result.data : [];
+    },
+
+    async createRegion(name: string): Promise<any> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_URL}/investment/locations/regions`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || 'Failed to create region');
+        }
+        return result?.data;
+    },
+
+    async deleteRegion(id: string): Promise<void> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_URL}/investment/locations/regions/${encodeURIComponent(id)}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || 'Failed to delete region');
+        }
+    },
+
+    async listCities(regionId: string): Promise<any[]> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_URL}/investment/locations/cities?regionId=${encodeURIComponent(regionId)}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || 'Failed to fetch cities');
+        }
+        return Array.isArray(result?.data) ? result.data : [];
+    },
+
+    async createCity(regionId: string, name: string): Promise<any> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_URL}/investment/locations/cities`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ regionId, name }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || 'Failed to create city');
+        }
+        return result?.data;
+    },
+
+    async deleteCity(id: string): Promise<void> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_URL}/investment/locations/cities/${encodeURIComponent(id)}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || 'Failed to delete city');
+        }
+    },
+
+    async listClients(search = ''): Promise<any[]> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_URL}/investment/clients?search=${encodeURIComponent(search)}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || 'Failed to fetch clients');
+        }
+        return Array.isArray(result?.data) ? result.data : [];
+    },
+
+    async createClient(payload: any): Promise<any> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_URL}/investment/clients`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || 'Failed to create client');
+        }
+        return result?.data;
+    },
+
+    async listOpportunities(
+        departmentType?: "investment" | "franchise",
+        opts?: { pendingStationAssignment?: boolean },
+    ): Promise<any[]> {
+        const token = localStorage.getItem('auth_token');
+        let url = this.withDepartment(`${API_URL}/investment/opportunities`, departmentType);
+        if (opts?.pendingStationAssignment) {
+            const sep = url.includes("?") ? "&" : "?";
+            url = `${url}${sep}pendingStationAssignment=true`;
+        }
+        const response = await fetch(url, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || 'Failed to fetch opportunities');
+        }
+        return Array.isArray(result?.data) ? result.data : [];
+    },
+
+    async getOpportunity(id: string): Promise<any> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_URL}/investment/opportunities/${encodeURIComponent(id)}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || 'Failed to fetch opportunity');
+        }
+        return result?.data;
+    },
+
+    async createOpportunity(payload: any, departmentType?: "investment" | "franchise"): Promise<any> {
+        const token = localStorage.getItem('auth_token');
+        const bodyPayload = departmentType ? { ...payload, departmentType } : payload;
+        const response = await fetch(`${API_URL}/investment/opportunities`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(bodyPayload),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || 'Failed to create opportunity');
+        }
+        return result?.data;
+    },
+
+    async ceoSendOpportunityToContract(id: string, payload: { contractDepartment: string; contractManagerUserId: string }): Promise<any> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_URL}/investment/opportunities/${encodeURIComponent(id)}/ceo/send-contract`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || 'Failed to send opportunity for contract');
+        }
+        return result?.data;
+    },
+
+    async ceoApproveOpportunity(id: string): Promise<any> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_URL}/investment/opportunities/${encodeURIComponent(id)}/ceo/approve`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || 'Failed to approve opportunity');
+        }
+        return result?.data;
+    },
+
+    async publishOpportunityStation(id: string, payload: { stationCode: string; stationName: string }): Promise<any> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_URL}/investment/opportunities/${encodeURIComponent(id)}/publish-station`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || 'Failed to publish station');
+        }
+        return result?.data;
+    },
+
+    async ceoRejectOpportunity(id: string): Promise<any> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_URL}/investment/opportunities/${encodeURIComponent(id)}/ceo/reject`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || 'Failed to reject opportunity');
+        }
+        return result?.data;
+    },
+
+    async submitOpportunityContract(id: string, payload: { contractFormData: any }): Promise<any> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_URL}/investment/opportunities/${encodeURIComponent(id)}/contract/submit`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || 'Failed to submit contract form');
+        }
+        return result?.data;
+    },
+
+    async listStudies(departmentType?: "investment" | "franchise"): Promise<any[]> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(this.withDepartment(`${API_URL}/investment/studies`, departmentType), {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || 'Failed to fetch studies');
+        }
+        return Array.isArray(result?.data) ? result.data : [];
+    },
+
+    async saveStudy(payload: any, departmentType?: "investment" | "franchise"): Promise<any> {
+        const token = localStorage.getItem('auth_token');
+        const bodyPayload = departmentType ? { ...payload, departmentType } : payload;
+        const response = await fetch(`${API_URL}/investment/studies`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(bodyPayload),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || 'Failed to save study');
+        }
+        return result?.data;
+    },
+
+    async submitStudy(id: string, departmentType?: "investment" | "franchise"): Promise<any> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(this.withDepartment(`${API_URL}/investment/studies/${encodeURIComponent(id)}/submit`, departmentType), {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || 'Failed to submit study');
+        }
+        return result?.data;
+    },
+
+    async getStudyDetails(id: string, departmentType?: "investment" | "franchise"): Promise<any> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(this.withDepartment(`${API_URL}/investment/studies/${encodeURIComponent(id)}/details`, departmentType), {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || 'Failed to fetch study details');
+        }
+        return result?.data;
+    },
+
+    async committeeInbox(departmentType?: "investment" | "franchise"): Promise<any[]> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(this.withDepartment(`${API_URL}/investment/committee/inbox`, departmentType), {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || 'Failed to fetch committee inbox');
+        }
+        return Array.isArray(result?.data) ? result.data : [];
+    },
+
+    async submitOpinion(
+        studyId: string,
+        department: string,
+        opinionPayload: any,
+        departmentType?: "investment" | "franchise",
+    ): Promise<any> {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_URL}/investment/studies/${encodeURIComponent(studyId)}/opinions/${encodeURIComponent(department)}`, {
+            method: 'PUT',
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify(departmentType ? { opinionPayload, departmentType } : { opinionPayload }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || 'Failed to submit opinion');
+        }
+        return result?.data;
+    },
 };
 
 export const feasibilityAPI = {
@@ -390,5 +716,181 @@ export const feasibilityAPI = {
             throw new Error(result?.error || result?.message || 'Failed to fetch feasibility details');
         }
         return result?.data;
+    },
+};
+
+const SIDEBAR_NAV_CFG_CACHE_KEY = "darb_sidebar_nav_cfg_cache_v1";
+
+function readSidebarNavCfgCache(): { nestedOrder: unknown | null } {
+    try {
+        const raw = localStorage.getItem(SIDEBAR_NAV_CFG_CACHE_KEY);
+        if (!raw) return { nestedOrder: null };
+        const parsed = JSON.parse(raw) as { nestedOrder?: unknown };
+        return { nestedOrder: parsed?.nestedOrder ?? null };
+    } catch {
+        return { nestedOrder: null };
+    }
+}
+
+function writeSidebarNavCfgCache(payload: { nestedOrder: unknown | null }) {
+    try {
+        localStorage.setItem(SIDEBAR_NAV_CFG_CACHE_KEY, JSON.stringify(payload));
+    } catch {
+        // Best-effort cache only.
+    }
+}
+
+function alignOrderToAllowed(order: string[], allowed: string[]): string[] {
+    const allowedSet = new Set(allowed);
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const slot of order) {
+        if (!allowedSet.has(slot) || seen.has(slot)) continue;
+        out.push(slot);
+        seen.add(slot);
+    }
+    for (const slot of allowed) {
+        if (!seen.has(slot)) out.push(slot);
+    }
+    return out;
+}
+
+function alignNestedToServerShape(
+    requestedNested: unknown | null,
+    serverNested: unknown,
+): Record<string, string[]> | null {
+    if (!requestedNested || typeof requestedNested !== "object") return null;
+    if (!serverNested || typeof serverNested !== "object") return null;
+    const requested = requestedNested as Record<string, unknown>;
+    const server = serverNested as Record<string, unknown>;
+    const normalized: Record<string, string[]> = {};
+    for (const key of Object.keys(server)) {
+        const allowedRaw = server[key];
+        if (!Array.isArray(allowedRaw)) continue;
+        const allowed = allowedRaw.filter((v): v is string => typeof v === "string");
+        if (allowed.length === 0) continue;
+        const requestedRaw = requested[key];
+        const requestedItems = Array.isArray(requestedRaw)
+            ? requestedRaw.filter((v): v is string => typeof v === "string")
+            : [];
+        normalized[key] = alignOrderToAllowed(requestedItems, allowed);
+    }
+    return Object.keys(normalized).length > 0 ? normalized : null;
+}
+
+export const appSettingsAPI = {
+    async getSidebarNavSlots(): Promise<string[] | null> {
+        const cfg = await this.getSidebarNavConfig();
+        return cfg.order;
+    },
+
+    async getSidebarNavConfig(): Promise<{ order: string[] | null; nestedOrder: unknown | null }> {
+        const token = localStorage.getItem("auth_token");
+        const cached = readSidebarNavCfgCache();
+        const response = await fetch(`${API_URL}/app-settings/sidebar-nav-slots`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || "Failed to load sidebar order");
+        }
+        const order = result?.data?.order;
+        const nestedOrder = result?.data?.nestedOrder ?? cached.nestedOrder ?? null;
+        writeSidebarNavCfgCache({ nestedOrder });
+        return { order: Array.isArray(order) ? order : null, nestedOrder };
+    },
+
+    async putSidebarNavSlots(order: string[]): Promise<void> {
+        await this.putSidebarNavConfig(order, null);
+    },
+
+    async putSidebarNavConfig(order: string[], nestedOrder: unknown | null): Promise<void> {
+        const token = localStorage.getItem("auth_token");
+        const doPut = async (payloadOrder: string[], payloadNestedOrder: unknown | null) =>
+            fetch(`${API_URL}/app-settings/sidebar-nav-slots`, {
+            method: "PUT",
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ order: payloadOrder, nestedOrder: payloadNestedOrder }),
+        });
+
+        let response = await doPut(order, nestedOrder);
+        let result = await response.json().catch(() => ({}));
+        if (response.ok) {
+            writeSidebarNavCfgCache({ nestedOrder });
+            return;
+        }
+
+        const message = String(result?.error || result?.message || "");
+        const maybeOldBackendInvalidOrder = response.status === 400 && /invalid\s+order/i.test(message);
+        if (maybeOldBackendInvalidOrder) {
+            // Fetch current server shape and align payload to what backend currently supports.
+            const readResponse = await fetch(`${API_URL}/app-settings/sidebar-nav-slots`, {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+            const readResult = await readResponse.json().catch(() => ({}));
+            const serverOrder = Array.isArray(readResult?.data?.order)
+                ? readResult.data.order.filter((v: unknown): v is string => typeof v === "string")
+                : [];
+            const alignedOrder = serverOrder.length > 0 ? alignOrderToAllowed(order, serverOrder) : order;
+            const alignedNested = alignNestedToServerShape(nestedOrder, readResult?.data?.nestedOrder);
+
+            response = await doPut(alignedOrder, alignedNested);
+            result = await response.json().catch(() => ({}));
+            if (response.ok) {
+                writeSidebarNavCfgCache({ nestedOrder });
+                return;
+            }
+
+            // Some older backends reject nestedOrder entirely; keep local cache and persist only order.
+            response = await doPut(alignedOrder, null);
+            result = await response.json().catch(() => ({}));
+            if (response.ok) {
+                writeSidebarNavCfgCache({ nestedOrder });
+                return;
+            }
+        }
+
+        throw new Error(result?.error || result?.message || "Failed to save sidebar order");
+    },
+
+    async getSurveyDropdowns(): Promise<{
+        stationStatusOptions: Array<{ value: string; label: string }>;
+        stageOptions: Array<{ value: string; label: string }>;
+    }> {
+        const token = localStorage.getItem("auth_token");
+        const response = await fetch(`${API_URL}/app-settings/survey-dropdowns`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || "Failed to load survey dropdowns");
+        }
+        const data = result?.data;
+        return {
+            stationStatusOptions: Array.isArray(data?.stationStatusOptions) ? data.stationStatusOptions : [],
+            stageOptions: Array.isArray(data?.stageOptions) ? data.stageOptions : [],
+        };
+    },
+
+    async putSurveyDropdowns(payload: {
+        stationStatusOptions: Array<{ value: string; label: string }>;
+        stageOptions: Array<{ value: string; label: string }>;
+    }): Promise<void> {
+        const token = localStorage.getItem("auth_token");
+        const response = await fetch(`${API_URL}/app-settings/survey-dropdowns`, {
+            method: "PUT",
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify(payload),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || "Failed to save survey dropdowns");
+        }
     },
 };

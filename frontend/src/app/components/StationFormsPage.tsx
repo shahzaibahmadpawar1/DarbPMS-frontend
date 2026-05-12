@@ -4,6 +4,7 @@ import { CheckCircle, Activity } from "lucide-react";
 import logo from "../../assets/logo.png";
 import { stationSections } from "../data/formSections";
 import { useStation } from "../context/StationContext";
+import { StationSurveySnapshot } from "./StationSurveySnapshot";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
@@ -197,6 +198,13 @@ export function StationFormsPage() {
           project: s.district || "N/A",
           customerName: s.street || "N/A",
           status: s.station_status_code || "Active",
+          survey_version_id: s.survey_version_id,
+          survey_saved_at: s.survey_saved_at,
+          survey_project_start_date: s.survey_project_start_date,
+          survey_project_delivery_date: s.survey_project_delivery_date,
+          survey_expected_date: s.survey_expected_date,
+          survey_station_status_code: s.survey_station_status_code,
+          survey_station_status_stage: s.survey_station_status_stage,
         };
 
         setStation(mapped);
@@ -285,6 +293,8 @@ export function StationFormsPage() {
             <Activity className="w-4 h-4" /> Analytics
           </Link>
         </div>
+
+        <StationSurveySnapshot raw={station} layout="detailHeader" className="mt-4" />
 
         <div className="mt-5 max-w-md">
           <div className="flex items-center justify-between mb-1">

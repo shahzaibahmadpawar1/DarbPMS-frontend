@@ -10,6 +10,7 @@ import {
 import logo from "../../assets/logo.png";
 import { useAuth } from "@/context/AuthContext";
 import { isStationTypeFilterValue, STATION_TYPE_QUERY_KEY } from "../constants/stationTypeFilter";
+import { StationSurveySnapshot } from "./StationSurveySnapshot";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 const STATIONS_PAGE_SIZE = 200;
@@ -148,7 +149,7 @@ const bucketLabels: Record<string, string> = {
     'not-started': 'Not Started',
     'operational-stations': 'Operational Stations',
     'opening-soon': 'Opening Soon',
-    'new-stations': 'New Stations During the Month',
+    'new-stations': 'New Stations (Last 30 Days)',
     'total-projects': 'Total Projects',
     'pending-review': 'Pending Review',
     'validated': 'Validated',
@@ -199,12 +200,6 @@ export function AllStationsListPage() {
         }
 
         try {
-            const [projects, tasks] = await Promise.all([
-                fetchAllInvestmentProjectsForVisibility(token),
-                fetchAllWorkflowTasksForVisibility(token),
-            ]);
-            const hiddenStationCodes = computeHiddenStationCodes(projects, tasks);
-
             if (activeBucket) {
                 const bucketParams = new URLSearchParams({ bucket: activeBucket });
                 if (selectedStationType) {
@@ -223,10 +218,9 @@ export function AllStationsListPage() {
                 }
 
                 const result = await response.json();
-                const mappedStations = (result.data || [])
-                    .filter((s: any) => !s?.review_status || String(s.review_status).trim() === 'Approved')
-                    .filter((s: any) => !hiddenStationCodes.has(String(s?.station_code || s?.stationCode || s?.display_code || '').trim()))
-                    .map((s: any) => ({
+                // Trust API bucket results: do not apply Approved-only or hiddenStationCodes
+                // (those hide contract/doc workflow rows and break contracted/documented/validated).
+                const mappedStations = (result.data || []).map((s: any) => ({
                     id: s.id || s.station_code,
                     station_code: s.station_code,
                     name: s.station_name,
@@ -239,6 +233,12 @@ export function AllStationsListPage() {
             }
 
             if (!activeBucket) {
+                const [projects, tasks] = await Promise.all([
+                    fetchAllInvestmentProjectsForVisibility(token),
+                    fetchAllWorkflowTasksForVisibility(token),
+                ]);
+                const hiddenStationCodes = computeHiddenStationCodes(projects, tasks);
+
                 const allStations: any[] = [];
                 let offset = 0;
 
@@ -542,72 +542,82 @@ export function AllStationsListPage() {
                                 className="p-3 sm:p-4 md:p-6 cursor-pointer hover:bg-primary/5 transition-colors"
                                 onClick={() => openStation(station.id)}
                             >
-                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-                                    <div className="flex items-center gap-3 sm:gap-4 flex-1 w-full sm:w-auto">
-                                        <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg p-1.5 flex-shrink-0">
-                                            <img src={logo} alt="Darb Logo" className="w-full h-full object-contain" />
-                                        </div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2 flex-wrap">
-                                                <h3 className="text-base sm:text-lg md:text-xl font-bold text-foreground">{station.name}</h3>
-                                                <span
-                                                    className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-bold border whitespace-nowrap ${getStatusColor(
-                                                        station.status
-                                                    )}`}
-                                                >
-                                                    {station.status}
-                                                </span>
+                                <div className="flex flex-col gap-4">
+                                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                                        <div className="flex items-start gap-3 sm:gap-4 flex-1 min-w-0">
+                                            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-lg sm:rounded-xl flex items-center justify-center shadow-lg p-1.5 flex-shrink-0">
+                                                <img src={logo} alt="Darb Logo" className="w-full h-full object-contain" />
                                             </div>
-                                            <p className="text-xs sm:text-sm text-muted-foreground mb-2 sm:mb-3">
-                                                {station.region} • {station.city} • {station.customerName}
-                                            </p>
-
-                                            {/* Progress Bar */}
-                                            <div className="max-w-md">
-                                                <div className="flex items-center justify-between mb-1">
-                                                    <span className="text-xs font-semibold text-muted-foreground">Form Completion</span>
-                                                    <span className="text-xs font-bold text-primary">
-                                                        {station.formsCompleted}/{station.totalForms} ({completionPercentage}%)
+                                            <div className="flex-1 min-w-0">
+                                                <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2 flex-wrap">
+                                                    <h3 className="text-base sm:text-lg md:text-xl font-bold text-foreground">{station.name}</h3>
+                                                    <span
+                                                        className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-bold border whitespace-nowrap ${getStatusColor(
+                                                            station.status
+                                                        )}`}
+                                                    >
+                                                        {station.status}
                                                     </span>
                                                 </div>
-                                                <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
-                                                    <div
-                                                        className="h-full gradient-primary rounded-full transition-all duration-500"
-                                                        style={{ width: `${completionPercentage}%` }}
-                                                    ></div>
-                                                </div>
+                                                <p className="text-xs sm:text-sm text-muted-foreground">
+                                                    {station.region} • {station.city} • {station.customerName}
+                                                </p>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
-                                        <Link
-                                            to={`/station/${station.id}/analytics`}
+
+                                        <div
+                                            className="flex items-center gap-2 sm:gap-3 w-full lg:w-auto lg:flex-shrink-0 lg:self-start justify-end"
                                             onClick={(e) => e.stopPropagation()}
-                                            className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors font-semibold text-xs sm:text-sm flex-1 sm:flex-none justify-center"
                                         >
-                                            <Activity className="w-4 h-4 flex-shrink-0" />
-                                            <span className="hidden xs:inline">Analytics</span>
-                                        </Link>
-                                        {canDeleteStation && (
-                                            <button
-                                                onClick={(e) => { e.stopPropagation(); setDeleteConfirm({ id: station.id, name: station.name }); }}
-                                                className="p-1.5 sm:p-2 hover:bg-red-50 text-red-500 hover:text-red-600 rounded-lg transition-colors flex-shrink-0"
-                                                title="Delete station"
+                                            <Link
+                                                to={`/station/${station.id}/analytics`}
+                                                className="flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors font-semibold text-xs sm:text-sm flex-1 sm:flex-none justify-center"
                                             >
-                                                <Trash2 className="w-4 h-4" />
+                                                <Activity className="w-4 h-4 flex-shrink-0" />
+                                                <span className="hidden xs:inline">Analytics</span>
+                                            </Link>
+                                            {canDeleteStation && (
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setDeleteConfirm({ id: station.id, name: station.name });
+                                                    }}
+                                                    className="p-1.5 sm:p-2 hover:bg-red-50 text-red-500 hover:text-red-600 rounded-lg transition-colors flex-shrink-0"
+                                                    title="Delete station"
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                            <button
+                                                type="button"
+                                                className="p-1.5 sm:p-2 hover:bg-muted rounded-lg transition-colors flex-shrink-0"
+                                                aria-label="Open station"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    openStation(station.id);
+                                                }}
+                                            >
+                                                <ChevronRight className="w-5 h-5 text-muted-foreground" />
                                             </button>
-                                        )}
-                                        <button
-                                            type="button"
-                                            className="p-1.5 sm:p-2 hover:bg-muted rounded-lg transition-colors flex-shrink-0"
-                                            aria-label="Open station"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                openStation(station.id);
-                                            }}
-                                        >
-                                            <ChevronRight className="w-5 h-5 text-muted-foreground" />
-                                        </button>
+                                        </div>
+                                    </div>
+
+                                    <StationSurveySnapshot raw={station.raw} layout="card" className="w-full" />
+
+                                    <div className="max-w-md pt-1">
+                                        <div className="flex items-center justify-between mb-1">
+                                            <span className="text-xs font-semibold text-muted-foreground">Form Completion</span>
+                                            <span className="text-xs font-bold text-primary">
+                                                {station.formsCompleted}/{station.totalForms} ({completionPercentage}%)
+                                            </span>
+                                        </div>
+                                        <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                                            <div
+                                                className="h-full gradient-primary rounded-full transition-all duration-500"
+                                                style={{ width: `${completionPercentage}%` }}
+                                            ></div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>

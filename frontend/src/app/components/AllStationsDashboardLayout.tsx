@@ -1,7 +1,9 @@
-﻿import { useState, useEffect } from "react";
+﻿import { useState, useEffect, useRef, useLayoutEffect, useMemo, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Link, Outlet, useLocation } from "react-router-dom";
 import {
     LayoutDashboard,
+    BarChart2,
     Activity,
     Menu,
     X,
@@ -15,6 +17,13 @@ import {
     Clock,
     Users,
     Building2,
+    Settings,
+    History,
+    BookOpen,
+    User,
+    CheckCircle,
+    Bell,
+    DatabaseBackup,
 } from "lucide-react";
 import { BackToDashboardButton } from "./BackToDashboardButton";
 import { LanguageSwitcher } from "./LanguageSwitcher";
@@ -22,7 +31,7 @@ import { BrandName } from "./BrandName";
 import { ChatWidget } from "./ChatWidget";
 import { useTranslation } from "../../utils/translations";
 import { useAuth } from "@/context/AuthContext";
-import { getRoleLabel } from "@/services/api";
+import { getRoleLabel, appSettingsAPI, isLegalDepartment } from "@/services/api";
 import {
     getOrInitLastSeenAt,
     markLastSeenNow,
@@ -32,17 +41,32 @@ import {
 } from "@/utils/sidebarBadgeStorage";
 import { useStation } from "../context/StationContext";
 import { useStationFormAutofill } from "../hooks/useStationFormAutofill";
+import {
+    canCreateInvestmentOpportunityOrProject,
+    isCommitteeDepartmentManagerForWorkflow,
+    isCommitteeOpinionOnlyWorkflowUser,
+} from "@/utils/investmentPermissions";
+import {
+    resolveExecutiveSidebarSlotOrder,
+    resolveDeptSidebarSlotOrder,
+} from "@/utils/allStationsSidebarSlots";
+import { DEFAULT_SIDEBAR_NESTED_ORDER, normalizeSidebarNestedOrder } from "@/utils/sidebarNestedOrder";
+import {
+    workflowDeptHref,
+    workflowDeptChildIsActive,
+    workflowDepartmentFromPath,
+    type WorkflowDepartmentType,
+} from "@/utils/investmentDepartmentNav";
 import logo from "../../assets/logo.png";
 import * as XLSX from 'xlsx';
 import axios from "axios";
+import {
+    AllStationsSidebarSlot,
+    type NavItem,
+    type SidebarNavRenderContext,
+} from "./AllStationsSidebarSlot";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
-
-interface NavItem {
-    titleKey: "dashboard" | "analytics" | "stations" | "departments" | "tasks" | "reports" | "contactCEO" | "requests" | "underReview" | "users" | "investmentDept" | "franchiseDept";
-    path: string;
-    icon: React.ReactNode;
-}
 
 export function AllStationsDashboardLayout() {
     // Start open on desktop (>= 1024px), closed on mobile
@@ -56,6 +80,80 @@ export function AllStationsDashboardLayout() {
     const [taskCount, setTaskCount] = useState(0);
     const [underReviewCount, setUnderReviewCount] = useState(0);
     const [importLoading, setImportLoading] = useState(false);
+    const [systemSettingsOpen, setSystemSettingsOpen] = useState(false);
+    const systemSettingsWrapRef = useRef<HTMLDivElement>(null);
+    const [systemSettingsFlyout, setSystemSettingsFlyout] = useState<{
+        top: number;
+        left: number;
+        width: number;
+    } | null>(null);
+    const [investmentMenuOpen, setInvestmentMenuOpen] = useState(false);
+    const investmentWrapRef = useRef<HTMLDivElement>(null);
+    const [investmentFlyout, setInvestmentFlyout] = useState<{
+        top: number;
+        left: number;
+        width: number;
+    } | null>(null);
+    const [franchiseMenuOpen, setFranchiseMenuOpen] = useState(false);
+    const franchiseWrapRef = useRef<HTMLDivElement>(null);
+    const [franchiseFlyout, setFranchiseFlyout] = useState<{
+        top: number;
+        left: number;
+        width: number;
+    } | null>(null);
+    const [dashboardMenuOpen, setDashboardMenuOpen] = useState(false);
+    const dashboardWrapRef = useRef<HTMLDivElement>(null);
+    const [dashboardFlyout, setDashboardFlyout] = useState<{
+        top: number;
+        left: number;
+        width: number;
+    } | null>(null);
+    const [legalMenuOpen, setLegalMenuOpen] = useState(false);
+    const legalWrapRef = useRef<HTMLDivElement>(null);
+    const [legalFlyout, setLegalFlyout] = useState<{
+        top: number;
+        left: number;
+        width: number;
+    } | null>(null);
+    const [projectMenuOpen, setProjectMenuOpen] = useState(false);
+    const projectWrapRef = useRef<HTMLDivElement>(null);
+    const [projectFlyout, setProjectFlyout] = useState<{
+        top: number;
+        left: number;
+        width: number;
+    } | null>(null);
+    const [preOpeningMenuOpen, setPreOpeningMenuOpen] = useState(false);
+    const preOpeningWrapRef = useRef<HTMLDivElement>(null);
+    const [preOpeningFlyout, setPreOpeningFlyout] = useState<{
+        top: number;
+        left: number;
+        width: number;
+    } | null>(null);
+    const [orderRequestMenuOpen, setOrderRequestMenuOpen] = useState(false);
+    const orderRequestWrapRef = useRef<HTMLDivElement>(null);
+    const [orderRequestFlyout, setOrderRequestFlyout] = useState<{
+        top: number;
+        left: number;
+        width: number;
+    } | null>(null);
+    const [openingSoonMenuOpen, setOpeningSoonMenuOpen] = useState(false);
+    const openingSoonWrapRef = useRef<HTMLDivElement>(null);
+    const [openingSoonFlyout, setOpeningSoonFlyout] = useState<{
+        top: number;
+        left: number;
+        width: number;
+    } | null>(null);
+    const [tasksMenuOpen, setTasksMenuOpen] = useState(false);
+    const tasksMenuWrapRef = useRef<HTMLDivElement>(null);
+    const [tasksMenuFlyout, setTasksMenuFlyout] = useState<{
+        top: number;
+        left: number;
+        width: number;
+    } | null>(null);
+    const [sidebarSlotOrder, setSidebarSlotOrder] = useState<string[] | null>(null);
+    const [sidebarNestedOrder, setSidebarNestedOrder] = useState(() =>
+        normalizeSidebarNestedOrder(DEFAULT_SIDEBAR_NESTED_ORDER),
+    );
     const location = useLocation();
     const { t, lang } = useTranslation();
     const { user, token } = useAuth();
@@ -63,7 +161,6 @@ export function AllStationsDashboardLayout() {
     const isRTL = lang === 'ar';
     const isDepartmentScopedUser = !!user && user.role !== 'super_admin' && user.role !== 'ceo';
     const canCreateDepartmentProject = !!user && ['super_admin', 'department_manager', 'supervisor'].includes(user.role);
-    const isInvestmentUser = isDepartmentScopedUser && canCreateDepartmentProject && user?.department === 'investment';
     const isFranchiseUser = isDepartmentScopedUser && canCreateDepartmentProject && user?.department === 'franchise';
     const isDeptUser = isDepartmentScopedUser;
     const canShowDepartmentAddButton = !!user
@@ -71,11 +168,345 @@ export function AllStationsDashboardLayout() {
         && (user.department === 'investment' || user.department === 'franchise');
     const addProjectPath = user?.department === 'franchise'
         ? '/station/new-station/form/franchise-department'
-        : '/station/new-station/form/investment-department';
+        : '/station/new-station/form/investment-department?tab=new-project';
+
+    useEffect(() => {
+        // Used by fullscreen modals to center within the remaining content area.
+        // When the sidebar is open on desktop, the modal would appear visually shifted left behind the sidebar.
+        const isDesktop = typeof window !== 'undefined' && window.innerWidth >= 1024;
+        const offset = (isDesktop && sidebarOpen) ? '18rem' : '0rem';
+        document.documentElement.style.setProperty('--sidebar-offset', offset);
+        return () => {
+            document.documentElement.style.setProperty('--sidebar-offset', '0rem');
+        };
+    }, [sidebarOpen]);
     useStationFormAutofill({
         pathname: location.pathname,
         stationCode: selectedStation?.station_code,
     });
+
+    const isSystemSettingsRoute =
+        location.pathname === "/all-stations-users" || location.pathname === "/all-stations-settings";
+
+    useEffect(() => {
+        if (isSystemSettingsRoute) {
+            setSystemSettingsOpen(true);
+        }
+    }, [isSystemSettingsRoute]);
+
+    const workflowRouteDept = workflowDepartmentFromPath(location.pathname);
+    const isInvestmentDeptRoute = workflowRouteDept === "investment";
+    const isFranchiseDeptRoute = workflowRouteDept === "franchise";
+    const isLegalRoute = location.pathname === "/all-stations-legal";
+    const isProjectRoute =
+        location.pathname === "/all-stations-project" ||
+        location.pathname === "/all-stations-list" ||
+        location.pathname === "/all-stations-reports" ||
+        location.pathname.includes("/investment-department") ||
+        location.pathname.includes("/franchise-department");
+    const isPreOpeningRoute = location.pathname === "/all-stations-pre-opening";
+    const isOrderRequestRoute = location.pathname === "/all-stations-requests" || location.pathname === "/all-stations-order-requests-submitted";
+    const isOpeningSoonRoute = location.pathname === "/all-stations-opening-soon-projects";
+    const isTasksMenuRoute = location.pathname === "/all-stations-tasks";
+    const isDashboardGroupRoute =
+        location.pathname === "/all-stations-dashboard" ||
+        location.pathname === "/all-stations-analytics" ||
+        location.pathname === "/all-stations-recent-activities" ||
+        location.pathname === "/all-stations-under-review" ||
+        isInvestmentDeptRoute ||
+        isFranchiseDeptRoute;
+
+    useEffect(() => {
+        if (isInvestmentDeptRoute) {
+            setInvestmentMenuOpen(true);
+        }
+    }, [isInvestmentDeptRoute]);
+
+    useEffect(() => {
+        if (isFranchiseDeptRoute) {
+            setFranchiseMenuOpen(true);
+        }
+    }, [isFranchiseDeptRoute]);
+
+    useEffect(() => {
+        if (isDashboardGroupRoute) {
+            setDashboardMenuOpen(true);
+        }
+    }, [isDashboardGroupRoute]);
+    useEffect(() => {
+        if (isLegalRoute) setLegalMenuOpen(true);
+    }, [isLegalRoute]);
+    useEffect(() => {
+        if (isProjectRoute) setProjectMenuOpen(true);
+    }, [isProjectRoute]);
+    useEffect(() => {
+        if (isPreOpeningRoute) setPreOpeningMenuOpen(true);
+    }, [isPreOpeningRoute]);
+    useEffect(() => {
+        if (isOrderRequestRoute) setOrderRequestMenuOpen(true);
+    }, [isOrderRequestRoute]);
+    useEffect(() => {
+        if (isOpeningSoonRoute) setOpeningSoonMenuOpen(true);
+    }, [isOpeningSoonRoute]);
+    useEffect(() => {
+        if (isTasksMenuRoute) setTasksMenuOpen(true);
+    }, [isTasksMenuRoute]);
+
+    useLayoutEffect(() => {
+        if (!systemSettingsOpen || sidebarOpen) {
+            setSystemSettingsFlyout(null);
+            return;
+        }
+        const update = () => {
+            const el = systemSettingsWrapRef.current;
+            if (!el) return;
+            const r = el.getBoundingClientRect();
+            const width = 176;
+            const gap = 8;
+            const left = isRTL
+                ? Math.max(gap, r.left - width - gap)
+                : Math.min(r.right + gap, window.innerWidth - width - gap);
+            setSystemSettingsFlyout({ top: r.top, left, width });
+        };
+        update();
+        window.addEventListener("resize", update);
+        return () => window.removeEventListener("resize", update);
+    }, [systemSettingsOpen, sidebarOpen, isRTL]);
+
+    useLayoutEffect(() => {
+        if (!investmentMenuOpen || sidebarOpen) {
+            setInvestmentFlyout(null);
+            return;
+        }
+        const update = () => {
+            const el = investmentWrapRef.current;
+            if (!el) return;
+            const r = el.getBoundingClientRect();
+            const width = 200;
+            const gap = 8;
+            const left = isRTL
+                ? Math.max(gap, r.left - width - gap)
+                : Math.min(r.right + gap, window.innerWidth - width - gap);
+            setInvestmentFlyout({ top: r.top, left, width });
+        };
+        update();
+        window.addEventListener("resize", update);
+        return () => window.removeEventListener("resize", update);
+    }, [investmentMenuOpen, sidebarOpen, isRTL]);
+
+    useLayoutEffect(() => {
+        if (!franchiseMenuOpen || sidebarOpen) {
+            setFranchiseFlyout(null);
+            return;
+        }
+        const update = () => {
+            const el = franchiseWrapRef.current;
+            if (!el) return;
+            const r = el.getBoundingClientRect();
+            const width = 200;
+            const gap = 8;
+            const left = isRTL
+                ? Math.max(gap, r.left - width - gap)
+                : Math.min(r.right + gap, window.innerWidth - width - gap);
+            setFranchiseFlyout({ top: r.top, left, width });
+        };
+        update();
+        window.addEventListener("resize", update);
+        return () => window.removeEventListener("resize", update);
+    }, [franchiseMenuOpen, sidebarOpen, isRTL]);
+
+    useLayoutEffect(() => {
+        if (!dashboardMenuOpen || sidebarOpen) {
+            setDashboardFlyout(null);
+            return;
+        }
+        const update = () => {
+            const el = dashboardWrapRef.current;
+            if (!el) return;
+            const r = el.getBoundingClientRect();
+            const width = 220;
+            const gap = 8;
+            const left = isRTL
+                ? Math.max(gap, r.left - width - gap)
+                : Math.min(r.right + gap, window.innerWidth - width - gap);
+            setDashboardFlyout({ top: r.top, left, width });
+        };
+        update();
+        window.addEventListener("resize", update);
+        return () => window.removeEventListener("resize", update);
+    }, [dashboardMenuOpen, sidebarOpen, isRTL]);
+    useLayoutEffect(() => {
+        if (!legalMenuOpen || sidebarOpen) {
+            setLegalFlyout(null);
+            return;
+        }
+        const update = () => {
+            const el = legalWrapRef.current;
+            if (!el) return;
+            const r = el.getBoundingClientRect();
+            const width = 220;
+            const gap = 8;
+            const left = isRTL
+                ? Math.max(gap, r.left - width - gap)
+                : Math.min(r.right + gap, window.innerWidth - width - gap);
+            setLegalFlyout({ top: r.top, left, width });
+        };
+        update();
+        window.addEventListener("resize", update);
+        return () => window.removeEventListener("resize", update);
+    }, [legalMenuOpen, sidebarOpen, isRTL]);
+    useLayoutEffect(() => {
+        if (!projectMenuOpen || sidebarOpen) {
+            setProjectFlyout(null);
+            return;
+        }
+        const update = () => {
+            const el = projectWrapRef.current;
+            if (!el) return;
+            const r = el.getBoundingClientRect();
+            const width = 220;
+            const gap = 8;
+            const left = isRTL
+                ? Math.max(gap, r.left - width - gap)
+                : Math.min(r.right + gap, window.innerWidth - width - gap);
+            setProjectFlyout({ top: r.top, left, width });
+        };
+        update();
+        window.addEventListener("resize", update);
+        return () => window.removeEventListener("resize", update);
+    }, [projectMenuOpen, sidebarOpen, isRTL]);
+    useLayoutEffect(() => {
+        if (!preOpeningMenuOpen || sidebarOpen) {
+            setPreOpeningFlyout(null);
+            return;
+        }
+        const update = () => {
+            const el = preOpeningWrapRef.current;
+            if (!el) return;
+            const r = el.getBoundingClientRect();
+            const width = 220;
+            const gap = 8;
+            const left = isRTL
+                ? Math.max(gap, r.left - width - gap)
+                : Math.min(r.right + gap, window.innerWidth - width - gap);
+            setPreOpeningFlyout({ top: r.top, left, width });
+        };
+        update();
+        window.addEventListener("resize", update);
+        return () => window.removeEventListener("resize", update);
+    }, [preOpeningMenuOpen, sidebarOpen, isRTL]);
+    useLayoutEffect(() => {
+        if (!orderRequestMenuOpen || sidebarOpen) {
+            setOrderRequestFlyout(null);
+            return;
+        }
+        const update = () => {
+            const el = orderRequestWrapRef.current;
+            if (!el) return;
+            const r = el.getBoundingClientRect();
+            const width = 240;
+            const gap = 8;
+            const left = isRTL
+                ? Math.max(gap, r.left - width - gap)
+                : Math.min(r.right + gap, window.innerWidth - width - gap);
+            setOrderRequestFlyout({ top: r.top, left, width });
+        };
+        update();
+        window.addEventListener("resize", update);
+        return () => window.removeEventListener("resize", update);
+    }, [orderRequestMenuOpen, sidebarOpen, isRTL]);
+    useLayoutEffect(() => {
+        if (!openingSoonMenuOpen || sidebarOpen) {
+            setOpeningSoonFlyout(null);
+            return;
+        }
+        const update = () => {
+            const el = openingSoonWrapRef.current;
+            if (!el) return;
+            const r = el.getBoundingClientRect();
+            const width = 240;
+            const gap = 8;
+            const left = isRTL
+                ? Math.max(gap, r.left - width - gap)
+                : Math.min(r.right + gap, window.innerWidth - width - gap);
+            setOpeningSoonFlyout({ top: r.top, left, width });
+        };
+        update();
+        window.addEventListener("resize", update);
+        return () => window.removeEventListener("resize", update);
+    }, [openingSoonMenuOpen, sidebarOpen, isRTL]);
+    useLayoutEffect(() => {
+        if (!tasksMenuOpen || sidebarOpen) {
+            setTasksMenuFlyout(null);
+            return;
+        }
+        const update = () => {
+            const el = tasksMenuWrapRef.current;
+            if (!el) return;
+            const r = el.getBoundingClientRect();
+            const width = 220;
+            const gap = 8;
+            const left = isRTL
+                ? Math.max(gap, r.left - width - gap)
+                : Math.min(r.right + gap, window.innerWidth - width - gap);
+            setTasksMenuFlyout({ top: r.top, left, width });
+        };
+        update();
+        window.addEventListener("resize", update);
+        return () => window.removeEventListener("resize", update);
+    }, [tasksMenuOpen, sidebarOpen, isRTL]);
+
+    useEffect(() => {
+        const flyoutOpen = (systemSettingsOpen || investmentMenuOpen || franchiseMenuOpen || dashboardMenuOpen || legalMenuOpen || projectMenuOpen || preOpeningMenuOpen || orderRequestMenuOpen || openingSoonMenuOpen || tasksMenuOpen) && !sidebarOpen;
+        if (!flyoutOpen) return;
+        const onPointerDown = (event: PointerEvent) => {
+            const target = event.target as Node;
+            const inSystem =
+                systemSettingsWrapRef.current?.contains(target) ||
+                (event.target as Element).closest?.("[data-system-settings-flyout]");
+            const inInvest =
+                investmentWrapRef.current?.contains(target) ||
+                (event.target as Element).closest?.("[data-investment-flyout]");
+            const inFranchise =
+                franchiseWrapRef.current?.contains(target) ||
+                (event.target as Element).closest?.("[data-franchise-flyout]");
+            const inDashboard =
+                dashboardWrapRef.current?.contains(target) ||
+                (event.target as Element).closest?.("[data-dashboard-flyout]");
+            const inLegal =
+                legalWrapRef.current?.contains(target) ||
+                (event.target as Element).closest?.("[data-legal-flyout]");
+            const inProject =
+                projectWrapRef.current?.contains(target) ||
+                (event.target as Element).closest?.("[data-project-flyout]");
+            const inPreOpening =
+                preOpeningWrapRef.current?.contains(target) ||
+                (event.target as Element).closest?.("[data-pre-opening-flyout]");
+            const inOrderRequest =
+                orderRequestWrapRef.current?.contains(target) ||
+                (event.target as Element).closest?.("[data-order-request-flyout]");
+            const inOpeningSoon =
+                openingSoonWrapRef.current?.contains(target) ||
+                (event.target as Element).closest?.("[data-opening-soon-flyout]");
+            const inTasksMenu =
+                tasksMenuWrapRef.current?.contains(target) ||
+                (event.target as Element).closest?.("[data-tasks-menu-flyout]");
+            if (!inSystem && !inInvest && !inFranchise && !inDashboard && !inLegal && !inProject && !inPreOpening && !inOrderRequest && !inOpeningSoon && !inTasksMenu) {
+                setSystemSettingsOpen(false);
+                setInvestmentMenuOpen(false);
+                setFranchiseMenuOpen(false);
+                setDashboardMenuOpen(false);
+                setLegalMenuOpen(false);
+                setProjectMenuOpen(false);
+                setPreOpeningMenuOpen(false);
+                setOrderRequestMenuOpen(false);
+                setOpeningSoonMenuOpen(false);
+                setTasksMenuOpen(false);
+            }
+        };
+        document.addEventListener("pointerdown", onPointerDown);
+        return () => document.removeEventListener("pointerdown", onPointerDown);
+    }, [systemSettingsOpen, investmentMenuOpen, franchiseMenuOpen, dashboardMenuOpen, legalMenuOpen, projectMenuOpen, preOpeningMenuOpen, orderRequestMenuOpen, openingSoonMenuOpen, tasksMenuOpen, sidebarOpen]);
 
 
     // Update sidebar state on window resize
@@ -270,34 +701,411 @@ export function AllStationsDashboardLayout() {
         reader.readAsArrayBuffer(file);
     };
 
+    const showSystemUsers = user?.role === "super_admin" || user?.role === "ceo";
+    const showSystemSettings = user?.role === "super_admin";
+    const canCreateInvestmentNav = canCreateInvestmentOpportunityOrProject(user);
+    const committeeOpinionOnlyWorkflow = isCommitteeOpinionOnlyWorkflowUser(user);
+    const showInvestmentMenu =
+        !!user &&
+        (user.role === "super_admin" ||
+            user.role === "ceo" ||
+            user.department === "investment" ||
+            isCommitteeDepartmentManagerForWorkflow(user));
+    const showFranchiseMenu =
+        !!user &&
+        (user.role === "super_admin" ||
+            user.role === "ceo" ||
+            user.department === "franchise" ||
+            isCommitteeDepartmentManagerForWorkflow(user));
+    const showLegalMenu = !!user && (user.role === "super_admin" || user.role === "ceo" || isLegalDepartment(user.department));
+    const showProjectMenu = !!user;
+    const showPreOpeningMenu = !!user;
+    const showOrderRequestMenu = !!user;
+    const showOpeningSoonMenu = !!user;
+    const showTasksMenu = !!user;
+
     const navigation: NavItem[] = isDeptUser
         ? [
             { titleKey: "dashboard", path: "/all-stations-dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
-            ...(isInvestmentUser ? [{ titleKey: "investmentDept" as const, path: "/station/new-station/form/investment-department", icon: <FileText className="w-5 h-5" /> }] : []),
-            ...(isFranchiseUser ? [{ titleKey: "franchiseDept" as const, path: "/station/new-station/form/franchise-department", icon: <FileText className="w-5 h-5" /> }] : []),
+            { titleKey: "recentActivities", path: "/all-stations-recent-activities", icon: <History className="w-5 h-5" /> },
             { titleKey: "underReview", path: "/all-stations-under-review", icon: <Clock className="w-5 h-5" /> },
                      { titleKey: "stations", path: "/all-stations-list", icon: <img src={logo} alt="" className="w-5 h-5 object-contain brightness-0 invert" /> },
                      { titleKey: "requests", path: "/all-stations-requests", icon: <Inbox className="w-5 h-5" /> },
                      { titleKey: "tasks", path: "/all-stations-tasks", icon: <ClipboardList className="w-5 h-5" /> },
-                     { titleKey: "reports", path: "/all-stations-reports", icon: <FileText className="w-5 h-5" /> },
                      { titleKey: "contactCEO", path: "/all-stations-contact-ceo", icon: <MessageCircle className="w-5 h-5" /> },
           ]
         : [
             { titleKey: "dashboard", path: "/all-stations-dashboard", icon: <LayoutDashboard className="w-5 h-5" /> },
+            { titleKey: "recentActivities", path: "/all-stations-recent-activities", icon: <History className="w-5 h-5" /> },
             { titleKey: "analytics", path: "/all-stations-analytics", icon: <Activity className="w-5 h-5" /> },
             { titleKey: "stations", path: "/all-stations-list", icon: <img src={logo} alt="" className="w-5 h-5 object-contain brightness-0 invert" /> },
             { titleKey: "departments", path: "/all-stations-departments", icon: <Building2 className="w-5 h-5" /> },
             { titleKey: "requests", path: "/all-stations-requests", icon: <Inbox className="w-5 h-5" /> },
             { titleKey: "underReview", path: "/all-stations-under-review", icon: <Clock className="w-5 h-5" /> },
             { titleKey: "tasks", path: "/all-stations-tasks", icon: <ClipboardList className="w-5 h-5" /> },
-            { titleKey: "reports", path: "/all-stations-reports", icon: <FileText className="w-5 h-5" /> },
             { titleKey: "contactCEO", path: "/all-stations-contact-ceo", icon: <MessageCircle className="w-5 h-5" /> },
-                        ...((user?.role === 'super_admin' || user?.role === 'ceo') ? [{ titleKey: "users" as const, path: "/all-stations-users", icon: <Users className="w-5 h-5" /> }] : []),
           ];
+
+    const loadSidebarSlots = useCallback(async () => {
+        if (!token) {
+            setSidebarSlotOrder(null);
+            setSidebarNestedOrder(normalizeSidebarNestedOrder(DEFAULT_SIDEBAR_NESTED_ORDER));
+            return;
+        }
+        try {
+            const { order, nestedOrder } = await appSettingsAPI.getSidebarNavConfig();
+            setSidebarSlotOrder(order);
+            setSidebarNestedOrder(normalizeSidebarNestedOrder(nestedOrder));
+        } catch {
+            setSidebarSlotOrder(null);
+            setSidebarNestedOrder(normalizeSidebarNestedOrder(DEFAULT_SIDEBAR_NESTED_ORDER));
+        }
+    }, [token]);
+
+    useEffect(() => {
+        void loadSidebarSlots();
+    }, [loadSidebarSlots]);
+
+    useEffect(() => {
+        const onSaved = () => {
+            void loadSidebarSlots();
+        };
+        window.addEventListener("darb-sidebar-slots-saved", onSaved);
+        return () => window.removeEventListener("darb-sidebar-slots-saved", onSaved);
+    }, [loadSidebarSlots]);
+
+    const resolvedSidebarSlots = useMemo(() => {
+        if (isDeptUser) return resolveDeptSidebarSlotOrder(sidebarSlotOrder, isFranchiseUser);
+        return resolveExecutiveSidebarSlotOrder(sidebarSlotOrder);
+    }, [isDeptUser, isFranchiseUser, sidebarSlotOrder]);
+
+    const sidebarNavCtx: SidebarNavRenderContext = useMemo(
+        () => ({
+            navigation,
+            sidebarOpen,
+            setSidebarOpen,
+            location,
+            t,
+            taskCount,
+            underReviewCount,
+            isDeptUser,
+            showSystemUsers,
+            showSystemSettings,
+            sidebarNestedOrder,
+            projectMenuOpen,
+            setProjectMenuOpen,
+            isProjectRoute,
+            showProjectMenu,
+            preOpeningMenuOpen,
+            setPreOpeningMenuOpen,
+            isPreOpeningRoute,
+            showPreOpeningMenu,
+            orderRequestMenuOpen,
+            setOrderRequestMenuOpen,
+            isOrderRequestRoute,
+            showOrderRequestMenu,
+            openingSoonMenuOpen,
+            setOpeningSoonMenuOpen,
+            isOpeningSoonRoute,
+            showOpeningSoonMenu,
+            tasksMenuOpen,
+            setTasksMenuOpen,
+            isTasksMenuRoute,
+            showTasksMenu,
+            dashboardMenuOpen,
+            setDashboardMenuOpen,
+            isDashboardGroupRoute,
+            legalMenuOpen,
+            setLegalMenuOpen,
+            isLegalRoute,
+            showLegalMenu,
+            investmentMenuOpen,
+            setInvestmentMenuOpen,
+            franchiseMenuOpen,
+            setFranchiseMenuOpen,
+            isInvestmentDeptRoute,
+            isFranchiseDeptRoute,
+            canCreateInvestmentNav,
+            showInvestmentMenu,
+            showFranchiseMenu,
+            committeeOpinionOnlyWorkflow,
+            systemSettingsOpen,
+            setSystemSettingsOpen,
+            isSystemSettingsRoute,
+            projectWrapRef,
+            preOpeningWrapRef,
+            orderRequestWrapRef,
+            openingSoonWrapRef,
+            tasksMenuWrapRef,
+            dashboardWrapRef,
+            legalWrapRef,
+            investmentWrapRef,
+            franchiseWrapRef,
+            systemSettingsWrapRef,
+        }),
+        [
+            navigation,
+            sidebarOpen,
+            location,
+            t,
+            taskCount,
+            underReviewCount,
+            isDeptUser,
+            showSystemUsers,
+            showSystemSettings,
+            sidebarNestedOrder,
+            projectMenuOpen,
+            preOpeningMenuOpen,
+            orderRequestMenuOpen,
+            openingSoonMenuOpen,
+            tasksMenuOpen,
+            dashboardMenuOpen,
+            legalMenuOpen,
+            investmentMenuOpen,
+            franchiseMenuOpen,
+            isDashboardGroupRoute,
+            isLegalRoute,
+            isInvestmentDeptRoute,
+            isFranchiseDeptRoute,
+            canCreateInvestmentNav,
+            showInvestmentMenu,
+            showFranchiseMenu,
+            committeeOpinionOnlyWorkflow,
+            showLegalMenu,
+            isProjectRoute,
+            showProjectMenu,
+            isPreOpeningRoute,
+            showPreOpeningMenu,
+            isOrderRequestRoute,
+            showOrderRequestMenu,
+            isOpeningSoonRoute,
+            showOpeningSoonMenu,
+            isTasksMenuRoute,
+            showTasksMenu,
+            systemSettingsOpen,
+            isSystemSettingsRoute,
+        ],
+    );
 
     const handleChatClick = () => {
         setChatOpen(!chatOpen);
     };
+
+    const renderWorkflowFlyout = (
+        dept: WorkflowDepartmentType,
+        flyout: { top: number; left: number; width: number },
+        closeMenu: () => void,
+    ) => (
+        <div
+            data-investment-flyout={dept === "investment" ? true : undefined}
+            data-franchise-flyout={dept === "franchise" ? true : undefined}
+            className="fixed z-[100] rounded-xl border border-border bg-card py-1 shadow-xl"
+            style={{
+                top: flyout.top,
+                left: flyout.left,
+                width: flyout.width,
+            }}
+        >
+            {sidebarNestedOrder[dept === "investment" ? "investment" : "franchiseDept"].map((childId) => {
+                if (childId === "new-project") {
+                    if (!canCreateInvestmentNav || committeeOpinionOnlyWorkflow) return null;
+                    return (
+                        <Link key={childId} to={workflowDeptHref(dept, "new-project", canCreateInvestmentNav, committeeOpinionOnlyWorkflow)} onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }}
+                            className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${workflowDeptChildIsActive(location.pathname, location.search, dept, "new-project", canCreateInvestmentNav, committeeOpinionOnlyWorkflow) ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}>
+                            <PlusCircle className="w-4 h-4 shrink-0" /><span className="truncate">{t("investmentNewProject")}</span>
+                        </Link>
+                    );
+                }
+                if (childId === "opportunities") {
+                    return (
+                        <Link key={childId} to={workflowDeptHref(dept, "opportunities", canCreateInvestmentNav, committeeOpinionOnlyWorkflow)} onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }}
+                            className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${workflowDeptChildIsActive(location.pathname, location.search, dept, "opportunities", canCreateInvestmentNav, committeeOpinionOnlyWorkflow) ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}>
+                            <ClipboardList className="w-4 h-4 shrink-0" /><span className="truncate">{dept === "franchise" ? t("franchiseOpportunities") : t("investmentOpportunities")}</span>
+                        </Link>
+                    );
+                }
+                if (childId === "investment-feasibility") {
+                    if (committeeOpinionOnlyWorkflow) return null;
+                    return (
+                        <Link key={childId} to={workflowDeptHref(dept, "investment-feasibility", canCreateInvestmentNav, committeeOpinionOnlyWorkflow)} onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }}
+                            className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${workflowDeptChildIsActive(location.pathname, location.search, dept, "investment-feasibility", canCreateInvestmentNav, committeeOpinionOnlyWorkflow) ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}>
+                            <BookOpen className="w-4 h-4 shrink-0" /><span className="truncate">{t("investmentFeasibilityStudy")}</span>
+                        </Link>
+                    );
+                }
+                if (childId === "opinions") {
+                    return (
+                        <Link key={childId} to={workflowDeptHref(dept, "opinions", canCreateInvestmentNav, committeeOpinionOnlyWorkflow)} onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }}
+                            className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${workflowDeptChildIsActive(location.pathname, location.search, dept, "opinions", canCreateInvestmentNav, committeeOpinionOnlyWorkflow) ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}>
+                            <User className="w-4 h-4 shrink-0" /><span className="truncate">{dept === "franchise" ? t("franchiseOpinions") : t("investmentOpinions")}</span>
+                        </Link>
+                    );
+                }
+                return (
+                    <Link key={childId} to="/all-stations-reports" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }}
+                        className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-reports" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}>
+                        <FileText className="w-4 h-4 shrink-0" /><span className="truncate">{t("reports")}</span>
+                    </Link>
+                );
+            })}
+        </div>
+    );
+
+    const renderDashboardFlyout = (
+        flyout: { top: number; left: number; width: number },
+        closeMenu: () => void,
+    ) => (
+        <div
+            data-dashboard-flyout
+            className="fixed z-[100] rounded-xl border border-border bg-card py-1 shadow-xl"
+            style={{
+                top: flyout.top,
+                left: flyout.left,
+                width: flyout.width,
+            }}
+        >
+            {sidebarNestedOrder.dashboard.map((childId) => {
+                if (childId === "dashboard") {
+                    return <Link key={childId} to="/all-stations-dashboard" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }} className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-dashboard" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}><LayoutDashboard className="w-4 h-4 shrink-0" /><span className="truncate">{t("dashboard")}</span></Link>;
+                }
+                if (childId === "analytics") {
+                    return <Link key={childId} to="/all-stations-analytics" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }} className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-analytics" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}><Activity className="w-4 h-4 shrink-0" /><span className="truncate">{t("analytics")}</span></Link>;
+                }
+                if (childId === "recentActivities") {
+                    return <Link key={childId} to="/all-stations-recent-activities" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }} className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-recent-activities" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}><History className="w-4 h-4 shrink-0" /><span className="truncate">{t("recentActivities")}</span></Link>;
+                }
+                if (childId === "underReview") {
+                    return <Link key={childId} to="/all-stations-under-review" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }} className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-under-review" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}><Clock className="w-4 h-4 shrink-0" /><span className="truncate">{t("underReview")}</span></Link>;
+                }
+                if (childId === "investmentOpportunities") {
+                    if (!showInvestmentMenu) return null;
+                    return <Link key={childId} to={workflowDeptHref("investment", "opportunities", canCreateInvestmentNav, committeeOpinionOnlyWorkflow)} onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }} className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${workflowDeptChildIsActive(location.pathname, location.search, "investment", "opportunities", canCreateInvestmentNav, committeeOpinionOnlyWorkflow) ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}><ClipboardList className="w-4 h-4 shrink-0" /><span className="truncate">{t("investmentOpportunities")}</span></Link>;
+                }
+                if (childId === "franchiseOpportunities") {
+                    if (!showFranchiseMenu) return null;
+                    return <Link key={childId} to={workflowDeptHref("franchise", "opportunities", canCreateInvestmentNav, committeeOpinionOnlyWorkflow)} onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }} className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${workflowDeptChildIsActive(location.pathname, location.search, "franchise", "opportunities", canCreateInvestmentNav, committeeOpinionOnlyWorkflow) ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}><ClipboardList className="w-4 h-4 shrink-0" /><span className="truncate">{t("franchiseOpportunities")}</span></Link>;
+                }
+                if (childId === "quickActions") {
+                    return <div key={childId} className="flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium text-foreground/60"><PlusCircle className="w-4 h-4 shrink-0" /><span className="truncate">{t("quickActions")}</span></div>;
+                }
+                return <div key={childId} className="flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium text-foreground/60"><Bell className="w-4 h-4 shrink-0" /><span className="truncate">{t("alertsNotifications")}</span></div>;
+            })}
+        </div>
+    );
+
+    const renderLegalFlyout = (
+        flyout: { top: number; left: number; width: number },
+        closeMenu: () => void,
+    ) => (
+        <div
+            data-legal-flyout
+            className="fixed z-[100] rounded-xl border border-border bg-card py-1 shadow-xl"
+            style={{ top: flyout.top, left: flyout.left, width: flyout.width }}
+        >
+            {sidebarNestedOrder.legalDept.map((childId) => {
+                if (childId === "contract") {
+                    return (
+                        <Link key={childId} to="/all-stations-legal" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }}
+                            className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-legal" && !location.search.includes("tab=document") ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}>
+                            <FileText className="w-4 h-4 shrink-0" /><span className="truncate">{t("contract")}</span>
+                        </Link>
+                    );
+                }
+                if (childId === "document") {
+                    return (
+                        <Link key={childId} to="/all-stations-legal?tab=document" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }}
+                            className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-legal" && location.search.includes("tab=document") ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}>
+                            <FileText className="w-4 h-4 shrink-0" /><span className="truncate">{t("document")}</span>
+                        </Link>
+                    );
+                }
+                return (
+                    <Link key={childId} to="/all-stations-reports" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }}
+                        className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-reports" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}>
+                        <BarChart2 className="w-4 h-4 shrink-0" /><span className="truncate">{t("reports")}</span>
+                    </Link>
+                );
+            })}
+        </div>
+    );
+    const renderProjectFlyout = (
+        flyout: { top: number; left: number; width: number },
+        closeMenu: () => void,
+    ) => (
+        <div data-project-flyout className="fixed z-[100] rounded-xl border border-border bg-card py-1 shadow-xl" style={{ top: flyout.top, left: flyout.left, width: flyout.width }}>
+            {sidebarNestedOrder.projectDept.map((childId) => {
+                if (childId === "newProject") {
+                    return (
+                        <div key={childId} className="px-2 py-1 space-y-1">
+                            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{t("projectNewProject")}</div>
+                            <Link to="/station/new-station/form/investment-department?tab=new-project" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${location.pathname.includes("/investment-department") ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}>
+                                <PlusCircle className="w-4 h-4 shrink-0" /><span className="truncate">{t("investmentDept")}</span>
+                            </Link>
+                            <Link to="/station/new-station/form/franchise-department?tab=new-project" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${location.pathname.includes("/franchise-department") ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}>
+                                <PlusCircle className="w-4 h-4 shrink-0" /><span className="truncate">{t("franchiseDept")}</span>
+                            </Link>
+                        </div>
+                    );
+                }
+                if (childId === "feasibility") {
+                    return <Link key={childId} to="/all-stations-project?tab=feasibility" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }} className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-project" && location.search.includes("tab=feasibility") ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}><BookOpen className="w-4 h-4 shrink-0" /><span className="truncate">{t("projectFeasibilityStudy")}</span></Link>;
+                }
+                if (childId === "stations") {
+                    return <Link key={childId} to="/all-stations-list" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }} className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-list" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}><BookOpen className="w-4 h-4 shrink-0" /><span className="truncate">{t("stations")}</span></Link>;
+                }
+                if (childId === "siteSurvey") {
+                    return <Link key={childId} to="/all-stations-project?tab=siteSurvey" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }} className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-project" && location.search.includes("tab=siteSurvey") ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}><ClipboardList className="w-4 h-4 shrink-0" /><span className="truncate">{t("siteSurvey")}</span></Link>;
+                }
+                return <Link key={childId} to="/all-stations-reports" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }} className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-reports" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}><FileText className="w-4 h-4 shrink-0" /><span className="truncate">{t("reports")}</span></Link>;
+            })}
+        </div>
+    );
+    const renderPreOpeningFlyout = (
+        flyout: { top: number; left: number; width: number },
+        closeMenu: () => void,
+    ) => (
+        <div data-pre-opening-flyout className="fixed z-[100] rounded-xl border border-border bg-card py-1 shadow-xl" style={{ top: flyout.top, left: flyout.left, width: flyout.width }}>
+            {sidebarNestedOrder.preOpening.map((childId) => {
+                if (childId === "governmentLicenses") {
+                    return <Link key={childId} to="/all-stations-pre-opening" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }} className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-pre-opening" && !location.search.includes("tab=other") ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}><FileText className="w-4 h-4 shrink-0" /><span className="truncate">{t("governmentLicenses")}</span></Link>;
+                }
+                return <Link key={childId} to="/all-stations-pre-opening?tab=other" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }} className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-pre-opening" && location.search.includes("tab=other") ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}><FileText className="w-4 h-4 shrink-0" /><span className="truncate">{t("otherLicenses")}</span></Link>;
+            })}
+        </div>
+    );
+    const renderOrderRequestFlyout = (
+        flyout: { top: number; left: number; width: number },
+        closeMenu: () => void,
+    ) => (
+        <div data-order-request-flyout className="fixed z-[100] rounded-xl border border-border bg-card py-1 shadow-xl" style={{ top: flyout.top, left: flyout.left, width: flyout.width }}>
+            {sidebarNestedOrder.orderRequest.map((childId) => {
+                if (childId === "newRequest") {
+                    return <Link key={childId} to="/all-stations-requests" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }} className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-requests" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}><ClipboardList className="w-4 h-4 shrink-0" /><span className="truncate">{t("newRequest")}</span></Link>;
+                }
+                return <Link key={childId} to="/all-stations-order-requests-submitted" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }} className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-order-requests-submitted" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}><CheckCircle className="w-4 h-4 shrink-0" /><span className="truncate">{t("submittedApprovedRequests")}</span></Link>;
+            })}
+        </div>
+    );
+    const renderOpeningSoonFlyout = (
+        flyout: { top: number; left: number; width: number },
+        closeMenu: () => void,
+    ) => (
+        <div data-opening-soon-flyout className="fixed z-[100] rounded-xl border border-border bg-card py-1 shadow-xl" style={{ top: flyout.top, left: flyout.left, width: flyout.width }}>
+            {sidebarNestedOrder.openingSoonProjects.map((childId) => (
+                <Link key={childId} to="/all-stations-opening-soon-projects" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }} className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-opening-soon-projects" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}><Clock className="w-4 h-4 shrink-0" /><span className="truncate">{t("trackNearLaunchProject")}</span></Link>
+            ))}
+        </div>
+    );
+    const renderTasksMenuFlyout = (
+        flyout: { top: number; left: number; width: number },
+        closeMenu: () => void,
+    ) => (
+        <div data-tasks-menu-flyout className="fixed z-[100] rounded-xl border border-border bg-card py-1 shadow-xl" style={{ top: flyout.top, left: flyout.left, width: flyout.width }}>
+            {sidebarNestedOrder.tasksMenu.map((childId) => (
+                <Link key={childId} to="/all-stations-tasks" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }} className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-tasks" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}><ClipboardList className="w-4 h-4 shrink-0" /><span className="truncate">{t("tasks")}</span></Link>
+            ))}
+        </div>
+    );
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-muted via-background to-muted flex relative">
@@ -348,34 +1156,8 @@ export function AllStationsDashboardLayout() {
                     </div>
 
                     <nav className={`flex-1 overflow-y-auto ${sidebarOpen ? 'p-4' : 'p-2'} space-y-2`}>
-                        {navigation.map((item) => (
-                            <Link
-                                key={item.path}
-                                to={item.path}
-                                onClick={() => window.innerWidth < 1024 && setSidebarOpen(false)}
-                                className={`flex items-center ${sidebarOpen ? 'gap-3 px-4' : 'justify-center px-2'} py-3 rounded-lg transition-all duration-200 ${location.pathname === item.path
-                                    ? "bg-primary text-white shadow-lg"
-                                    : "text-white/80 hover:bg-white/15 hover:text-white"
-                                    } relative`}
-                                title={!sidebarOpen ? t(item.titleKey) : undefined}
-                            >
-                                {item.icon}
-                                {sidebarOpen && (
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <span className="text-sm font-medium truncate">{t(item.titleKey)}</span>
-                                        {item.titleKey === "tasks" && taskCount > 0 && (
-                                            <span className="min-w-5 h-5 px-1.5 bg-info text-info-foreground rounded-full flex items-center justify-center text-[10px] font-bold leading-none shadow-sm">
-                                                {taskCount > 99 ? "99+" : taskCount}
-                                            </span>
-                                        )}
-                                        {item.titleKey === "underReview" && underReviewCount > 0 && (
-                                            <span className="min-w-5 h-5 px-1.5 bg-info text-info-foreground rounded-full flex items-center justify-center text-[10px] font-bold leading-none shadow-sm">
-                                                {underReviewCount > 99 ? "99+" : underReviewCount}
-                                            </span>
-                                        )}
-                                    </div>
-                                )}
-                            </Link>
+                        {resolvedSidebarSlots.map((slotId) => (
+                            <AllStationsSidebarSlot key={slotId} slotId={slotId} ctx={sidebarNavCtx} />
                         ))}
                         <button
                             onClick={handleChatClick}
@@ -405,6 +1187,139 @@ export function AllStationsDashboardLayout() {
                         </Link>
                     </div>
                 </aside>
+
+                {typeof document !== "undefined" &&
+                    systemSettingsOpen &&
+                    !sidebarOpen &&
+                    systemSettingsFlyout &&
+                    !isDeptUser &&
+                    (showSystemUsers || showSystemSettings) &&
+                    createPortal(
+                        <div
+                            data-system-settings-flyout
+                            className="fixed z-[100] rounded-xl border border-border bg-card py-1 shadow-xl"
+                            style={{
+                                top: systemSettingsFlyout.top,
+                                left: systemSettingsFlyout.left,
+                                width: systemSettingsFlyout.width,
+                            }}
+                        >
+                            {sidebarNestedOrder.systemSettings.map((childId) => {
+                                if (childId === "users") {
+                                    if (!showSystemUsers) return null;
+                                    return (
+                                        <Link key={childId} to="/all-stations-users" onClick={() => { setSystemSettingsOpen(false); if (window.innerWidth < 1024) setSidebarOpen(false); }}
+                                            className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-users" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}>
+                                            <Users className="w-4 h-4 shrink-0" /><span className="truncate">{t("users")}</span>
+                                        </Link>
+                                    );
+                                }
+                                if (childId === "companyInfo") {
+                                    if (!showSystemSettings) return null;
+                                    return (
+                                        <Link key={childId} to="/all-stations-settings" onClick={() => { setSystemSettingsOpen(false); if (window.innerWidth < 1024) setSidebarOpen(false); }}
+                                            className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-settings" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}>
+                                            <Settings className="w-4 h-4 shrink-0" /><span className="truncate">{t("companyInfo")}</span>
+                                        </Link>
+                                    );
+                                }
+                                if (childId === "notifications") {
+                                    return <div key={childId} className="flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium text-foreground/60"><Bell className="w-4 h-4 shrink-0" /><span className="truncate">{t("notifications")}</span></div>;
+                                }
+                                return <div key={childId} className="flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium text-foreground/60"><DatabaseBackup className="w-4 h-4 shrink-0" /><span className="truncate">{t("backup")}</span></div>;
+                            })}
+                        </div>,
+                        document.body
+                    )}
+
+                {typeof document !== "undefined" &&
+                    dashboardMenuOpen &&
+                    !sidebarOpen &&
+                    dashboardFlyout &&
+                    createPortal(
+                        renderDashboardFlyout(dashboardFlyout, () => setDashboardMenuOpen(false)),
+                        document.body
+                    )}
+
+                {typeof document !== "undefined" &&
+                    legalMenuOpen &&
+                    showLegalMenu &&
+                    !sidebarOpen &&
+                    legalFlyout &&
+                    createPortal(
+                        renderLegalFlyout(legalFlyout, () => setLegalMenuOpen(false)),
+                        document.body
+                    )}
+
+                {typeof document !== "undefined" &&
+                    orderRequestMenuOpen &&
+                    showOrderRequestMenu &&
+                    !sidebarOpen &&
+                    orderRequestFlyout &&
+                    createPortal(
+                        renderOrderRequestFlyout(orderRequestFlyout, () => setOrderRequestMenuOpen(false)),
+                        document.body
+                    )}
+
+                {typeof document !== "undefined" &&
+                    openingSoonMenuOpen &&
+                    showOpeningSoonMenu &&
+                    !sidebarOpen &&
+                    openingSoonFlyout &&
+                    createPortal(
+                        renderOpeningSoonFlyout(openingSoonFlyout, () => setOpeningSoonMenuOpen(false)),
+                        document.body
+                    )}
+
+                {typeof document !== "undefined" &&
+                    tasksMenuOpen &&
+                    showTasksMenu &&
+                    !sidebarOpen &&
+                    tasksMenuFlyout &&
+                    createPortal(
+                        renderTasksMenuFlyout(tasksMenuFlyout, () => setTasksMenuOpen(false)),
+                        document.body
+                    )}
+
+                {typeof document !== "undefined" &&
+                    preOpeningMenuOpen &&
+                    showPreOpeningMenu &&
+                    !sidebarOpen &&
+                    preOpeningFlyout &&
+                    createPortal(
+                        renderPreOpeningFlyout(preOpeningFlyout, () => setPreOpeningMenuOpen(false)),
+                        document.body
+                    )}
+
+                {typeof document !== "undefined" &&
+                    projectMenuOpen &&
+                    showProjectMenu &&
+                    !sidebarOpen &&
+                    projectFlyout &&
+                    createPortal(
+                        renderProjectFlyout(projectFlyout, () => setProjectMenuOpen(false)),
+                        document.body
+                    )}
+
+                {typeof document !== "undefined" &&
+                    investmentMenuOpen &&
+                    showInvestmentMenu &&
+                    !sidebarOpen &&
+                    investmentFlyout &&
+                    createPortal(
+                        renderWorkflowFlyout("investment", investmentFlyout, () => setInvestmentMenuOpen(false)),
+                        document.body
+                    )}
+
+                {typeof document !== "undefined" &&
+                    franchiseMenuOpen &&
+                    showFranchiseMenu &&
+                    !sidebarOpen &&
+                    franchiseFlyout &&
+                    createPortal(
+                        renderWorkflowFlyout("franchise", franchiseFlyout, () => setFranchiseMenuOpen(false)),
+                        document.body
+                    )}
 
                 {sidebarOpen && (
                     <div
@@ -469,9 +1384,9 @@ export function AllStationsDashboardLayout() {
                                     />
                                 </label>
                             )}
-                            {!isDeptUser && user?.role === 'super_admin' && (
+                            {!isDeptUser && (user?.role === 'super_admin' || user?.role === 'ceo') && (
                                 <Link
-                                    to="/station/new-station/form/investment-department"
+                                    to="/station/new-station/form/investment-department?tab=new-project"
                                     className="flex items-center gap-2 px-3 md:px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 font-semibold text-xs md:text-sm"
                                 >
                                     <PlusCircle className="w-4 h-4" />
