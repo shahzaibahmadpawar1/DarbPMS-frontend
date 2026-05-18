@@ -3,7 +3,11 @@ import { useEffect } from "react";
 import { Save, PlusCircle, Eye, Trash2, Upload, X, History } from "lucide-react";
 import { appSettingsAPI } from "@/services/api";
 import { useStation } from "../../context/StationContext";
+import { useStationFormReadOnly } from "../../hooks/useStationFormReadOnly";
 import { useResolvedStationCode } from "../../hooks/useResolvedStationCode";
+import { ProjectCompletionStagesTable } from "./ProjectCompletionStagesTable";
+import type { CompletionStageRow } from "./surveyReportTypes";
+import { FALLBACK_SURVEY_STAGE_OPTIONS } from "./surveyReportTypes";
 
 interface ProjectComponent {
     id: string;
@@ -33,18 +37,6 @@ interface FuelTank {
     size: string;
 }
 
-interface CompletionStage {
-    id: string;
-    stage: string;
-    customStage: string;
-    condition: string;
-    completionRate: string;
-    remarks: string;
-    attachment: File | null;
-    attachmentUrl?: string | null;
-    attachmentName?: string | null;
-}
-
 interface DocumentUpload {
     name: string;
     file: File | null;
@@ -67,16 +59,6 @@ const FALLBACK_STATUS_OPTIONS: Array<{ value: string; label: string }> = [
     { value: "3", label: "Under Construction" },
     { value: "4", label: "Under Development" },
     { value: "5", label: "Pending" },
-];
-
-const FALLBACK_STAGE_OPTIONS: Array<{ value: string; label: string }> = [
-    { value: "operating license", label: "operating license" },
-    { value: "electricity connection", label: "electricity connection" },
-    { value: "automation", label: "automation" },
-    { value: "cameras", label: "cameras" },
-    { value: "finishing stage", label: "finishing stage" },
-    { value: "it works", label: "it works" },
-    { value: "other", label: "other" },
 ];
 
 const normalizeStoredAttachment = (value: any): StoredAttachment | null => {
@@ -127,25 +109,25 @@ const uploadSurveyFile = async (token: string, file: File): Promise<{ fileName: 
 };
 
 export function SurveyReportForm() {
-    const { accessMode, selectedStation } = useStation();
+    const { selectedStation } = useStation();
     const resolvedStationCode = useResolvedStationCode();
-    const isReadOnly = accessMode === 'view-only';
+    const isReadOnly = useStationFormReadOnly('survey-report');
     const [isSaving, setIsSaving] = useState(false);
     const [historyViewActive, setHistoryViewActive] = useState(false);
     const [historyModalOpen, setHistoryModalOpen] = useState(false);
     const [historyEntries, setHistoryEntries] = useState<Array<{ id: string; created_at: string }>>([]);
     const [historyListLoading, setHistoryListLoading] = useState(false);
     const [statusOptions, setStatusOptions] = useState(FALLBACK_STATUS_OPTIONS);
-    const [stageOptions, setStageOptions] = useState(FALLBACK_STAGE_OPTIONS);
+    const [stageOptions, setStageOptions] = useState(FALLBACK_SURVEY_STAGE_OPTIONS);
 
     const inputsDisabled = isReadOnly || historyViewActive;
 
     // Project Completion Rate Report
     const [projectStartDate, setProjectStartDate] = useState(isReadOnly ? "2024-01-15" : "");
     const [projectDeliveryDate, setProjectDeliveryDate] = useState(isReadOnly ? "2025-11-15" : "");
-    const [typeOfContract, setTypeOfContract] = useState(isReadOnly ? "employment" : "");
-    const [reportNumber, setReportNumber] = useState(isReadOnly ? "154/1/2025" : "");
-    const [projectName, setProjectName] = useState(isReadOnly ? "Prince Fawaz - Jeddah" : "");
+    const [reportNumber, setReportNumber] = useState("");
+    const [reportNumberAssigned, setReportNumberAssigned] = useState(false);
+    const [projectName, setProjectName] = useState("");
     const [city, setCity] = useState(isReadOnly ? "Jeddah" : "");
     const [location, setLocation] = useState(isReadOnly ? "https://maps.app.goo.gl/BsSRbvX1GwVzwEpd6" : "");
     const [theDate, setTheDate] = useState(isReadOnly ? "2024-01-15" : "");
@@ -215,13 +197,7 @@ export function SurveyReportForm() {
     ]);
 
     // Completion Stages
-    const [completionStages, setCompletionStages] = useState<CompletionStage[]>(
-        isReadOnly ? [
-            { id: "1", stage: "operating license", customStage: "", condition: "License documents completed", completionRate: "100.00%", remarks: "Ready for compliance check", attachment: null },
-            { id: "2", stage: "electricity connection", customStage: "", condition: "Grid connection under process", completionRate: "75.00%", remarks: "Awaiting final utility approval", attachment: null },
-            { id: "3", stage: "other", customStage: "Fuel canopy setup", condition: "Steel structure completed", completionRate: "90.00%", remarks: "Pending final paint and signage", attachment: null },
-        ] : []
-    );
+    const [completionStages, setCompletionStages] = useState<CompletionStageRow[]>([]);
 
     // New sections
     const [projectObstacles, setProjectObstacles] = useState(isReadOnly ? "Sample obstacles text..." : "");
@@ -233,9 +209,10 @@ export function SurveyReportForm() {
 
         setProjectStartDate(payload.projectStartDate || "");
         setProjectDeliveryDate(payload.projectDeliveryDate || "");
-        setTypeOfContract(payload.typeOfContract || "");
-        setReportNumber(payload.reportNumber || "");
-        setProjectName(payload.projectName || "");
+        const savedReportNumber = String(payload.reportNumber || "").trim();
+        setReportNumber(savedReportNumber);
+        setReportNumberAssigned(Boolean(savedReportNumber));
+        setProjectName(payload.projectName || selectedStation?.name || "");
         setCity(payload.city || "");
         setLocation(payload.location || "");
         setTheDate(payload.theDate || "");
@@ -254,6 +231,8 @@ export function SurveyReportForm() {
         setCompletionStages(Array.isArray(payload.completionStages)
             ? payload.completionStages.map((stage: any) => ({
                 ...stage,
+                createdAt: stage.createdAt ?? null,
+                updatedAt: stage.updatedAt ?? null,
                 attachment: null,
                 attachmentUrl: stage.attachmentUrl || stage.attachment || null,
                 attachmentName: stage.attachmentName || null,
@@ -295,7 +274,7 @@ export function SurveyReportForm() {
 
     useEffect(() => {
         setHistoryViewActive(false);
-    }, [resolvedStationCode, selectedStation?.station_code]);
+    }, [resolvedStationCode, selectedStation?.station_code, selectedStation?.name]);
 
     useEffect(() => {
         const token = localStorage.getItem('auth_token');
@@ -313,6 +292,12 @@ export function SurveyReportForm() {
 
         void loadDropdowns();
     }, []);
+
+    useEffect(() => {
+        const stationName = selectedStation?.name?.trim();
+        if (!stationName || historyViewActive) return;
+        setProjectName((prev) => (prev.trim() ? prev : stationName));
+    }, [selectedStation?.name, historyViewActive]);
 
     useEffect(() => {
         const stationCode = resolvedStationCode || selectedStation?.station_code;
@@ -335,6 +320,31 @@ export function SurveyReportForm() {
                 const payload = result?.data?.payload;
                 if (payload) {
                     applyPayload(payload);
+                } else {
+                    const stationName = selectedStation?.name?.trim();
+                    if (stationName) {
+                        setProjectName(stationName);
+                    }
+                    setReportNumber("");
+                    setReportNumberAssigned(false);
+                }
+
+                const reportRes = await fetch(
+                    `${API_BASE_URL}/survey-reports/station/${encodeURIComponent(stationCode)}/report-number`,
+                    {
+                        headers: {
+                            Authorization: `Bearer ${token}`,
+                            "Content-Type": "application/json",
+                        },
+                    },
+                );
+                if (reportRes.ok) {
+                    const reportMeta = await reportRes.json();
+                    const assigned = String(reportMeta?.data?.reportNumber ?? "").trim();
+                    if (assigned) {
+                        setReportNumber(assigned);
+                        setReportNumberAssigned(true);
+                    }
                 }
             } catch (error) {
                 console.error('Failed to load survey report:', error);
@@ -490,9 +500,8 @@ export function SurveyReportForm() {
         const payload = {
             projectStartDate,
             projectDeliveryDate,
-            typeOfContract,
-            reportNumber,
-            projectName,
+            reportNumber: reportNumber.trim() || undefined,
+            projectName: projectName.trim() || selectedStation?.name || "",
             city,
             location,
             theDate,
@@ -533,6 +542,11 @@ export function SurveyReportForm() {
             }
 
             setHistoryViewActive(false);
+            const savedPayload = result?.data?.payload;
+            if (savedPayload?.reportNumber) {
+                setReportNumber(String(savedPayload.reportNumber));
+                setReportNumberAssigned(true);
+            }
             await loadLatestSurveyForStation();
             alert('Survey Report saved successfully!');
         } catch (error) {
@@ -621,6 +635,7 @@ export function SurveyReportForm() {
     };
 
     const addCompletionStage = () => {
+        const now = new Date().toISOString();
         setCompletionStages([...completionStages, {
             id: Date.now().toString(),
             stage: "",
@@ -628,6 +643,8 @@ export function SurveyReportForm() {
             condition: "",
             completionRate: "",
             remarks: "",
+            createdAt: now,
+            updatedAt: now,
             attachment: null,
         }]);
     };
@@ -648,15 +665,17 @@ export function SurveyReportForm() {
         }
     };
 
-    const updateCompletionStage = (id: string, field: keyof CompletionStage, value: string) => {
+    const updateCompletionStage = (id: string, field: keyof CompletionStageRow, value: string) => {
+        const now = new Date().toISOString();
         setCompletionStages(completionStages.map(stage =>
-            stage.id === id ? { ...stage, [field]: value } : stage
+            stage.id === id ? { ...stage, [field]: value, updatedAt: now } : stage
         ));
     };
 
     const updateCompletionAttachment = (id: string, file: File | null) => {
+        const now = new Date().toISOString();
         setCompletionStages(completionStages.map(stage =>
-            stage.id === id ? { ...stage, attachment: file } : stage
+            stage.id === id ? { ...stage, attachment: file, updatedAt: now } : stage
         ));
     };
 
@@ -780,37 +799,30 @@ export function SurveyReportForm() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-muted-foreground mb-1">Type of Contract</label>
-                                    <input
-                                        type="text"
-                                        value={typeOfContract}
-                                        onChange={(e) => setTypeOfContract(e.target.value)}
-                                        className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
-                                        placeholder="e.g., employment"
-                                        disabled={inputsDisabled}
-                                    />
-                                </div>
-                                <div>
                                     <label className="block text-sm font-medium text-muted-foreground mb-1">Report Number</label>
                                     <input
                                         type="text"
                                         value={reportNumber}
-                                        onChange={(e) => setReportNumber(e.target.value)}
-                                        className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
-                                        placeholder="e.g., 154/1/2025"
-                                        disabled={inputsDisabled}
+                                        readOnly
+                                        className="w-full px-3 py-2 border border-border rounded-lg bg-muted/50 text-foreground cursor-not-allowed"
+                                        placeholder={reportNumberAssigned ? "" : "Assigned automatically on first save"}
                                     />
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        {reportNumberAssigned
+                                            ? "Unique report number for this station survey."
+                                            : "A unique number will be generated when you save."}
+                                    </p>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-muted-foreground mb-1">Project Name</label>
                                     <input
                                         type="text"
                                         value={projectName}
-                                        onChange={(e) => setProjectName(e.target.value)}
-                                        className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
-                                        placeholder="e.g., Prince Fawaz - Jeddah"
-                                        disabled={inputsDisabled}
+                                        readOnly
+                                        className="w-full px-3 py-2 border border-border rounded-lg bg-muted/50 text-foreground cursor-not-allowed"
+                                        placeholder="From station name"
                                     />
+                                    <p className="text-xs text-muted-foreground mt-1">Filled from the station name.</p>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-muted-foreground mb-1">City</label>
@@ -1256,126 +1268,15 @@ export function SurveyReportForm() {
                                     </button>
                                 )}
                             </div>
-                            <div className="rounded-lg border border-border overflow-hidden">
-                                <table className="w-full border-collapse">
-                                    <thead>
-                                        <tr className="bg-muted/50">
-                                            <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Stage</th>
-                                            <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Condition</th>
-                                            <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Completion Rate</th>
-                                            <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Remarks</th>
-                                            <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Attachment</th>
-                                            {!inputsDisabled && <th className="border border-border px-4 py-2 text-left text-sm font-semibold">Actions</th>}
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {completionStages.map((stage) => (
-                                            <tr key={stage.id}>
-                                                <td className="border border-border px-2 py-2">
-                                                    <div className="space-y-2">
-                                                        <select
-                                                            value={stage.stage}
-                                                            onChange={(e) => updateCompletionStage(stage.id, 'stage', e.target.value)}
-                                                            className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted"
-                                                            disabled={inputsDisabled}
-                                                        >
-                                                            <option value="">Select Stage</option>
-                                                            {stageOptions.map((opt) => (
-                                                                <option key={opt.value} value={opt.value}>
-                                                                    {opt.label}
-                                                                </option>
-                                                            ))}
-                                                        </select>
-                                                        {stage.stage === 'other' && (
-                                                            <input
-                                                                type="text"
-                                                                value={stage.customStage}
-                                                                onChange={(e) => updateCompletionStage(stage.id, 'customStage', e.target.value)}
-                                                                className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted"
-                                                                placeholder="Enter custom stage"
-                                                                disabled={inputsDisabled}
-                                                            />
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                <td className="border border-border px-2 py-2">
-                                                    <input
-                                                        type="text"
-                                                        value={stage.condition}
-                                                        onChange={(e) => updateCompletionStage(stage.id, 'condition', e.target.value)}
-                                                        className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted"
-                                                        disabled={inputsDisabled}
-                                                    />
-                                                </td>
-                                                <td className="border border-border px-2 py-2">
-                                                    <input
-                                                        type="text"
-                                                        value={stage.completionRate}
-                                                        onChange={(e) => updateCompletionStage(stage.id, 'completionRate', e.target.value)}
-                                                        className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted"
-                                                        placeholder="e.g., 100.00%"
-                                                        disabled={inputsDisabled}
-                                                    />
-                                                </td>
-                                                <td className="border border-border px-2 py-2">
-                                                    <textarea
-                                                        value={stage.remarks}
-                                                        onChange={(e) => updateCompletionStage(stage.id, 'remarks', e.target.value)}
-                                                        className="w-full px-2 py-1 border-0 focus:outline-none focus:ring-2 focus:ring-primary rounded bg-background text-foreground disabled:bg-muted min-h-[70px]"
-                                                        placeholder="Add comment or remark"
-                                                        disabled={inputsDisabled}
-                                                    />
-                                                </td>
-                                                <td className="border border-border px-2 py-2">
-                                                    <div className="flex flex-col gap-2">
-                                                        {!inputsDisabled && (
-                                                            <label className="cursor-pointer w-fit">
-                                                                <input
-                                                                    type="file"
-                                                                    className="hidden"
-                                                                    onChange={(e) => updateCompletionAttachment(stage.id, e.target.files?.[0] || null)}
-                                                                />
-                                                                <div className="p-2 hover:bg-primary/10 rounded-lg transition-colors">
-                                                                    <Upload className="w-5 h-5 text-primary" />
-                                                                </div>
-                                                            </label>
-                                                        )}
-                                                        {stage.attachment && (
-                                                            <span className="text-xs text-muted-foreground truncate">{stage.attachment.name}</span>
-                                                        )}
-                                                        {!stage.attachment && (stage as any).attachmentUrl && (
-                                                            <button
-                                                                type="button"
-                                                                className="px-2 py-1 text-xs border border-border rounded-md hover:bg-muted"
-                                                                onClick={() => openPreview(null, (stage as any).attachmentUrl)}
-                                                            >
-                                                                View
-                                                            </button>
-                                                        )}
-                                                        {!stage.attachment && (stage as any).attachmentName && (
-                                                            <span className="text-xs text-muted-foreground truncate">{(stage as any).attachmentName}</span>
-                                                        )}
-                                                        {!stage.attachment && inputsDisabled && (
-                                                            <span className="text-xs text-muted-foreground">No attachment</span>
-                                                        )}
-                                                    </div>
-                                                </td>
-                                                {!inputsDisabled && (
-                                                    <td className="border border-border px-2 py-2 text-center">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => removeCompletionStage(stage.id)}
-                                                            className="text-error hover:text-error/80 transition-colors"
-                                                        >
-                                                            <Trash2 className="w-4 h-4" />
-                                                        </button>
-                                                    </td>
-                                                )}
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                            <ProjectCompletionStagesTable
+                                stages={completionStages}
+                                stageOptions={stageOptions}
+                                readOnly={inputsDisabled}
+                                onRemoveStage={inputsDisabled ? undefined : removeCompletionStage}
+                                onUpdateStage={inputsDisabled ? undefined : updateCompletionStage}
+                                onUpdateAttachment={inputsDisabled ? undefined : updateCompletionAttachment}
+                                onViewAttachment={openPreview}
+                            />
                         </div>
 
                         {/* Station Status */}
@@ -1383,7 +1284,7 @@ export function SurveyReportForm() {
                             <h2 className="text-xl font-semibold text-foreground mb-4 border-b border-border pb-2 bg-primary/10 px-4 -mx-4 sm:px-6 sm:-mx-6 md:px-8 md:-mx-8 py-3">
                                 Station Status
                             </h2>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
                                 <div>
                                     <label className="block text-sm font-medium text-muted-foreground mb-1">Status</label>
                                     <select
@@ -1415,6 +1316,16 @@ export function SurveyReportForm() {
                                             </option>
                                         ))}
                                     </select>
+                                    {stationStatusStage === "other" && (
+                                        <input
+                                            type="text"
+                                            value={stationStatusCustomStage}
+                                            onChange={(e) => setStationStatusCustomStage(e.target.value)}
+                                            className="w-full mt-2 px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
+                                            placeholder="Enter custom stage"
+                                            disabled={inputsDisabled}
+                                        />
+                                    )}
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-muted-foreground mb-1">Condition</label>
@@ -1437,22 +1348,30 @@ export function SurveyReportForm() {
                                         disabled={inputsDisabled}
                                     />
                                 </div>
-                                {stationStatusStage === 'other' && (
-                                    <div>
-                                        <label className="block text-sm font-medium text-muted-foreground mb-1">Custom Stage</label>
-                                        <input
-                                            type="text"
-                                            value={stationStatusCustomStage}
-                                            onChange={(e) => setStationStatusCustomStage(e.target.value)}
-                                            className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground"
-                                            placeholder="Enter custom stage"
-                                            disabled={inputsDisabled}
-                                        />
-                                    </div>
-                                )}
                                 <div>
                                     <label className="block text-sm font-medium text-muted-foreground mb-1">Attachment</label>
-                                    <div className="flex items-center gap-2 min-h-[42px]">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        {stationStatusAttachment?.fileName || stationStatusAttachment?.fileUrl ? (
+                                            <span className="text-xs text-muted-foreground truncate max-w-[200px]">
+                                                {stationStatusAttachment.file?.name || stationStatusAttachment.fileName || "Attachment"}
+                                            </span>
+                                        ) : (
+                                            <span className="text-xs text-muted-foreground">No attachment</span>
+                                        )}
+                                        {(stationStatusAttachment?.file || stationStatusAttachment?.fileUrl) && (
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    openPreview(
+                                                        stationStatusAttachment.file,
+                                                        stationStatusAttachment.fileUrl,
+                                                    )
+                                                }
+                                                className="px-2 py-1 text-xs border border-border rounded-md hover:bg-muted"
+                                            >
+                                                View
+                                            </button>
+                                        )}
                                         {!inputsDisabled && (
                                             <label className="cursor-pointer">
                                                 <input
@@ -1460,37 +1379,31 @@ export function SurveyReportForm() {
                                                     className="hidden"
                                                     onChange={(e) => {
                                                         const file = e.target.files?.[0] || null;
-                                                        setStationStatusAttachment(file ? { file, fileName: file.name, fileUrl: null, previewUrl: URL.createObjectURL(file) } : null);
+                                                        setStationStatusAttachment(
+                                                            file
+                                                                ? { file, fileUrl: null, fileName: file.name }
+                                                                : null,
+                                                        );
                                                     }}
+                                                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                                                 />
-                                                <div className="p-2 hover:bg-primary/10 rounded-lg transition-colors">
+                                                <div className="p-2 hover:bg-primary/10 rounded-lg transition-colors inline-flex">
                                                     <Upload className="w-5 h-5 text-primary" />
                                                 </div>
                                             </label>
                                         )}
-                                            {stationStatusAttachment ? (
-                                            <button
-                                                type="button"
-                                                className="px-2 py-1 text-xs border border-border rounded-md hover:bg-muted"
-                                                    onClick={() => openPreview(stationStatusAttachment.file, stationStatusAttachment.fileUrl || stationStatusAttachment.previewUrl || null)}
-                                            >
-                                                    View {stationStatusAttachment.file?.name || stationStatusAttachment.fileName || 'Attachment'}
-                                            </button>
-                                        ) : (
-                                            <span className="text-xs text-muted-foreground">No attachment</span>
-                                        )}
                                     </div>
                                 </div>
-                                <div className="md:col-span-3">
-                                    <label className="block text-sm font-medium text-muted-foreground mb-1">Remarks</label>
-                                    <textarea
-                                        value={stationStatusRemarks}
-                                        onChange={(e) => setStationStatusRemarks(e.target.value)}
-                                        className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground min-h-[120px]"
-                                        placeholder="Add remarks, e.g., why station is pending..."
-                                        disabled={inputsDisabled}
-                                    />
-                                </div>
+                            </div>
+                            <div className="mt-4">
+                                <label className="block text-sm font-medium text-muted-foreground mb-1">Remarks</label>
+                                <textarea
+                                    value={stationStatusRemarks}
+                                    onChange={(e) => setStationStatusRemarks(e.target.value)}
+                                    className="w-full px-4 py-3 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary disabled:bg-muted disabled:cursor-not-allowed bg-background text-foreground min-h-[100px]"
+                                    placeholder="Add remarks, e.g., why station is pending..."
+                                    disabled={inputsDisabled}
+                                />
                             </div>
                         </div>
 

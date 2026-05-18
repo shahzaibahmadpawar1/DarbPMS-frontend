@@ -1816,6 +1816,17 @@ export function InvestmentFranchiseDepartmentPage({ title, description }: DeptPa
         }
     }, [committeeOpinionOnlyWorkflow, searchParams, setSearchParams]);
 
+    useEffect(() => {
+        const opportunityId = String(searchParams.get("opportunityId") || "").trim();
+        if (!opportunityId) return;
+        setFocusOpportunityId(opportunityId);
+        const tab = searchParams.get("tab");
+        if (tab === "opportunities" || tab === "investment-feasibility" || tab === "opinions") {
+            return;
+        }
+        setTab("opportunities");
+    }, [searchParams, setTab]);
+
     const renderContent = () => {
         switch (activeTab) {
             case "new-project": return <NewProjectTab />;
@@ -1829,15 +1840,7 @@ export function InvestmentFranchiseDepartmentPage({ title, description }: DeptPa
                 );
             case "investment-feasibility": return <InvestmentFeasibilityStudyTab departmentType={departmentType} />;
             case "opinions":
-                return (
-                    <InvestmentOpinionsTab
-                        departmentType={departmentType}
-                        onOpenOpportunity={(opportunityId) => {
-                            setFocusOpportunityId(opportunityId);
-                            setTab("opportunities");
-                        }}
-                    />
-                );
+                return <InvestmentOpinionsTab departmentType={departmentType} />;
         }
     };
 

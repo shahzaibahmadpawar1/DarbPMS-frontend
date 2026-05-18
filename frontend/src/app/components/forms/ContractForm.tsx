@@ -2,6 +2,7 @@ import { useState, useEffect, type ChangeEvent } from "react";
 import { Save, List, PlusCircle, Eye, FileText, Send, Upload, Paperclip } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
+import { useStationFormReadOnly } from "../../hooks/useStationFormReadOnly";
 import axios from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
@@ -11,11 +12,11 @@ import { useLocation, useParams } from "react-router-dom";
 export function ContractForm() {
   const { stationId } = useParams();
   const location = useLocation();
-  const { accessMode, selectedStation } = useStation();
+  const { selectedStation } = useStation();
   const searchParams = new URLSearchParams(location.search);
   const taskId = searchParams.get("taskId") || "";
   const previewMode = searchParams.get("preview") === "1";
-  const isReadOnly = accessMode === 'view-only' || previewMode;
+  const isReadOnly = useStationFormReadOnly('contract') || previewMode;
 
   const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
   const [loading, setLoading] = useState(false);
@@ -154,7 +155,7 @@ export function ContractForm() {
         setFormData(prev => prev.stationCode === stationCode ? prev : { ...prev, stationCode });
       }
 
-      await fetchRecords(stationCode || undefined);
+      const stationRecords = await fetchRecords(stationCode || undefined);
 
       try {
         const token = localStorage.getItem('auth_token');
@@ -170,9 +171,15 @@ export function ContractForm() {
 
         const saved = response.data?.data;
         if (taskId) return;
-        if (!saved?.id) return;
+        if (saved?.id) {
+          applyContractRowToForm(saved, stationCode);
+          return;
+        }
 
-        applyContractRowToForm(saved, stationCode);
+        const fallback = Array.isArray(stationRecords) ? stationRecords[0] : null;
+        if (fallback?.id) {
+          applyContractRowToForm(fallback, stationCode);
+        }
       } catch (error) {
         console.error("Error loading latest saved contract:", error);
       }
@@ -224,7 +231,7 @@ export function ContractForm() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [taskId]);
 
-  const fetchRecords = async (stationCode?: string) => {
+  const fetchRecords = async (stationCode?: string): Promise<any[]> => {
     try {
       const token = localStorage.getItem('auth_token');
       const code = stationCode || currentStation?.station_code;
@@ -235,9 +242,12 @@ export function ContractForm() {
       const response = await axios.get(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setRecords(response.data.data);
+      const rows = Array.isArray(response.data?.data) ? response.data.data : [];
+      setRecords(rows);
+      return rows;
     } catch (error) {
       console.error("Error fetching contracts:", error);
+      return [];
     }
   };
 

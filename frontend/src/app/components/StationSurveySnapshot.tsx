@@ -1,10 +1,16 @@
+import { useEffect, useState } from "react";
+import { Layers } from "lucide-react";
+import { appSettingsAPI } from "@/services/api";
 import {
-    formatDeliveryCountdown,
+    formatDateCountdown,
     formatShortDate,
-    formatSurveyStatusLabel,
+    formatSurveyCardStatus,
+    formatSurveyLatestCompletionStage,
     hasSurveySnapshot,
     type SurveySnapshotRaw,
+    type SurveyStatusOption,
 } from "@/utils/stationSurveyDisplay";
+import { ProjectCompletionStagesModal } from "./ProjectCompletionStagesModal";
 
 type Layout = "card" | "detailHeader";
 
@@ -12,6 +18,8 @@ type StationSurveySnapshotProps = {
     raw: SurveySnapshotRaw | null | undefined;
     layout?: Layout;
     className?: string;
+    stationCode?: string | null;
+    stationName?: string | null;
 };
 
 function Row({
@@ -34,11 +42,76 @@ function Row({
     );
 }
 
-/**
- * Latest survey snapshot: dates, days left (bold), status label, stage, saved time.
- * Matches station list / detail header mockups (grid + compact bar on narrow screens).
- */
-export function StationSurveySnapshot({ raw, layout = "card", className = "" }: StationSurveySnapshotProps) {
+function StageWithQuickView({
+    stage,
+    stationCode,
+    stationName,
+    size,
+}: {
+    stage: string;
+    stationCode?: string | null;
+    stationName?: string | null;
+    size: "compact" | "comfortable";
+}) {
+    const [modalOpen, setModalOpen] = useState(false);
+    const code = String(stationCode ?? "").trim();
+    const iconClass = size === "comfortable" ? "w-4 h-4" : "w-3.5 h-3.5";
+
+    return (
+        <>
+            <span className="inline-flex items-center gap-1.5 flex-wrap">
+                <span className="text-muted-foreground">{stage}</span>
+                {code ? (
+                    <button
+                        type="button"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setModalOpen(true);
+                        }}
+                        className="inline-flex items-center justify-center rounded-md border border-primary/30 bg-primary/10 p-1 text-primary hover:bg-primary/20 transition-colors"
+                        title="View all completion stages"
+                        aria-label="View project completion stages"
+                    >
+                        <Layers className={iconClass} />
+                    </button>
+                ) : null}
+            </span>
+            {code ? (
+                <ProjectCompletionStagesModal
+                    stationCode={code}
+                    stationName={stationName ?? undefined}
+                    open={modalOpen}
+                    onOpenChange={setModalOpen}
+                />
+            ) : null}
+        </>
+    );
+}
+
+export function StationSurveySnapshot({
+    raw,
+    layout = "card",
+    className = "",
+    stationCode,
+    stationName,
+}: StationSurveySnapshotProps) {
+    const [statusOptions, setStatusOptions] = useState<SurveyStatusOption[]>([]);
+
+    useEffect(() => {
+        let cancelled = false;
+        appSettingsAPI
+            .getSurveyDropdowns()
+            .then(({ stationStatusOptions }) => {
+                if (!cancelled && stationStatusOptions.length) {
+                    setStatusOptions(stationStatusOptions);
+                }
+            })
+            .catch(() => undefined);
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
     if (!hasSurveySnapshot(raw)) {
         return null;
     }
@@ -46,9 +119,9 @@ export function StationSurveySnapshot({ raw, layout = "card", className = "" }: 
     const start = formatShortDate(raw.survey_project_start_date);
     const expected = formatShortDate(raw.survey_expected_date);
     const delivery = formatShortDate(raw.survey_project_delivery_date);
-    const daysLeft = formatDeliveryCountdown(raw.survey_project_delivery_date);
-    const status = formatSurveyStatusLabel(raw.survey_station_status_code);
-    const stage = String(raw.survey_station_status_stage || "").trim() || "—";
+    const daysLeft = formatDateCountdown(raw.survey_expected_date);
+    const status = formatSurveyCardStatus(raw, statusOptions);
+    const stage = formatSurveyLatestCompletionStage(raw);
     const saved =
         raw.survey_saved_at != null && String(raw.survey_saved_at).trim() !== ""
             ? new Date(String(raw.survey_saved_at)).toLocaleString()
@@ -63,7 +136,6 @@ export function StationSurveySnapshot({ raw, layout = "card", className = "" }: 
             className={`rounded-lg border border-border/60 bg-muted/25 ${pad} ${className}`.trim()}
             data-testid="station-survey-snapshot"
         >
-            {/* Narrow screens: single-line style with bold prefix + bold days (mockup 1) */}
             <div className={`${textBar} leading-relaxed text-muted-foreground md:hidden`}>
                 <span className="font-bold text-foreground">Survey (latest): </span>
                 Start {start}
@@ -76,7 +148,13 @@ export function StationSurveySnapshot({ raw, layout = "card", className = "" }: 
                 <span className="mx-1">·</span>
                 <span className="font-bold text-foreground">Status</span> {status}
                 <span className="mx-1">·</span>
-                <span className="font-bold text-foreground">Stage</span> {stage}
+                <span className="font-bold text-foreground">Stage</span>{" "}
+                <StageWithQuickView
+                    stage={stage}
+                    stationCode={stationCode}
+                    stationName={stationName}
+                    size="compact"
+                />
                 {saved ? (
                     <>
                         <span className="mx-1">·</span>
@@ -85,7 +163,6 @@ export function StationSurveySnapshot({ raw, layout = "card", className = "" }: 
                 ) : null}
             </div>
 
-            {/* md+: column mockup — dates / days / status+stage (mockup 2) */}
             <div className="hidden md:grid md:grid-cols-3 md:gap-x-8 md:gap-y-3">
                 <div className="space-y-2">
                     <Row label="Start Date:" size={rowSize}>
@@ -108,7 +185,12 @@ export function StationSurveySnapshot({ raw, layout = "card", className = "" }: 
                         {status}
                     </Row>
                     <Row label="Stage:" size={rowSize}>
-                        {stage}
+                        <StageWithQuickView
+                            stage={stage}
+                            stationCode={stationCode}
+                            stationName={stationName}
+                            size={rowSize}
+                        />
                     </Row>
                 </div>
             </div>

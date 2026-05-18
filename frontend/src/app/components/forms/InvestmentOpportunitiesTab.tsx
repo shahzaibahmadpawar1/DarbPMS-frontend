@@ -192,11 +192,40 @@ const selectCls = "w-full px-3 py-2 border border-border rounded-lg bg-backgroun
 
 type OppUiTab = "all" | "new" | "under_study" | "approved" | "rejected" | "cancelled" | "contracted" | "documented";
 
+const APPROVED_WORKFLOW_STATUSES = new Set([
+  "approved",
+  "station_published",
+  "approved_pending_station_assignment",
+]);
+
+const CONTRACT_STAGE_STATUSES = new Set(["contract_in_progress", "awaiting_ceo_final_approval"]);
+
+function opportunityWorkflowStatus(o: any): string {
+  return String(o.workflow_status || "").trim().toLowerCase();
+}
+
+/** CEO routed this opportunity through the contract branch (fields persist after final approval). */
+function isOpportunityContracted(o: any): boolean {
+  if (o.contract_department || o.contract_manager_user_id) return true;
+  return CONTRACT_STAGE_STATUSES.has(opportunityWorkflowStatus(o));
+}
+
+/**
+ * Direct CEO approval (no contract branch), or linked project on the documents workflow path.
+ */
+function isOpportunityDocumented(o: any): boolean {
+  const linkedPath = String(o.linked_project_workflow_path || o.workflow_path || "").trim().toLowerCase();
+  if (linkedPath === "documents") return true;
+  if (isOpportunityContracted(o)) return false;
+  const wf = opportunityWorkflowStatus(o);
+  if (APPROVED_WORKFLOW_STATUSES.has(wf) && o.ceo_approved_at) return true;
+  return false;
+}
+
 function primaryOpportunityBucket(o: any): "new" | "under_study" | "approved" | "rejected" {
-  const wf = String(o.workflow_status || "").trim().toLowerCase();
-  if (wf === "approved" || wf === "station_published") return "approved";
+  const wf = opportunityWorkflowStatus(o);
+  if (APPROVED_WORKFLOW_STATUSES.has(wf)) return "approved";
   if (wf === "rejected") return "rejected";
-  if (wf === "approved_pending_station_assignment") return "under_study";
   if (wf === "new" || String(o.status || "") === "draft") return "new";
 
   const required = Number(o.opinions_required_count ?? 5);
@@ -209,6 +238,32 @@ function primaryOpportunityBucket(o: any): "new" | "under_study" | "approved" | 
   if (sc > 0) return "under_study";
   return "new";
 }
+
+function matchesOpportunityTab(o: any, tab: OppUiTab): boolean {
+  switch (tab) {
+    case "all":
+      return true;
+    case "contracted":
+      return isOpportunityContracted(o);
+    case "documented":
+      return isOpportunityDocumented(o);
+    case "cancelled":
+      return false;
+    default:
+      return primaryOpportunityBucket(o) === tab;
+  }
+}
+
+const OPPORTUNITY_FILTER_TABS: { key: OppUiTab; label: string }[] = [
+  { key: "new", label: "New" },
+  { key: "under_study", label: "Under Study" },
+  { key: "approved", label: "Approved" },
+  { key: "rejected", label: "Rejected" },
+  { key: "cancelled", label: "Cancelled" },
+  { key: "contracted", label: "Contracted" },
+  { key: "documented", label: "Documented" },
+  { key: "all", label: "All" },
+];
 
 function labelOpportunityTypeShort(v: string) {
   const m: Record<string, string> = {
@@ -273,34 +328,28 @@ export function InvestmentOpportunitiesTab({
 
   const tabCounts = useMemo(() => {
     const rows = filtered;
-    return {
+    const counts: Record<OppUiTab, number> = {
       all: rows.length,
-      new: rows.filter((o) => primaryOpportunityBucket(o) === "new").length,
-      under_study: rows.filter((o) => primaryOpportunityBucket(o) === "under_study").length,
-      approved: rows.filter((o) => primaryOpportunityBucket(o) === "approved").length,
-      rejected: rows.filter((o) => primaryOpportunityBucket(o) === "rejected").length,
+      new: 0,
+      under_study: 0,
+      approved: 0,
+      rejected: 0,
       cancelled: 0,
       contracted: 0,
       documented: 0,
     };
+    for (const o of rows) {
+      for (const { key } of OPPORTUNITY_FILTER_TABS) {
+        if (matchesOpportunityTab(o, key)) counts[key] += 1;
+      }
+    }
+    return counts;
   }, [filtered]);
 
   const displayedOpps = useMemo(() => {
     if (activeTab === "all") return filtered;
-    if (["cancelled", "contracted", "documented"].includes(activeTab)) return [];
-    return filtered.filter((o) => primaryOpportunityBucket(o) === activeTab);
+    return filtered.filter((o) => matchesOpportunityTab(o, activeTab));
   }, [filtered, activeTab]);
-
-  const oppTabs: { key: OppUiTab; label: string }[] = [
-    { key: "new", label: "New" },
-    { key: "under_study", label: "Under Study" },
-    { key: "approved", label: "Approved" },
-    { key: "rejected", label: "Rejected" },
-    { key: "cancelled", label: "Cancelled" },
-    { key: "contracted", label: "Contracted" },
-    { key: "documented", label: "Documented" },
-    { key: "all", label: "All" },
-  ];
 
   function BucketBadge({ o }: { o: any }) {
     const b = primaryOpportunityBucket(o);
@@ -355,7 +404,7 @@ export function InvestmentOpportunitiesTab({
       </div>
 
       <div className="flex flex-wrap gap-2">
-        {oppTabs.map((t) => (
+        {OPPORTUNITY_FILTER_TABS.map((t) => (
           <button
             key={t.key}
             type="button"
@@ -914,7 +963,12 @@ function NewOpportunityModal({
         </section>
 
         <section className="space-y-4">
-          <p className="text-sm font-bold text-foreground">Investment Specialist</p>
+          <div>
+            <p className="text-sm font-bold text-foreground">Investment Specialist</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Person who brought this opportunity (shown in the table only; feasibility is completed by department managers).
+            </p>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Field label="Select Department" required>
               <select

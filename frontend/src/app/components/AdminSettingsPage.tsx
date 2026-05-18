@@ -1,81 +1,10 @@
 import { useEffect, useState } from "react";
-import { PlusCircle, Trash2, MapPin, GripVertical } from "lucide-react";
+import { PlusCircle, Trash2, MapPin } from "lucide-react";
 import { investmentWorkflowAPI, appSettingsAPI } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
-import { useTranslation } from "../../utils/translations";
-import {
-    EXECUTIVE_SIDEBAR_SLOT_IDS,
-    isValidExecutiveSidebarOrder,
-    normalizeExecutiveSidebarOrder,
-} from "@/utils/allStationsSidebarSlots";
-import {
-    DEFAULT_SIDEBAR_NESTED_ORDER,
-    normalizeSidebarNestedOrder,
-    type SidebarNestedOrder,
-} from "@/utils/sidebarNestedOrder";
-
-function sidebarSlotLabel(t: (key: string) => string, slotId: string): string {
-    const keys: Record<string, string> = {
-        dashboard: "dashboard",
-        recentActivities: "recentActivities",
-        analytics: "analytics",
-        stations: "stations",
-        departments: "departments",
-        requests: "requests",
-        underReview: "underReview",
-        tasks: "tasks",
-        reports: "reports",
-        contactCEO: "contactCEO",
-        investment: "investmentDept",
-        franchiseDept: "franchiseDept",
-        legalDept: "legalDept",
-        projectDept: "projectDept",
-        preOpening: "preOpening",
-        orderRequest: "orderRequest",
-        openingSoonProjects: "openingSoonProjects",
-        tasksMenu: "tasksMenu",
-        systemSettings: "systemSetting",
-    };
-    const k = keys[slotId];
-    return k ? t(k) : slotId;
-}
-
-function nestedSidebarSlotLabel(t: (key: string) => string, slotId: string): string {
-    const keys: Record<string, string> = {
-        dashboard: "dashboard",
-        analytics: "analytics",
-        recentActivities: "recentActivities",
-        investmentOpportunities: "investmentOpportunities",
-        franchiseOpportunities: "franchiseOpportunities",
-        quickActions: "quickActions",
-        alertsNotifications: "alertsNotifications",
-        newProject: "projectNewProject",
-        feasibility: "projectFeasibilityStudy",
-        governmentLicenses: "governmentLicenses",
-        otherLicenses: "otherLicenses",
-        newRequest: "newRequest",
-        submittedApprovedRequests: "submittedApprovedRequests",
-        trackNearLaunchProject: "trackNearLaunchProject",
-        "new-project": "investmentNewProject",
-        opportunities: "investmentOpportunities",
-        "investment-feasibility": "investmentFeasibilityStudy",
-        opinions: "investmentOpinions",
-        reports: "reports",
-        contract: "contract",
-        document: "document",
-        siteSurvey: "siteSurvey",
-        users: "users",
-        companyInfo: "companyInfo",
-        notifications: "notifications",
-        backup: "backup",
-    };
-    const k = keys[slotId];
-    return k ? t(k) : slotId;
-}
 
 export function AdminSettingsPage() {
     const { user } = useAuth();
-    const { t } = useTranslation();
     const canManage = user?.role === "super_admin";
 
     const [regions, setRegions] = useState<Array<{ id: string; name: string }>>([]);
@@ -85,16 +14,6 @@ export function AdminSettingsPage() {
 
     const [newRegionName, setNewRegionName] = useState("");
     const [newCityName, setNewCityName] = useState("");
-    const [sidebarOrderDraft, setSidebarOrderDraft] = useState<string[]>(() => [...EXECUTIVE_SIDEBAR_SLOT_IDS]);
-    const [sidebarNestedOrderDraft, setSidebarNestedOrderDraft] = useState<SidebarNestedOrder>(
-        () => normalizeSidebarNestedOrder(DEFAULT_SIDEBAR_NESTED_ORDER),
-    );
-    const [sidebarOrderLoading, setSidebarOrderLoading] = useState(false);
-    const [sidebarOrderSaving, setSidebarOrderSaving] = useState(false);
-    const [dragIndex, setDragIndex] = useState<number | null>(null);
-    const [nestedDrag, setNestedDrag] = useState<{ group: keyof SidebarNestedOrder; index: number } | null>(null);
-    const hiddenTopLevelSlotIds = new Set(["analytics", "recentActivities", "reports", "stations", "requests", "tasks", "underReview"]);
-    const visibleTopLevelOrder = sidebarOrderDraft.filter((id) => !hiddenTopLevelSlotIds.has(id));
 
     const [surveyStatusDraft, setSurveyStatusDraft] = useState<Array<{ value: string; label: string }>>([]);
     const [surveyStageDraft, setSurveyStageDraft] = useState<Array<{ value: string; label: string }>>([]);
@@ -159,31 +78,6 @@ export function AdminSettingsPage() {
     }, [canManage]);
 
     useEffect(() => {
-        if (!canManage) return;
-        let cancelled = false;
-        setSidebarOrderLoading(true);
-        appSettingsAPI
-            .getSidebarNavConfig()
-            .then(({ order, nestedOrder }) => {
-                if (cancelled) return;
-                setSidebarOrderDraft(normalizeExecutiveSidebarOrder(order));
-                setSidebarNestedOrderDraft(normalizeSidebarNestedOrder(nestedOrder));
-            })
-            .catch(() => {
-                if (!cancelled) {
-                    setSidebarOrderDraft([...EXECUTIVE_SIDEBAR_SLOT_IDS]);
-                    setSidebarNestedOrderDraft(normalizeSidebarNestedOrder(DEFAULT_SIDEBAR_NESTED_ORDER));
-                }
-            })
-            .finally(() => {
-                if (!cancelled) setSidebarOrderLoading(false);
-            });
-        return () => {
-            cancelled = true;
-        };
-    }, [canManage]);
-
-    useEffect(() => {
         void loadCities(selectedRegionId);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedRegionId]);
@@ -192,7 +86,7 @@ export function AdminSettingsPage() {
         return (
             <div className="p-8">
                 <div className="bg-card rounded-xl border border-border p-8 text-center">
-                    <p className="text-lg font-bold text-foreground">Settings</p>
+                    <p className="text-lg font-bold text-foreground">Company Info</p>
                     <p className="text-sm text-muted-foreground mt-2">Only Super Admin can access this page.</p>
                 </div>
             </div>
@@ -203,7 +97,7 @@ export function AdminSettingsPage() {
         <div className="p-8 space-y-6">
             <div className="flex items-center justify-between gap-3">
                 <div>
-                    <h2 className="text-2xl font-black text-foreground">Settings</h2>
+                    <h2 className="text-2xl font-black text-foreground">Company Info</h2>
                     <p className="text-sm text-muted-foreground mt-1">Manage Regions and Cities for Investment Opportunities.</p>
                 </div>
             </div>
@@ -340,127 +234,6 @@ export function AdminSettingsPage() {
                             <div className="p-8 text-center text-muted-foreground">Select a region to manage its cities.</div>
                         )}
                     </div>
-                </div>
-            </div>
-
-            <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
-                <div className="p-5 border-b border-border">
-                    <div className="flex items-center gap-2">
-                        <GripVertical className="w-5 h-5 text-primary" />
-                        <p className="font-bold text-foreground">{t("sidebarNavOrderTitle")}</p>
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-2">{t("sidebarNavOrderDescription")}</p>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                        <button
-                            type="button"
-                            disabled={sidebarOrderSaving || sidebarOrderLoading}
-                            onClick={async () => {
-                                if (!isValidExecutiveSidebarOrder(sidebarOrderDraft)) return;
-                                setSidebarOrderSaving(true);
-                                try {
-                                    await appSettingsAPI.putSidebarNavConfig(sidebarOrderDraft, sidebarNestedOrderDraft);
-                                    window.dispatchEvent(new Event("darb-sidebar-slots-saved"));
-                                    alert(t("sidebarNavOrderSaved"));
-                                } catch (e: unknown) {
-                                    alert(e instanceof Error ? e.message : "Save failed");
-                                } finally {
-                                    setSidebarOrderSaving(false);
-                                }
-                            }}
-                            className="btn-primary px-4 py-2 rounded-lg text-sm font-semibold disabled:opacity-60"
-                        >
-                            {sidebarOrderSaving ? "…" : t("sidebarNavOrderSave")}
-                        </button>
-                        <button
-                            type="button"
-                            disabled={sidebarOrderSaving || sidebarOrderLoading}
-                            onClick={() => {
-                                setSidebarOrderDraft([...EXECUTIVE_SIDEBAR_SLOT_IDS]);
-                                setSidebarNestedOrderDraft(normalizeSidebarNestedOrder(DEFAULT_SIDEBAR_NESTED_ORDER));
-                            }}
-                            className="px-4 py-2 rounded-lg text-sm font-semibold border border-border hover:bg-muted/40 disabled:opacity-60"
-                        >
-                            {t("sidebarNavOrderReset")}
-                        </button>
-                    </div>
-                </div>
-                <ul className="divide-y divide-border">
-                    {visibleTopLevelOrder.map((slotId, index) => (
-                        <li
-                            key={slotId}
-                            draggable
-                            onDragStart={() => setDragIndex(index)}
-                            onDragEnd={() => setDragIndex(null)}
-                            onDragOver={(e) => e.preventDefault()}
-                            onDrop={() => {
-                                if (dragIndex === null || dragIndex === index) return;
-                                setSidebarOrderDraft((prev) => {
-                                    const hidden = prev.filter((id) => hiddenTopLevelSlotIds.has(id));
-                                    const visible = prev.filter((id) => !hiddenTopLevelSlotIds.has(id));
-                                    const nextVisible = [...visible];
-                                    const [removed] = nextVisible.splice(dragIndex, 1);
-                                    nextVisible.splice(index, 0, removed);
-                                    return [...nextVisible, ...hidden];
-                                });
-                                setDragIndex(null);
-                            }}
-                            className={`px-5 py-3 flex items-center gap-3 cursor-grab active:cursor-grabbing select-none hover:bg-muted/20 ${dragIndex === index ? "bg-primary/10" : ""
-                                }`}
-                        >
-                            <GripVertical className="w-4 h-4 text-muted-foreground shrink-0" />
-                            <span className="text-sm font-semibold text-foreground">
-                                {sidebarSlotLabel(t as (key: string) => string, slotId)}
-                            </span>
-                        </li>
-                    ))}
-                </ul>
-                <div className="p-5 border-t border-border space-y-4">
-                    <p className="text-sm font-bold text-foreground">Dropdown options order</p>
-                    {(
-                        [
-                            ["dashboard", t("dashboard")],
-                            ["projectDept", t("projectDept")],
-                            ["preOpening", t("preOpening")],
-                            ["orderRequest", t("orderRequest")],
-                            ["openingSoonProjects", t("openingSoonProjects")],
-                            ["tasksMenu", t("tasksMenu")],
-                            ["investment", t("investmentDept")],
-                            ["franchiseDept", t("franchiseDept")],
-                            ["legalDept", t("legalDept")],
-                            ["systemSettings", t("systemSetting")],
-                        ] as Array<[keyof SidebarNestedOrder, string]>
-                    ).map(([groupKey, label]) => (
-                        <div key={groupKey} className="rounded-lg border border-border overflow-hidden">
-                            <div className="px-4 py-2.5 bg-muted/30 text-sm font-semibold">{label}</div>
-                            <ul className="divide-y divide-border">
-                                {sidebarNestedOrderDraft[groupKey].map((childId, index) => (
-                                    <li
-                                        key={`${groupKey}-${childId}`}
-                                        draggable
-                                        onDragStart={() => setNestedDrag({ group: groupKey, index })}
-                                        onDragEnd={() => setNestedDrag(null)}
-                                        onDragOver={(e) => e.preventDefault()}
-                                        onDrop={() => {
-                                            if (!nestedDrag || nestedDrag.group !== groupKey || nestedDrag.index === index) return;
-                                            setSidebarNestedOrderDraft((prev) => {
-                                                const nextGroup = [...prev[groupKey]];
-                                                const [removed] = nextGroup.splice(nestedDrag.index, 1);
-                                                nextGroup.splice(index, 0, removed);
-                                                return { ...prev, [groupKey]: nextGroup } as SidebarNestedOrder;
-                                            });
-                                            setNestedDrag(null);
-                                        }}
-                                        className={`px-4 py-2.5 flex items-center gap-3 cursor-grab active:cursor-grabbing select-none hover:bg-muted/20 ${nestedDrag?.group === groupKey && nestedDrag.index === index ? "bg-primary/10" : ""}`}
-                                    >
-                                        <GripVertical className="w-4 h-4 text-muted-foreground shrink-0" />
-                                        <span className="text-sm font-medium text-foreground">
-                                            {nestedSidebarSlotLabel(t as (key: string) => string, childId)}
-                                        </span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
-                    ))}
                 </div>
             </div>
 

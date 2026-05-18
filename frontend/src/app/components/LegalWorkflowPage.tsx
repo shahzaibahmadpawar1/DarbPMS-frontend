@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { FileText, FolderOpen, BarChart2, Upload, Eye, ExternalLink } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { isLegalDepartment } from "@/services/api";
+import { InvestmentOpportunityDetailModal } from "@/app/components/forms/InvestmentWorkflowDetailModals";
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";
 type LegalTab = "contract" | "document";
@@ -37,7 +38,9 @@ export function LegalWorkflowPage() {
     const [taskFile, setTaskFile] = useState<File | null>(null);
     const [note, setNote] = useState("");
     const [savingDoc, setSavingDoc] = useState(false);
+    const [detailOpportunityId, setDetailOpportunityId] = useState<string | null>(null);
     const activeTab: LegalTab = searchParams.get("tab") === "document" ? "document" : "contract";
+    const focusOpportunityId = String(searchParams.get("opportunityId") || "").trim() || null;
     const canEditLegalWorkflow = !!user && (user.role === "super_admin" || isLegalDepartment(user.department));
     const canViewLegalWorkflow = canEditLegalWorkflow || user?.role === "ceo";
 
@@ -64,22 +67,51 @@ export function LegalWorkflowPage() {
         };
     }, [token]);
 
+    useEffect(() => {
+        if (!focusOpportunityId) return;
+        setDetailOpportunityId(focusOpportunityId);
+    }, [focusOpportunityId]);
+
     const rows = useMemo(() => {
-        const targetFlow = activeTab === "contract" ? "contract" : "documents";
-        const filtered = tasks.filter(
-            (t) => String(t.flow_type).toLowerCase() === targetFlow && String(t.target_department || "").toLowerCase() === "legal",
-        );
+        const filtered = tasks.filter((t) => {
+            const flow = String(t.flow_type).toLowerCase();
+            const target = String(t.target_department || "").toLowerCase();
+            if (target !== "legal") return false;
+            if (activeTab === "contract") {
+                return flow === "contract" || flow === "opportunity_contract";
+            }
+            return flow === "documents";
+        });
 
         const seen = new Set<string>();
         const unique: WorkflowTask[] = [];
         for (const t of filtered) {
-            const key = t.investment_project_id || t.id;
+            const meta = t.metadata && typeof t.metadata === "object" ? t.metadata : {};
+            const opportunityId = meta.opportunityId ? String(meta.opportunityId) : "";
+            const key = opportunityId || t.investment_project_id || t.id;
             if (seen.has(key)) continue;
             seen.add(key);
             unique.push(t);
         }
         return unique;
     }, [tasks, activeTab]);
+
+    const displayTitle = (task: WorkflowTask) => {
+        const meta = task.metadata && typeof task.metadata === "object" ? task.metadata : {};
+        const clientName = meta.clientName ? String(meta.clientName).trim() : "";
+        if (clientName) return clientName;
+        if (task.project_name) return task.project_name;
+        if (String(task.flow_type).toLowerCase() === "opportunity_contract") return "Opportunity contract";
+        return "Station";
+    };
+
+    const openOpportunityContract = (task: WorkflowTask) => {
+        const meta = task.metadata && typeof task.metadata === "object" ? task.metadata : {};
+        const opportunityId = meta.opportunityId ? String(meta.opportunityId).trim() : "";
+        if (!opportunityId) return;
+        setDetailOpportunityId(opportunityId);
+        setSearchParams({ tab: "contract", opportunityId }, { replace: true });
+    };
 
     const selectedTask = useMemo(
         () => rows.find((r) => r.id === selectedTaskId) || null,
@@ -212,15 +244,23 @@ export function LegalWorkflowPage() {
                 {loading ? (
                     <div className="p-8 text-center text-muted-foreground">Loading...</div>
                 ) : rows.length === 0 ? (
-                    <div className="p-8 text-center text-muted-foreground">No stations found.</div>
+                    <div className="p-8 text-center text-muted-foreground">No contract work assigned yet.</div>
                 ) : (
                     <div className="divide-y divide-border">
-                        {rows.map((r) => (
+                        {rows.map((r) => {
+                            const isOpportunityContract = String(r.flow_type).toLowerCase() === "opportunity_contract";
+                            const meta = r.metadata && typeof r.metadata === "object" ? r.metadata : {};
+                            const opportunityId = meta.opportunityId ? String(meta.opportunityId) : "";
+                            return (
                             <div key={r.id} className="px-4 py-3 flex items-center justify-between gap-3">
                                 <div>
-                                    <p className="font-semibold text-foreground">{r.project_name || "Station"}</p>
+                                    <p className="font-semibold text-foreground">{displayTitle(r)}</p>
                                     <p className="text-xs text-muted-foreground mt-0.5">
-                                        {r.project_code || "—"} · {r.city || "—"} · {new Date(r.created_at).toLocaleDateString()}
+                                        {isOpportunityContract
+                                            ? `Opportunity contract${opportunityId ? ` · ${opportunityId.slice(0, 8)}…` : ""}`
+                                            : `${r.project_code || "—"} · ${r.city || "—"}`}
+                                        {" · "}
+                                        {new Date(r.created_at).toLocaleDateString()}
                                     </p>
                                 </div>
                                 <div className="text-right flex items-center gap-2">
@@ -228,16 +268,27 @@ export function LegalWorkflowPage() {
                                         <p className="text-xs text-muted-foreground">Status</p>
                                         <p className="text-sm font-semibold">{r.status || "—"}</p>
                                     </div>
-                                    <button
-                                        type="button"
-                                        onClick={() => setSelectedTaskId(r.id)}
-                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-sm font-semibold hover:bg-muted"
-                                    >
-                                        <Eye className="w-4 h-4" /> Details
-                                    </button>
+                                    {isOpportunityContract && opportunityId ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => openOpportunityContract(r)}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-success/30 bg-success/10 text-success text-sm font-semibold hover:bg-success/20"
+                                        >
+                                            <FileText className="w-4 h-4" /> Fill contract
+                                        </button>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={() => setSelectedTaskId(r.id)}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-sm font-semibold hover:bg-muted"
+                                        >
+                                            <Eye className="w-4 h-4" /> Details
+                                        </button>
+                                    )}
                                 </div>
                             </div>
-                        ))}
+                            );
+                        })}
                     </div>
                 )}
             </div>
@@ -275,6 +326,22 @@ export function LegalWorkflowPage() {
                                 <p className="text-sm font-semibold mb-2">Contract action</p>
                                 {(() => {
                                     const meta = selectedTask.metadata || {};
+                                    const opportunityId = String((meta as { opportunityId?: string }).opportunityId || "").trim();
+                                    if (String(selectedTask.flow_type).toLowerCase() === "opportunity_contract" && opportunityId) {
+                                        return (
+                                            <button
+                                                type="button"
+                                                disabled={!canEditLegalWorkflow}
+                                                onClick={() => {
+                                                    setDetailOpportunityId(opportunityId);
+                                                    setSearchParams({ tab: "contract", opportunityId }, { replace: true });
+                                                }}
+                                                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground text-sm font-semibold disabled:opacity-50"
+                                            >
+                                                <FileText className="w-4 h-4" /> {canEditLegalWorkflow ? "Fill opportunity contract" : "View opportunity contract"}
+                                            </button>
+                                        );
+                                    }
                                     const stationCode = String(meta.stationCode || meta.station_code || meta.stationcode || "").trim();
                                     const backTo = `/all-stations-legal${activeTab === "document" ? "?tab=document" : ""}`;
                                     if (!stationCode) {
@@ -340,6 +407,15 @@ export function LegalWorkflowPage() {
                     </div>
                 </div>
             )}
+            <InvestmentOpportunityDetailModal
+                opportunityId={detailOpportunityId}
+                onClose={() => {
+                    setDetailOpportunityId(null);
+                    if (focusOpportunityId) {
+                        setSearchParams({ tab: "contract" }, { replace: true });
+                    }
+                }}
+            />
         </div>
     );
 }

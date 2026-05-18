@@ -41,8 +41,7 @@ export function StationProvider({ children }: { children: ReactNode }) {
 
     const [accessMode, setAccessMode] = useState<'admin' | 'view-only' | null>(() => {
         const saved = localStorage.getItem("accessMode") as 'admin' | 'view-only' | null;
-        // Default to 'admin' mode for production (editable forms)
-        return saved || 'admin';
+        return saved || null;
     });
 
     const [investmentProjectData, setInvestmentProjectData] = useState<InvestmentProjectData | null>(() => {

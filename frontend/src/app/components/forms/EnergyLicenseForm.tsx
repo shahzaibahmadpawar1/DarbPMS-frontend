@@ -2,12 +2,12 @@ import { useEffect, useState } from "react";
 import { Save, List, PlusCircle, Eye, Send } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
+import { useStationFormReadOnly } from "../../hooks/useStationFormReadOnly";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 export function EnergyLicenseForm() {
-  const { accessMode } = useStation();
-  const isReadOnly = accessMode === 'view-only';
+  const isReadOnly = useStationFormReadOnly('energy-license');
 
   const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
   const [loading, setLoading] = useState(false);
@@ -16,13 +16,13 @@ export function EnergyLicenseForm() {
   const [records, setRecords] = useState<any[]>([]);
 
   const [formData, setFormData] = useState({
-    licenseNumber: isReadOnly ? "EN-2024-00129" : "",
-    issuanceDate: isReadOnly ? "2024-01-10" : "",
-    expiryDate: isReadOnly ? "2025-01-10" : "",
-    numberOfDays: isReadOnly ? "180" : "",
-    licenseStatus: isReadOnly ? "active" : "",
-    stationCode: isReadOnly ? "N101" : "",
-    officeCode: isReadOnly ? "OFF-204" : "",
+    licenseNumber: "",
+    issuanceDate: "",
+    expiryDate: "",
+    numberOfDays: "",
+    licenseStatus: "",
+    stationCode: "",
+    officeCode: "",
   });
 
   useEffect(() => {
@@ -53,7 +53,7 @@ export function EnergyLicenseForm() {
     const loadLatestSaved = async () => {
       try {
         const token = localStorage.getItem('auth_token');
-        if (!token || isReadOnly) return;
+        if (!token) return;
 
         const params = new URLSearchParams();
         if (formData.stationCode) params.set('stationCode', formData.stationCode);

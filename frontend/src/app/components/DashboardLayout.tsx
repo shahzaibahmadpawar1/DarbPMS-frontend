@@ -19,6 +19,9 @@ import { ChatWidget } from "./ChatWidget";
 import { useStation } from "../context/StationContext";
 import { useTranslation } from "../../utils/translations";
 import { useStationFormAutofill } from "../hooks/useStationFormAutofill";
+import { useAuth } from "@/context/AuthContext";
+import { TaskPendingBadge } from "@/components/TaskPendingBadge";
+import { usePendingTaskCount } from "@/hooks/usePendingTaskCount";
 import logo from "../../assets/logo.png";
 
 interface NavItem {
@@ -27,8 +30,6 @@ interface NavItem {
   path: string;
   icon: React.ReactNode;
 }
-
-const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 export function DashboardLayout() {
   // Start open on desktop (>= 1024px), closed on mobile
@@ -39,8 +40,9 @@ export function DashboardLayout() {
     return false;
   });
   const [chatOpen, setChatOpen] = useState(false);
-  const [taskCount, setTaskCount] = useState(0);
   const location = useLocation();
+  const { token, user } = useAuth();
+  const { taskCount } = usePendingTaskCount(token, user?.id);
   const { t, lang } = useTranslation();
   const isRTL = lang === 'ar';
 
@@ -61,43 +63,6 @@ export function DashboardLayout() {
 
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  useEffect(() => {
-    const token = localStorage.getItem("auth_token");
-    if (!token) {
-      setTaskCount(0);
-      return;
-    }
-
-    let isMounted = true;
-    const fetchTaskCount = async () => {
-      try {
-        const response = await fetch(`${API_URL}/tasks`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!response.ok) return;
-
-        const result = await response.json();
-        if (isMounted) {
-          setTaskCount(Array.isArray(result?.data) ? result.data.length : 0);
-        }
-      } catch {
-        if (isMounted) setTaskCount(0);
-      }
-    };
-
-    fetchTaskCount();
-
-    const onFocus = () => {
-      fetchTaskCount();
-    };
-    window.addEventListener("focus", onFocus);
-
-    return () => {
-      isMounted = false;
-      window.removeEventListener("focus", onFocus);
-    };
   }, []);
 
   const navigation: NavItem[] = [
@@ -183,11 +148,7 @@ export function DashboardLayout() {
                 {sidebarOpen && (
                   <div className="flex items-center gap-2 min-w-0">
                     <span className="text-sm font-medium truncate">{item.titleKey ? t(item.titleKey) : item.title}</span>
-                    {item.titleKey === "tasks" && taskCount > 0 && (
-                      <span className="min-w-5 h-5 px-1.5 bg-info text-info-foreground rounded-full flex items-center justify-center text-[10px] font-bold leading-none shadow-sm">
-                        {taskCount > 99 ? "99+" : taskCount}
-                      </span>
-                    )}
+                    {item.titleKey === "tasks" ? <TaskPendingBadge count={taskCount} /> : null}
                   </div>
                 )}
               </Link>

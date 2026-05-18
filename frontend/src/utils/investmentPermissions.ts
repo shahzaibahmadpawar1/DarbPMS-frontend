@@ -41,30 +41,60 @@ export function canCreateInvestmentOpportunityOrProject(user: InvestmentPermissi
   return roleOk && (dept === "investment" || dept === "franchise");
 }
 
+export type WorkflowDepartmentType = "investment" | "franchise";
+
+function isOwningDepartmentManager(
+  user: InvestmentPermissionUser,
+  departmentType: WorkflowDepartmentType,
+): boolean {
+  return (
+    user.role === "department_manager"
+    && String(user.department || "").trim().toLowerCase() === departmentType
+  );
+}
+
+function resolveOpportunityWorkflowDepartment(
+  opportunity: { workflow_department_type?: string | null } | null | undefined,
+  fallback: WorkflowDepartmentType,
+): WorkflowDepartmentType {
+  const raw = String(opportunity?.workflow_department_type || "").trim().toLowerCase();
+  return raw === "franchise" ? "franchise" : fallback;
+}
+
+/** Matches backend canManageOpportunityFeasibilityStudy: executives or owning dept manager. */
 export function canWriteFeasibilityStudy(
   user: InvestmentPermissionUser | null,
-  opportunities: Array<{ investment_specialist_user_id?: string | null }>,
+  departmentType: WorkflowDepartmentType,
 ): boolean {
   if (!user) return false;
   if (user.role === "super_admin" || user.role === "ceo") return true;
-  return opportunities.some((o) => String(o.investment_specialist_user_id || "") === user.id);
+  return isOwningDepartmentManager(user, departmentType);
 }
 
-export function eligibleOpportunitiesForNewStudy<T extends { investment_specialist_user_id?: string | null }>(
+export function eligibleOpportunitiesForNewStudy<
+  T extends { workflow_department_type?: string | null; studies_count?: number | null },
+>(
   user: InvestmentPermissionUser | null,
   opportunities: T[],
+  departmentType: WorkflowDepartmentType,
 ): T[] {
-  if (!user) return [];
-  if (user.role === "super_admin" || user.role === "ceo") return opportunities;
-  return opportunities.filter((o) => String(o.investment_specialist_user_id || "") === user.id);
+  if (!canWriteFeasibilityStudy(user, departmentType)) return [];
+  return opportunities.filter((o) => {
+    const oppDept = resolveOpportunityWorkflowDepartment(o, departmentType);
+    if (oppDept !== departmentType) return false;
+    const count = Number(o.studies_count ?? 0);
+    return count === 0;
+  });
 }
 
-/** Matches backend submitStudyToCommittee: CEO/super_admin or assigned investment specialist. */
+/** Matches backend submitStudyToCommittee: CEO/super_admin or owning department manager. */
 export function canSubmitStudyToCommittee(
   user: InvestmentPermissionUser | null,
-  opportunity: { investment_specialist_user_id?: string | null } | null | undefined,
+  opportunity: { workflow_department_type?: string | null } | null | undefined,
+  departmentType: WorkflowDepartmentType,
 ): boolean {
   if (!user) return false;
   if (user.role === "super_admin" || user.role === "ceo") return true;
-  return String(opportunity?.investment_specialist_user_id || "") === user.id;
+  const oppDept = resolveOpportunityWorkflowDepartment(opportunity, departmentType);
+  return isOwningDepartmentManager(user, oppDept);
 }

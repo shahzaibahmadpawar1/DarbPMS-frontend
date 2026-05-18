@@ -1,6 +1,6 @@
 ﻿import { useState, useEffect, useRef, useLayoutEffect, useMemo, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { Link, Outlet, useLocation } from "react-router-dom";
+import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
     LayoutDashboard,
     BarChart2,
@@ -31,7 +31,7 @@ import { BrandName } from "./BrandName";
 import { ChatWidget } from "./ChatWidget";
 import { useTranslation } from "../../utils/translations";
 import { useAuth } from "@/context/AuthContext";
-import { getRoleLabel, appSettingsAPI, isLegalDepartment } from "@/services/api";
+import { getRoleLabel, appSettingsAPI } from "@/services/api";
 import {
     getOrInitLastSeenAt,
     markLastSeenNow,
@@ -39,17 +39,23 @@ import {
     toTimestamp,
     UNDER_REVIEW_LAST_SEEN_SUFFIX,
 } from "@/utils/sidebarBadgeStorage";
+import { TaskPendingBadge } from "@/components/TaskPendingBadge";
+import { usePendingTaskCount } from "@/hooks/usePendingTaskCount";
 import { useStation } from "../context/StationContext";
+import { resolveStationAccessMode } from "@/utils/stationFormPermissions";
 import { useStationFormAutofill } from "../hooks/useStationFormAutofill";
+import { isCommitteeOpinionOnlyWorkflowUser } from "@/utils/investmentPermissions";
 import {
-    canCreateInvestmentOpportunityOrProject,
-    isCommitteeDepartmentManagerForWorkflow,
-    isCommitteeOpinionOnlyWorkflowUser,
-} from "@/utils/investmentPermissions";
-import {
-    resolveExecutiveSidebarSlotOrder,
+    resolveExecutiveSidebarSlotOrderFiltered,
     resolveDeptSidebarSlotOrder,
 } from "@/utils/allStationsSidebarSlots";
+import {
+    buildSidebarVisibilityContext,
+    filterNestedChildren,
+    isTopLevelSlotVisible,
+} from "@/utils/sidebarVisibility";
+import { canAccessPath, getDefaultRedirectPath } from "@/utils/sidebarRouteAccess";
+import type { SidebarNestedOrder } from "@/utils/sidebarNestedOrder";
 import { DEFAULT_SIDEBAR_NESTED_ORDER, normalizeSidebarNestedOrder } from "@/utils/sidebarNestedOrder";
 import {
     workflowDeptHref,
@@ -77,7 +83,6 @@ export function AllStationsDashboardLayout() {
         return false;
     });
     const [chatOpen, setChatOpen] = useState(false);
-    const [taskCount, setTaskCount] = useState(0);
     const [underReviewCount, setUnderReviewCount] = useState(0);
     const [importLoading, setImportLoading] = useState(false);
     const [systemSettingsOpen, setSystemSettingsOpen] = useState(false);
@@ -122,6 +127,13 @@ export function AllStationsDashboardLayout() {
         left: number;
         width: number;
     } | null>(null);
+    const [feasibilityStudyMenuOpen, setFeasibilityStudyMenuOpen] = useState(false);
+    const feasibilityStudyWrapRef = useRef<HTMLDivElement>(null);
+    const [feasibilityStudyFlyout, setFeasibilityStudyFlyout] = useState<{
+        top: number;
+        left: number;
+        width: number;
+    } | null>(null);
     const [preOpeningMenuOpen, setPreOpeningMenuOpen] = useState(false);
     const preOpeningWrapRef = useRef<HTMLDivElement>(null);
     const [preOpeningFlyout, setPreOpeningFlyout] = useState<{
@@ -155,20 +167,30 @@ export function AllStationsDashboardLayout() {
         normalizeSidebarNestedOrder(DEFAULT_SIDEBAR_NESTED_ORDER),
     );
     const location = useLocation();
+    const navigate = useNavigate();
     const { t, lang } = useTranslation();
     const { user, token } = useAuth();
-    const { selectedStation } = useStation();
+    const { taskCount, refreshTaskCount } = usePendingTaskCount(token, user?.id);
+    const { selectedStation, setAccessMode } = useStation();
     const isRTL = lang === 'ar';
     const isDepartmentScopedUser = !!user && user.role !== 'super_admin' && user.role !== 'ceo';
     const canCreateDepartmentProject = !!user && ['super_admin', 'department_manager', 'supervisor'].includes(user.role);
     const isFranchiseUser = isDepartmentScopedUser && canCreateDepartmentProject && user?.department === 'franchise';
     const isDeptUser = isDepartmentScopedUser;
+    const sidebarVisibilityCtx = useMemo(() => buildSidebarVisibilityContext(user), [user]);
     const canShowDepartmentAddButton = !!user
         && ['department_manager', 'supervisor'].includes(user.role)
         && (user.department === 'investment' || user.department === 'franchise');
     const addProjectPath = user?.department === 'franchise'
         ? '/station/new-station/form/franchise-department'
         : '/station/new-station/form/investment-department?tab=new-project';
+
+    useEffect(() => {
+        const mode = resolveStationAccessMode(user, location.pathname);
+        if (mode) {
+            setAccessMode(mode);
+        }
+    }, [user, location.pathname, setAccessMode]);
 
     useEffect(() => {
         // Used by fullscreen modals to center within the remaining content area.
@@ -186,7 +208,9 @@ export function AllStationsDashboardLayout() {
     });
 
     const isSystemSettingsRoute =
-        location.pathname === "/all-stations-users" || location.pathname === "/all-stations-settings";
+        location.pathname === "/all-stations-users" ||
+        location.pathname === "/all-stations-settings" ||
+        location.pathname === "/all-stations-settings/preferences";
 
     useEffect(() => {
         if (isSystemSettingsRoute) {
@@ -198,12 +222,16 @@ export function AllStationsDashboardLayout() {
     const isInvestmentDeptRoute = workflowRouteDept === "investment";
     const isFranchiseDeptRoute = workflowRouteDept === "franchise";
     const isLegalRoute = location.pathname === "/all-stations-legal";
+    const isFeasibilityStudyRoute =
+        (location.pathname === "/all-stations-project" &&
+            location.search.includes("tab=feasibility")) ||
+        (location.pathname.includes("/investment-department") &&
+            location.search.includes("tab=opinions"));
     const isProjectRoute =
-        location.pathname === "/all-stations-project" ||
         location.pathname === "/all-stations-list" ||
         location.pathname === "/all-stations-reports" ||
-        location.pathname.includes("/investment-department") ||
-        location.pathname.includes("/franchise-department");
+        (location.pathname === "/all-stations-project" &&
+            !location.search.includes("tab=feasibility"));
     const isPreOpeningRoute = location.pathname === "/all-stations-pre-opening";
     const isOrderRequestRoute = location.pathname === "/all-stations-requests" || location.pathname === "/all-stations-order-requests-submitted";
     const isOpeningSoonRoute = location.pathname === "/all-stations-opening-soon-projects";
@@ -239,6 +267,9 @@ export function AllStationsDashboardLayout() {
     useEffect(() => {
         if (isProjectRoute) setProjectMenuOpen(true);
     }, [isProjectRoute]);
+    useEffect(() => {
+        if (isFeasibilityStudyRoute) setFeasibilityStudyMenuOpen(true);
+    }, [isFeasibilityStudyRoute]);
     useEffect(() => {
         if (isPreOpeningRoute) setPreOpeningMenuOpen(true);
     }, [isPreOpeningRoute]);
@@ -375,6 +406,26 @@ export function AllStationsDashboardLayout() {
         window.addEventListener("resize", update);
         return () => window.removeEventListener("resize", update);
     }, [projectMenuOpen, sidebarOpen, isRTL]);
+    useLayoutEffect(() => {
+        if (!feasibilityStudyMenuOpen || sidebarOpen) {
+            setFeasibilityStudyFlyout(null);
+            return;
+        }
+        const update = () => {
+            const el = feasibilityStudyWrapRef.current;
+            if (!el) return;
+            const r = el.getBoundingClientRect();
+            const width = 220;
+            const gap = 8;
+            const left = isRTL
+                ? Math.max(gap, r.left - width - gap)
+                : Math.min(r.right + gap, window.innerWidth - width - gap);
+            setFeasibilityStudyFlyout({ top: r.top, left, width });
+        };
+        update();
+        window.addEventListener("resize", update);
+        return () => window.removeEventListener("resize", update);
+    }, [feasibilityStudyMenuOpen, sidebarOpen, isRTL]);
     useLayoutEffect(() => {
         if (!preOpeningMenuOpen || sidebarOpen) {
             setPreOpeningFlyout(null);
@@ -523,49 +574,6 @@ export function AllStationsDashboardLayout() {
 
     useEffect(() => {
         if (!token || !user?.id) {
-            setTaskCount(0);
-            return;
-        }
-
-        let isMounted = true;
-
-        const fetchTaskCount = async () => {
-            try {
-                const response = await fetch(`${API_BASE_URL}/tasks`, {
-                    headers: { Authorization: `Bearer ${token}` },
-                });
-                if (!response.ok) return;
-
-                const result = await response.json();
-                if (isMounted) {
-                    const lastSeenAt = getOrInitLastSeenAt(user.id, TASKS_LAST_SEEN_SUFFIX);
-                    const items = Array.isArray(result?.data) ? result.data : [];
-                    const newItemsCount = items.filter((task: any) => {
-                        const createdAt = toTimestamp(task?.created_at);
-                        return createdAt !== null && createdAt > lastSeenAt;
-                    }).length;
-                    setTaskCount(newItemsCount);
-                }
-            } catch {
-                if (isMounted) setTaskCount(0);
-            }
-        };
-
-        fetchTaskCount();
-
-        const onFocus = () => {
-            fetchTaskCount();
-        };
-        window.addEventListener("focus", onFocus);
-
-        return () => {
-            isMounted = false;
-            window.removeEventListener("focus", onFocus);
-        };
-    }, [token, user?.id]);
-
-    useEffect(() => {
-        if (!token || !user?.id) {
             setUnderReviewCount(0);
             return;
         }
@@ -621,14 +629,14 @@ export function AllStationsDashboardLayout() {
 
         if (markTasksSeen) {
             markLastSeenNow(user.id, TASKS_LAST_SEEN_SUFFIX);
-            setTaskCount(0);
+            void refreshTaskCount();
         }
 
         if (markUnderReviewSeen) {
             markLastSeenNow(user.id, UNDER_REVIEW_LAST_SEEN_SUFFIX);
             setUnderReviewCount(0);
         }
-    }, [location.pathname, user?.id]);
+    }, [location.pathname, user?.id, refreshTaskCount]);
 
     const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -701,28 +709,38 @@ export function AllStationsDashboardLayout() {
         reader.readAsArrayBuffer(file);
     };
 
-    const showSystemUsers = user?.role === "super_admin" || user?.role === "ceo";
-    const showSystemSettings = user?.role === "super_admin";
-    const canCreateInvestmentNav = canCreateInvestmentOpportunityOrProject(user);
+    const {
+        showSystemUsers,
+        showCompanyInfo,
+        showUserSettings,
+        showInvestmentMenu,
+        showFranchiseMenu,
+        showLegalMenu,
+        showProjectMenu,
+        showPreOpeningMenu,
+        showFeasibilityStudyMenu,
+        showCommitteeOpinionsNav,
+        showOrderRequestMenu,
+        showOpeningSoonMenu,
+        showTasksMenu,
+        canCreateInvestmentNav,
+    } = sidebarVisibilityCtx;
     const committeeOpinionOnlyWorkflow = isCommitteeOpinionOnlyWorkflowUser(user);
-    const showInvestmentMenu =
-        !!user &&
-        (user.role === "super_admin" ||
-            user.role === "ceo" ||
-            user.department === "investment" ||
-            isCommitteeDepartmentManagerForWorkflow(user));
-    const showFranchiseMenu =
-        !!user &&
-        (user.role === "super_admin" ||
-            user.role === "ceo" ||
-            user.department === "franchise" ||
-            isCommitteeDepartmentManagerForWorkflow(user));
-    const showLegalMenu = !!user && (user.role === "super_admin" || user.role === "ceo" || isLegalDepartment(user.department));
-    const showProjectMenu = !!user;
-    const showPreOpeningMenu = !!user;
-    const showOrderRequestMenu = !!user;
-    const showOpeningSoonMenu = !!user;
-    const showTasksMenu = !!user;
+
+    const filteredSidebarNestedOrder = useMemo((): SidebarNestedOrder => {
+        const keys = Object.keys(sidebarNestedOrder) as (keyof SidebarNestedOrder)[];
+        const out = { ...sidebarNestedOrder };
+        for (const key of keys) {
+            out[key] = filterNestedChildren(key, sidebarNestedOrder[key], sidebarVisibilityCtx) as SidebarNestedOrder[typeof key];
+        }
+        return out;
+    }, [sidebarNestedOrder, sidebarVisibilityCtx]);
+
+    useEffect(() => {
+        if (!user) return;
+        if (canAccessPath(user, location.pathname, location.search)) return;
+        navigate(getDefaultRedirectPath(user), { replace: true });
+    }, [user, location.pathname, location.search, navigate]);
 
     const navigation: NavItem[] = isDeptUser
         ? [
@@ -753,7 +771,7 @@ export function AllStationsDashboardLayout() {
             return;
         }
         try {
-            const { order, nestedOrder } = await appSettingsAPI.getSidebarNavConfig();
+            const { order, nestedOrder } = await appSettingsAPI.getMySidebarNavConfig();
             setSidebarSlotOrder(order);
             setSidebarNestedOrder(normalizeSidebarNestedOrder(nestedOrder));
         } catch {
@@ -775,9 +793,10 @@ export function AllStationsDashboardLayout() {
     }, [loadSidebarSlots]);
 
     const resolvedSidebarSlots = useMemo(() => {
-        if (isDeptUser) return resolveDeptSidebarSlotOrder(sidebarSlotOrder, isFranchiseUser);
-        return resolveExecutiveSidebarSlotOrder(sidebarSlotOrder);
-    }, [isDeptUser, isFranchiseUser, sidebarSlotOrder]);
+        const isSlotVisible = (slotId: string) => isTopLevelSlotVisible(slotId, sidebarVisibilityCtx);
+        if (isDeptUser) return resolveDeptSidebarSlotOrder(sidebarSlotOrder, isFranchiseUser, isSlotVisible);
+        return resolveExecutiveSidebarSlotOrderFiltered(sidebarSlotOrder, isSlotVisible);
+    }, [isDeptUser, isFranchiseUser, sidebarSlotOrder, sidebarVisibilityCtx]);
 
     const sidebarNavCtx: SidebarNavRenderContext = useMemo(
         () => ({
@@ -790,12 +809,19 @@ export function AllStationsDashboardLayout() {
             underReviewCount,
             isDeptUser,
             showSystemUsers,
-            showSystemSettings,
-            sidebarNestedOrder,
+            showCompanyInfo,
+            showUserSettings,
+            sidebarNestedOrder: filteredSidebarNestedOrder,
             projectMenuOpen,
             setProjectMenuOpen,
             isProjectRoute,
             showProjectMenu,
+            feasibilityStudyMenuOpen,
+            setFeasibilityStudyMenuOpen,
+            isFeasibilityStudyRoute,
+            showFeasibilityStudyMenu,
+            showCommitteeOpinionsNav,
+            feasibilityStudyWrapRef,
             preOpeningMenuOpen,
             setPreOpeningMenuOpen,
             isPreOpeningRoute,
@@ -852,9 +878,11 @@ export function AllStationsDashboardLayout() {
             underReviewCount,
             isDeptUser,
             showSystemUsers,
-            showSystemSettings,
-            sidebarNestedOrder,
+            showCompanyInfo,
+            showUserSettings,
+            filteredSidebarNestedOrder,
             projectMenuOpen,
+            feasibilityStudyMenuOpen,
             preOpeningMenuOpen,
             orderRequestMenuOpen,
             openingSoonMenuOpen,
@@ -874,6 +902,9 @@ export function AllStationsDashboardLayout() {
             showLegalMenu,
             isProjectRoute,
             showProjectMenu,
+            isFeasibilityStudyRoute,
+            showFeasibilityStudyMenu,
+            showCommitteeOpinionsNav,
             isPreOpeningRoute,
             showPreOpeningMenu,
             isOrderRequestRoute,
@@ -1033,23 +1064,7 @@ export function AllStationsDashboardLayout() {
         closeMenu: () => void,
     ) => (
         <div data-project-flyout className="fixed z-[100] rounded-xl border border-border bg-card py-1 shadow-xl" style={{ top: flyout.top, left: flyout.left, width: flyout.width }}>
-            {sidebarNestedOrder.projectDept.map((childId) => {
-                if (childId === "newProject") {
-                    return (
-                        <div key={childId} className="px-2 py-1 space-y-1">
-                            <div className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">{t("projectNewProject")}</div>
-                            <Link to="/station/new-station/form/investment-department?tab=new-project" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${location.pathname.includes("/investment-department") ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}>
-                                <PlusCircle className="w-4 h-4 shrink-0" /><span className="truncate">{t("investmentDept")}</span>
-                            </Link>
-                            <Link to="/station/new-station/form/franchise-department?tab=new-project" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }} className={`flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${location.pathname.includes("/franchise-department") ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}>
-                                <PlusCircle className="w-4 h-4 shrink-0" /><span className="truncate">{t("franchiseDept")}</span>
-                            </Link>
-                        </div>
-                    );
-                }
-                if (childId === "feasibility") {
-                    return <Link key={childId} to="/all-stations-project?tab=feasibility" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }} className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-project" && location.search.includes("tab=feasibility") ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}><BookOpen className="w-4 h-4 shrink-0" /><span className="truncate">{t("projectFeasibilityStudy")}</span></Link>;
-                }
+            {filteredSidebarNestedOrder.projectDept.map((childId) => {
                 if (childId === "stations") {
                     return <Link key={childId} to="/all-stations-list" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }} className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-list" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}><BookOpen className="w-4 h-4 shrink-0" /><span className="truncate">{t("stations")}</span></Link>;
                 }
@@ -1060,12 +1075,29 @@ export function AllStationsDashboardLayout() {
             })}
         </div>
     );
+    const renderFeasibilityStudyFlyout = (
+        flyout: { top: number; left: number; width: number },
+        closeMenu: () => void,
+    ) => (
+        <div data-feasibility-study-flyout className="fixed z-[100] rounded-xl border border-border bg-card py-1 shadow-xl" style={{ top: flyout.top, left: flyout.left, width: flyout.width }}>
+            {filteredSidebarNestedOrder.feasibilityStudy.map((childId) => {
+                if (childId === "overview") {
+                    return <Link key={childId} to="/all-stations-project?tab=feasibility" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }} className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-project" && location.search.includes("tab=feasibility") ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}><BookOpen className="w-4 h-4 shrink-0" /><span className="truncate">{t("projectFeasibilityStudy")}</span></Link>;
+                }
+                if (childId === "committeeOpinions") {
+                    return <Link key={childId} to="/station/new-station/form/investment-department?tab=opinions" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }} className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname.includes("/investment-department") && location.search.includes("tab=opinions") ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}><User className="w-4 h-4 shrink-0" /><span className="truncate">{t("investmentOpinions")}</span></Link>;
+                }
+                return null;
+            })}
+        </div>
+    );
+
     const renderPreOpeningFlyout = (
         flyout: { top: number; left: number; width: number },
         closeMenu: () => void,
     ) => (
         <div data-pre-opening-flyout className="fixed z-[100] rounded-xl border border-border bg-card py-1 shadow-xl" style={{ top: flyout.top, left: flyout.left, width: flyout.width }}>
-            {sidebarNestedOrder.preOpening.map((childId) => {
+            {filteredSidebarNestedOrder.preOpening.map((childId) => {
                 if (childId === "governmentLicenses") {
                     return <Link key={childId} to="/all-stations-pre-opening" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }} className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-pre-opening" && !location.search.includes("tab=other") ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}><FileText className="w-4 h-4 shrink-0" /><span className="truncate">{t("governmentLicenses")}</span></Link>;
                 }
@@ -1102,7 +1134,7 @@ export function AllStationsDashboardLayout() {
     ) => (
         <div data-tasks-menu-flyout className="fixed z-[100] rounded-xl border border-border bg-card py-1 shadow-xl" style={{ top: flyout.top, left: flyout.left, width: flyout.width }}>
             {sidebarNestedOrder.tasksMenu.map((childId) => (
-                <Link key={childId} to="/all-stations-tasks" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }} className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-tasks" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}><ClipboardList className="w-4 h-4 shrink-0" /><span className="truncate">{t("tasks")}</span></Link>
+                <Link key={childId} to="/all-stations-tasks" onClick={() => { closeMenu(); if (window.innerWidth < 1024) setSidebarOpen(false); }} className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-tasks" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}><ClipboardList className="w-4 h-4 shrink-0" /><span className="truncate flex-1 min-w-0">{t("tasks")}</span><TaskPendingBadge count={taskCount} /></Link>
             ))}
         </div>
     );
@@ -1192,8 +1224,7 @@ export function AllStationsDashboardLayout() {
                     systemSettingsOpen &&
                     !sidebarOpen &&
                     systemSettingsFlyout &&
-                    !isDeptUser &&
-                    (showSystemUsers || showSystemSettings) &&
+                    (showSystemUsers || showCompanyInfo || showUserSettings) &&
                     createPortal(
                         <div
                             data-system-settings-flyout
@@ -1214,8 +1245,17 @@ export function AllStationsDashboardLayout() {
                                         </Link>
                                     );
                                 }
+                                if (childId === "userSettings") {
+                                    if (!showUserSettings) return null;
+                                    return (
+                                        <Link key={childId} to="/all-stations-settings/preferences" onClick={() => { setSystemSettingsOpen(false); if (window.innerWidth < 1024) setSidebarOpen(false); }}
+                                            className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-settings/preferences" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}>
+                                            <Settings className="w-4 h-4 shrink-0" /><span className="truncate">{t("settings")}</span>
+                                        </Link>
+                                    );
+                                }
                                 if (childId === "companyInfo") {
-                                    if (!showSystemSettings) return null;
+                                    if (!showCompanyInfo) return null;
                                     return (
                                         <Link key={childId} to="/all-stations-settings" onClick={() => { setSystemSettingsOpen(false); if (window.innerWidth < 1024) setSidebarOpen(false); }}
                                             className={`flex items-center gap-2 px-3 py-2.5 mx-1 rounded-lg text-sm font-medium transition-colors ${location.pathname === "/all-stations-settings" ? "bg-primary text-primary-foreground" : "text-foreground hover:bg-muted"}`}>
@@ -1288,6 +1328,16 @@ export function AllStationsDashboardLayout() {
                     preOpeningFlyout &&
                     createPortal(
                         renderPreOpeningFlyout(preOpeningFlyout, () => setPreOpeningMenuOpen(false)),
+                        document.body
+                    )}
+
+                {typeof document !== "undefined" &&
+                    feasibilityStudyMenuOpen &&
+                    showFeasibilityStudyMenu &&
+                    !sidebarOpen &&
+                    feasibilityStudyFlyout &&
+                    createPortal(
+                        renderFeasibilityStudyFlyout(feasibilityStudyFlyout, () => setFeasibilityStudyMenuOpen(false)),
                         document.body
                     )}
 

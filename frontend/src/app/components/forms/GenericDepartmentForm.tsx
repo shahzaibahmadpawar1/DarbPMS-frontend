@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { Save, List, PlusCircle, Eye } from "lucide-react";
+import { useLocation } from "react-router-dom";
 import { FormRecordsList } from "../FormRecordsList";
-import { useStation } from "../../context/StationContext";
+import { useStationFormReadOnly } from "../../hooks/useStationFormReadOnly";
+import { extractFormPathFromPathname } from "@/utils/stationFormPermissions";
 
 interface GenericFormProps {
     title: string;
@@ -10,8 +12,9 @@ interface GenericFormProps {
 }
 
 export function GenericDepartmentForm({ title, description, fields }: GenericFormProps) {
-    const { accessMode } = useStation();
-    const isReadOnly = accessMode === 'view-only';
+    const { pathname } = useLocation();
+    const formPath = extractFormPathFromPathname(pathname) || "";
+    const isReadOnly = useStationFormReadOnly(formPath);
 
     const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
 

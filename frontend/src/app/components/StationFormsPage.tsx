@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
-import { CheckCircle, Activity } from "lucide-react";
+import { CheckCircle, Activity, Eye } from "lucide-react";
 import logo from "../../assets/logo.png";
 import { stationSections } from "../data/formSections";
 import { useStation } from "../context/StationContext";
+import { useAuth } from "@/context/AuthContext";
+import { canManageAllStationForms } from "@/utils/stationFormPermissions";
 import { StationSurveySnapshot } from "./StationSurveySnapshot";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
@@ -89,7 +91,9 @@ function writeCompletionCache(stationCode: string, data: CompletionMap): void {
 
 export function StationFormsPage() {
   const { stationId } = useParams();
+  const { user } = useAuth();
   const { setSelectedStation } = useStation();
+  const canEditStation = canManageAllStationForms(user);
   const [loading, setLoading] = useState(true);
   const [station, setStation] = useState<any | null>(null);
   const [completionByPath, setCompletionByPath] = useState<CompletionMap>({});
@@ -205,6 +209,11 @@ export function StationFormsPage() {
           survey_expected_date: s.survey_expected_date,
           survey_station_status_code: s.survey_station_status_code,
           survey_station_status_stage: s.survey_station_status_stage,
+          survey_station_status_custom_stage: s.survey_station_status_custom_stage,
+          survey_station_status_completion_rate: s.survey_station_status_completion_rate,
+          survey_latest_completion_stage: s.survey_latest_completion_stage,
+          survey_latest_completion_condition: s.survey_latest_completion_condition,
+          survey_latest_completion_updated_at: s.survey_latest_completion_updated_at,
         };
 
         setStation(mapped);
@@ -268,6 +277,14 @@ export function StationFormsPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
+      {!canEditStation && (
+        <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-950">
+          <Eye className="w-5 h-5 shrink-0 mt-0.5" aria-hidden />
+          <p className="text-sm">
+            <span className="font-semibold">View only.</span> You can browse this station and its forms. Only the project department and super-admin can edit and save changes.
+          </p>
+        </div>
+      )}
       <div className="bg-card/80 backdrop-blur-xl rounded-2xl shadow-lg border border-border p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
@@ -294,7 +311,13 @@ export function StationFormsPage() {
           </Link>
         </div>
 
-        <StationSurveySnapshot raw={station} layout="detailHeader" className="mt-4" />
+        <StationSurveySnapshot
+          raw={station}
+          layout="detailHeader"
+          className="mt-4"
+          stationCode={station.station_code}
+          stationName={station.name}
+        />
 
         <div className="mt-5 max-w-md">
           <div className="flex items-center justify-between mb-1">

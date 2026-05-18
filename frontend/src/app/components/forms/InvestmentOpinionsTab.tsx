@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { investmentWorkflowAPI } from "@/services/api";
 import { useAuth } from "@/context/AuthContext";
 import { CheckCircle, Search, Eye } from "lucide-react";
+import { InvestmentOpportunityDetailModal } from "@/app/components/forms/InvestmentWorkflowDetailModals";
 
 type OpinionPayload = {
   suggestions: string;
@@ -14,10 +15,8 @@ type OpinionPayload = {
 const inputCls = "w-full px-3 py-2 border border-border rounded-lg bg-background";
 
 export function InvestmentOpinionsTab({
-  onOpenOpportunity,
   departmentType = "investment",
 }: {
-  onOpenOpportunity?: (opportunityId: string) => void;
   departmentType?: "investment" | "franchise";
 }) {
   const { token, user } = useAuth();
@@ -28,6 +27,8 @@ export function InvestmentOpinionsTab({
   const [detailsById, setDetailsById] = useState<Record<string, any>>({});
   const [formByStudy, setFormByStudy] = useState<Record<string, OpinionPayload>>({});
   const [saving, setSaving] = useState(false);
+  const [detailOpportunityId, setDetailOpportunityId] = useState<string | null>(null);
+  const [detailStudyId, setDetailStudyId] = useState<string | null>(null);
 
   const myDept = (user?.role === "department_manager" ? (user.department || "") : "") as string;
 
@@ -161,11 +162,14 @@ export function InvestmentOpinionsTab({
                       </p>
                     )}
                   </button>
-                  {onOpenOpportunity && s.opportunity_id ? (
+                  {s.opportunity_id ? (
                     <div className="mt-2">
                       <button
                         type="button"
-                        onClick={() => onOpenOpportunity(String(s.opportunity_id))}
+                        onClick={() => {
+                          setDetailOpportunityId(String(s.opportunity_id));
+                          setDetailStudyId(String(s.id));
+                        }}
                         className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-xs font-semibold hover:bg-muted/60"
                       >
                         <Eye className="w-3.5 h-3.5" /> Details
@@ -328,6 +332,15 @@ export function InvestmentOpinionsTab({
           )}
         </div>
       </div>
+
+      <InvestmentOpportunityDetailModal
+        opportunityId={detailOpportunityId}
+        initialOpenStudyId={detailStudyId}
+        onClose={() => {
+          setDetailOpportunityId(null);
+          setDetailStudyId(null);
+        }}
+      />
     </div>
   );
 }

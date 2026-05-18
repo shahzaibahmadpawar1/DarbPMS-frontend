@@ -6,9 +6,11 @@ import {
     ChevronRight,
     Search,
     Trash2,
+    Eye,
 } from "lucide-react";
 import logo from "../../assets/logo.png";
 import { useAuth } from "@/context/AuthContext";
+import { canDeleteStation, canManageAllStationForms } from "@/utils/stationFormPermissions";
 import { isStationTypeFilterValue, STATION_TYPE_QUERY_KEY } from "../constants/stationTypeFilter";
 import { StationSurveySnapshot } from "./StationSurveySnapshot";
 
@@ -185,7 +187,8 @@ export function AllStationsListPage() {
     const [deleteConfirm, setDeleteConfirm] = useState<{ id: string; name: string } | null>(null);
     const [deleting, setDeleting] = useState(false);
 
-    const canDeleteStation = user?.role === 'super_admin' || user?.role === 'department_manager';
+    const showDeleteStation = canDeleteStation(user);
+    const canEditStations = canManageAllStationForms(user);
 
     useEffect(() => {
         fetchStations();
@@ -464,8 +467,21 @@ export function AllStationsListPage() {
         <div className="max-w-7xl mx-auto">
             <div className="mb-4 sm:mb-6 md:mb-8">
                 <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground mb-2 tracking-tight">All Stations</h1>
-                <p className="text-sm sm:text-base text-muted-foreground font-medium">Manage all stations and their associated forms</p>
+                <p className="text-sm sm:text-base text-muted-foreground font-medium">
+                    {canEditStations
+                        ? "Manage all stations and their associated forms"
+                        : "Browse all stations and their associated forms (view only)"}
+                </p>
             </div>
+
+            {!canEditStations && (
+                <div className="mb-4 sm:mb-6 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-amber-950">
+                    <Eye className="w-5 h-5 shrink-0 mt-0.5" aria-hidden />
+                    <p className="text-sm">
+                        You can open any station to view its details and forms. Editing and saving is limited to the project department and super-admin.
+                    </p>
+                </div>
+            )}
 
             {/* Search and Filters */}
             <div className="mb-4 sm:mb-6 space-y-4">
@@ -576,7 +592,7 @@ export function AllStationsListPage() {
                                                 <Activity className="w-4 h-4 flex-shrink-0" />
                                                 <span className="hidden xs:inline">Analytics</span>
                                             </Link>
-                                            {canDeleteStation && (
+                                            {showDeleteStation && (
                                                 <button
                                                     type="button"
                                                     onClick={(e) => {
@@ -603,7 +619,13 @@ export function AllStationsListPage() {
                                         </div>
                                     </div>
 
-                                    <StationSurveySnapshot raw={station.raw} layout="card" className="w-full" />
+                                    <StationSurveySnapshot
+                                        raw={station.raw}
+                                        layout="card"
+                                        className="w-full"
+                                        stationCode={station.station_code}
+                                        stationName={station.name}
+                                    />
 
                                     <div className="max-w-md pt-1">
                                         <div className="flex items-center justify-between mb-1">

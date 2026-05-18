@@ -2,6 +2,7 @@
 import { Save, List, PlusCircle, FileText, Eye, Check, X } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
+import { useStationFormReadOnly } from "../../hooks/useStationFormReadOnly";
 
 type RequestType =
     | "product-supply"
@@ -42,8 +43,7 @@ interface ProcurementFormData {
 }
 
 export function ProcurementDepartmentForm() {
-    const { accessMode } = useStation();
-    const isReadOnly = accessMode === 'view-only';
+    const isReadOnly = useStationFormReadOnly('procurement');
 
     const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
     const [requestFiles, setRequestFiles] = useState<File[]>([]);

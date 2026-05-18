@@ -721,20 +721,34 @@ export const feasibilityAPI = {
 
 const SIDEBAR_NAV_CFG_CACHE_KEY = "darb_sidebar_nav_cfg_cache_v1";
 
-function readSidebarNavCfgCache(): { nestedOrder: unknown | null } {
+function sidebarNavCacheStorageKey(): string {
     try {
-        const raw = localStorage.getItem(SIDEBAR_NAV_CFG_CACHE_KEY);
-        if (!raw) return { nestedOrder: null };
-        const parsed = JSON.parse(raw) as { nestedOrder?: unknown };
-        return { nestedOrder: parsed?.nestedOrder ?? null };
+        const userRaw = localStorage.getItem("auth_user");
+        if (!userRaw) return SIDEBAR_NAV_CFG_CACHE_KEY;
+        const user = JSON.parse(userRaw) as { id?: string };
+        return user?.id ? `${SIDEBAR_NAV_CFG_CACHE_KEY}:${user.id}` : SIDEBAR_NAV_CFG_CACHE_KEY;
     } catch {
-        return { nestedOrder: null };
+        return SIDEBAR_NAV_CFG_CACHE_KEY;
     }
 }
 
-function writeSidebarNavCfgCache(payload: { nestedOrder: unknown | null }) {
+function readSidebarNavCfgCache(): { order: string[] | null; nestedOrder: unknown | null } {
     try {
-        localStorage.setItem(SIDEBAR_NAV_CFG_CACHE_KEY, JSON.stringify(payload));
+        const raw = localStorage.getItem(sidebarNavCacheStorageKey());
+        if (!raw) return { order: null, nestedOrder: null };
+        const parsed = JSON.parse(raw) as { order?: unknown; nestedOrder?: unknown };
+        const order = Array.isArray(parsed?.order)
+            ? parsed.order.filter((v): v is string => typeof v === "string")
+            : null;
+        return { order: order?.length ? order : null, nestedOrder: parsed?.nestedOrder ?? null };
+    } catch {
+        return { order: null, nestedOrder: null };
+    }
+}
+
+function writeSidebarNavCfgCache(payload: { order: string[] | null; nestedOrder: unknown | null }) {
+    try {
+        localStorage.setItem(sidebarNavCacheStorageKey(), JSON.stringify(payload));
     } catch {
         // Best-effort cache only.
     }
@@ -796,8 +810,12 @@ export const appSettingsAPI = {
         }
         const order = result?.data?.order;
         const nestedOrder = result?.data?.nestedOrder ?? cached.nestedOrder ?? null;
-        writeSidebarNavCfgCache({ nestedOrder });
-        return { order: Array.isArray(order) ? order : null, nestedOrder };
+        const resolvedOrder = Array.isArray(order) ? order : cached.order;
+        writeSidebarNavCfgCache({
+            order: Array.isArray(resolvedOrder) ? resolvedOrder : null,
+            nestedOrder,
+        });
+        return { order: Array.isArray(resolvedOrder) ? resolvedOrder : null, nestedOrder };
     },
 
     async putSidebarNavSlots(order: string[]): Promise<void> {
@@ -819,7 +837,7 @@ export const appSettingsAPI = {
         let response = await doPut(order, nestedOrder);
         let result = await response.json().catch(() => ({}));
         if (response.ok) {
-            writeSidebarNavCfgCache({ nestedOrder });
+            writeSidebarNavCfgCache({ order, nestedOrder });
             return;
         }
 
@@ -840,7 +858,7 @@ export const appSettingsAPI = {
             response = await doPut(alignedOrder, alignedNested);
             result = await response.json().catch(() => ({}));
             if (response.ok) {
-                writeSidebarNavCfgCache({ nestedOrder });
+                writeSidebarNavCfgCache({ order: alignedOrder, nestedOrder });
                 return;
             }
 
@@ -848,12 +866,49 @@ export const appSettingsAPI = {
             response = await doPut(alignedOrder, null);
             result = await response.json().catch(() => ({}));
             if (response.ok) {
-                writeSidebarNavCfgCache({ nestedOrder });
+                writeSidebarNavCfgCache({ order: alignedOrder, nestedOrder });
                 return;
             }
         }
 
         throw new Error(result?.error || result?.message || "Failed to save sidebar order");
+    },
+
+    async getMySidebarNavConfig(): Promise<{ order: string[] | null; nestedOrder: unknown | null }> {
+        const token = localStorage.getItem("auth_token");
+        const cached = readSidebarNavCfgCache();
+        const response = await fetch(`${API_URL}/app-settings/my-sidebar-nav`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || "Failed to load sidebar order");
+        }
+        const order = result?.data?.order;
+        const nestedOrder = result?.data?.nestedOrder ?? cached.nestedOrder ?? null;
+        const resolvedOrder = Array.isArray(order) ? order : cached.order;
+        writeSidebarNavCfgCache({
+            order: Array.isArray(resolvedOrder) ? resolvedOrder : null,
+            nestedOrder,
+        });
+        return { order: Array.isArray(resolvedOrder) ? resolvedOrder : null, nestedOrder };
+    },
+
+    async putMySidebarNavConfig(order: string[], nestedOrder: unknown | null): Promise<void> {
+        const token = localStorage.getItem("auth_token");
+        const response = await fetch(`${API_URL}/app-settings/my-sidebar-nav`, {
+            method: "PUT",
+            headers: {
+                Authorization: `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ order, nestedOrder }),
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+            throw new Error(result?.error || result?.message || "Failed to save sidebar order");
+        }
+        writeSidebarNavCfgCache({ order, nestedOrder });
     },
 
     async getSurveyDropdowns(): Promise<{

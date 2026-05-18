@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Save, Eye, Upload, FileCheck, Trash2, Paperclip, X, ExternalLink, FileText } from "lucide-react";
 import { useStation } from "../../context/StationContext";
+import { useStationFormReadOnly } from "../../hooks/useStationFormReadOnly";
 import { useResolvedStationCode } from "../../hooks/useResolvedStationCode";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";
@@ -117,9 +118,8 @@ function PreviewModal({ file, label, onClose }: { file: File; label: string; onC
 
 // ── Main Page ────────────────────────────────────────────────────────────────
 export function GovernmentLicenseAttachmentsPage() {
-    const { accessMode } = useStation();
     const resolvedStationCode = useResolvedStationCode();
-    const isReadOnly = accessMode === "view-only";
+    const isReadOnly = useStationFormReadOnly("government-license-attachments");
 
     const [attachments, setAttachments] = useState<AttachmentState>(
         Object.fromEntries(ATTACHMENT_TYPES.map((t) => [t.key, { file: null, url: null, name: null }]))

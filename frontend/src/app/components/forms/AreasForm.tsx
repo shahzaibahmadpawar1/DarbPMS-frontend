@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Save, List, PlusCircle, Trash2, Building2, Send } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
+import { useStationFormReadOnly } from "../../hooks/useStationFormReadOnly";
 import { useResolvedStationCode } from "../../hooks/useResolvedStationCode";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
@@ -13,9 +14,8 @@ type CommercialComponent = {
 };
 
 export function AreasForm() {
-    const { accessMode } = useStation();
     const resolvedStationCode = useResolvedStationCode();
-    const isReadOnly = accessMode === 'view-only';
+    const isReadOnly = useStationFormReadOnly('areas');
 
     const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
     const [loading, setLoading] = useState(false);

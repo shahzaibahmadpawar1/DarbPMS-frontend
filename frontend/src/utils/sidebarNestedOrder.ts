@@ -17,20 +17,49 @@ export const WORKFLOW_CHILD_IDS = [
     "reports",
 ] as const;
 
+export const FEASIBILITY_STUDY_CHILD_IDS = ["overview", "committeeOpinions"] as const;
+
+export const PROJECT_DEPT_CHILD_IDS = ["stations", "siteSurvey", "reports"] as const;
+
 export const SYSTEM_SETTINGS_CHILD_IDS = [
     "users",
+    "userSettings",
     "companyInfo",
     "notifications",
     "backup",
 ] as const;
 
+function normalizeSystemSettingsChildren(children: string[]): SystemSettingsChildId[] {
+    const allowed = [...SYSTEM_SETTINGS_CHILD_IDS];
+    const seen = new Set<string>();
+    const out: string[] = [];
+    for (const id of children) {
+        if (!allowed.includes(id as SystemSettingsChildId) || seen.has(id)) continue;
+        out.push(id);
+        seen.add(id);
+    }
+    if (!seen.has("userSettings")) {
+        const usersIdx = out.indexOf("users");
+        if (usersIdx >= 0) out.splice(usersIdx + 1, 0, "userSettings");
+        else out.unshift("userSettings");
+        seen.add("userSettings");
+    }
+    for (const id of allowed) {
+        if (!seen.has(id)) out.push(id);
+    }
+    return out as SystemSettingsChildId[];
+}
+
 export type DashboardChildId = (typeof DASHBOARD_CHILD_IDS)[number];
 export type WorkflowChildId = (typeof WORKFLOW_CHILD_IDS)[number];
+export type FeasibilityStudyChildId = (typeof FEASIBILITY_STUDY_CHILD_IDS)[number];
+export type ProjectDeptChildId = (typeof PROJECT_DEPT_CHILD_IDS)[number];
 export type SystemSettingsChildId = (typeof SYSTEM_SETTINGS_CHILD_IDS)[number];
 
 export type SidebarNestedOrder = {
     dashboard: DashboardChildId[];
-    projectDept: ["newProject", "feasibility", "stations", "siteSurvey", "reports"];
+    projectDept: ProjectDeptChildId[];
+    feasibilityStudy: FeasibilityStudyChildId[];
     preOpening: ["governmentLicenses", "otherLicenses"];
     orderRequest: ["newRequest", "submittedApprovedRequests"];
     openingSoonProjects: ["trackNearLaunchProject"];
@@ -43,7 +72,8 @@ export type SidebarNestedOrder = {
 
 export const DEFAULT_SIDEBAR_NESTED_ORDER: SidebarNestedOrder = {
     dashboard: [...DASHBOARD_CHILD_IDS],
-    projectDept: ["newProject", "feasibility", "stations", "siteSurvey", "reports"],
+    projectDept: [...PROJECT_DEPT_CHILD_IDS],
+    feasibilityStudy: [...FEASIBILITY_STUDY_CHILD_IDS],
     preOpening: ["governmentLicenses", "otherLicenses"],
     orderRequest: ["newRequest", "submittedApprovedRequests"],
     openingSoonProjects: ["trackNearLaunchProject"],
@@ -65,12 +95,29 @@ function isValidPermutation<T extends string>(value: unknown, allowed: readonly 
     return seen.size === allowed.length;
 }
 
+function mergeLegacyProjectDeptChildren(raw: unknown): ProjectDeptChildId[] {
+    const allowed = new Set<string>(PROJECT_DEPT_CHILD_IDS);
+    const out: string[] = [];
+    if (Array.isArray(raw)) {
+        for (const id of raw) {
+            if (typeof id !== "string") continue;
+            if (id === "feasibility" || id === "newProject") continue;
+            if (allowed.has(id) && !out.includes(id)) out.push(id);
+        }
+    }
+    for (const id of PROJECT_DEPT_CHILD_IDS) {
+        if (!out.includes(id)) out.push(id);
+    }
+    return out as ProjectDeptChildId[];
+}
+
 export function isValidSidebarNestedOrder(value: unknown): value is SidebarNestedOrder {
     if (!value || typeof value !== "object") return false;
     const src = value as Partial<Record<keyof SidebarNestedOrder, unknown>>;
     return (
         isValidPermutation(src.dashboard, DASHBOARD_CHILD_IDS) &&
-        isValidPermutation(src.projectDept, ["newProject", "feasibility", "stations", "siteSurvey", "reports"] as const) &&
+        isValidPermutation(src.projectDept, PROJECT_DEPT_CHILD_IDS) &&
+        isValidPermutation(src.feasibilityStudy, FEASIBILITY_STUDY_CHILD_IDS) &&
         isValidPermutation(src.preOpening, ["governmentLicenses", "otherLicenses"] as const) &&
         isValidPermutation(src.orderRequest, ["newRequest", "submittedApprovedRequests"] as const) &&
         isValidPermutation(src.openingSoonProjects, ["trackNearLaunchProject"] as const) &&
@@ -87,6 +134,7 @@ export function normalizeSidebarNestedOrder(value: unknown): SidebarNestedOrder 
         return {
             dashboard: [...value.dashboard],
             projectDept: [...value.projectDept],
+            feasibilityStudy: [...value.feasibilityStudy],
             preOpening: [...value.preOpening],
             orderRequest: [...value.orderRequest],
             openingSoonProjects: [...value.openingSoonProjects],
@@ -104,9 +152,12 @@ export function normalizeSidebarNestedOrder(value: unknown): SidebarNestedOrder 
     const investment = isValidPermutation(src.investment, WORKFLOW_CHILD_IDS)
         ? [...src.investment]
         : [...DEFAULT_SIDEBAR_NESTED_ORDER.investment];
-    const projectDept = isValidPermutation(src.projectDept, ["newProject", "feasibility", "stations", "siteSurvey", "reports"] as const)
+    const projectDept = isValidPermutation(src.projectDept, PROJECT_DEPT_CHILD_IDS)
         ? [...src.projectDept]
-        : [...DEFAULT_SIDEBAR_NESTED_ORDER.projectDept];
+        : mergeLegacyProjectDeptChildren(src.projectDept);
+    const feasibilityStudy = isValidPermutation(src.feasibilityStudy, FEASIBILITY_STUDY_CHILD_IDS)
+        ? [...src.feasibilityStudy]
+        : [...DEFAULT_SIDEBAR_NESTED_ORDER.feasibilityStudy];
     const preOpening = isValidPermutation(src.preOpening, ["governmentLicenses", "otherLicenses"] as const)
         ? [...src.preOpening]
         : [...DEFAULT_SIDEBAR_NESTED_ORDER.preOpening];
@@ -125,9 +176,21 @@ export function normalizeSidebarNestedOrder(value: unknown): SidebarNestedOrder 
     const legalDept = isValidPermutation(src.legalDept, ["contract", "document", "reports"] as const)
         ? [...src.legalDept]
         : [...DEFAULT_SIDEBAR_NESTED_ORDER.legalDept];
-    const systemSettings = isValidPermutation(src.systemSettings, SYSTEM_SETTINGS_CHILD_IDS)
-        ? [...src.systemSettings]
-        : [...DEFAULT_SIDEBAR_NESTED_ORDER.systemSettings];
-    return { dashboard, projectDept, preOpening, orderRequest, openingSoonProjects, tasksMenu, investment, franchiseDept, legalDept, systemSettings };
+    const systemRaw = Array.isArray(src.systemSettings)
+        ? src.systemSettings.filter((v): v is string => typeof v === "string")
+        : [];
+    const systemSettings = normalizeSystemSettingsChildren(systemRaw);
+    return {
+        dashboard,
+        projectDept,
+        feasibilityStudy,
+        preOpening,
+        orderRequest,
+        openingSoonProjects,
+        tasksMenu,
+        investment,
+        franchiseDept,
+        legalDept,
+        systemSettings,
+    };
 }
-

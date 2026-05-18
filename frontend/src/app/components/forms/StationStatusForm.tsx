@@ -1,10 +1,10 @@
 import { Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useStation } from "../../context/StationContext";
+import { useStationFormReadOnly } from "../../hooks/useStationFormReadOnly";
 
 export function StationStatusForm() {
-  const { accessMode } = useStation();
-  const isReadOnly = accessMode === 'view-only';
+  const isReadOnly = useStationFormReadOnly('station-status');
   const navigate = useNavigate();
 
   const statuses = [

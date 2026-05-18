@@ -2,10 +2,10 @@ import { useState } from "react";
 import { Save, Upload, List, PlusCircle, Eye } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
+import { useStationFormReadOnly } from "../../hooks/useStationFormReadOnly";
 
 export function ArchitecturalDesignForm() {
-  const { accessMode } = useStation();
-  const isReadOnly = accessMode === 'view-only';
+  const isReadOnly = useStationFormReadOnly('architectural-design');
 
   const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
   const [attachedDocument, setAttachedDocument] = useState<File | null>(null);

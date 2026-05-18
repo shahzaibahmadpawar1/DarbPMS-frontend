@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Save, List, PlusCircle, Eye, Send } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
+import { useStationFormReadOnly } from "../../hooks/useStationFormReadOnly";
 import axios from "axios";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
@@ -10,8 +11,8 @@ import { useParams } from "react-router-dom";
 
 export function DeedInformationForm() {
   const { stationId } = useParams();
-  const { accessMode, selectedStation } = useStation();
-  const isReadOnly = accessMode === 'view-only';
+  const { selectedStation } = useStation();
+  const isReadOnly = useStationFormReadOnly('deed-information');
 
   const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
   const [loading, setLoading] = useState(false);

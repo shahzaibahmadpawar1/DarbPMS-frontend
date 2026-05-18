@@ -1,6 +1,7 @@
 import { ChangeEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { notifyPendingTaskCountChanged } from "@/components/TaskPendingBadge";
 import {
     AlertCircle,
     CheckCircle,
@@ -12,7 +13,7 @@ import {
     Upload,
     User,
 } from "lucide-react";
-import { departmentOptions, type Department } from "@/services/api";
+import { departmentOptions, investmentWorkflowAPI, type Department } from "@/services/api";
 
 type WorkflowTaskStatus =
     | "manager_queue"
@@ -28,7 +29,18 @@ type WorkflowTaskStatus =
     | "requester_accepted"
     | "requester_declined";
 
-type WorkflowTaskFlow = "contract" | "documents" | "request" | "ceo_contact" | "feasibility";
+type WorkflowTaskFlow =
+    | "contract"
+    | "documents"
+    | "request"
+    | "ceo_contact"
+    | "feasibility"
+    | "opportunity_study"
+    | "committee_opinion"
+    | "opportunity_contract"
+    | "station_publish"
+    | "station_form"
+    | "opportunity_ceo_review";
 type FeasibilityInput = {
     suggestions: string;
     budget: string;
@@ -38,7 +50,15 @@ type FeasibilityInput = {
 };
 type RoleViewTab = "manager" | "employee" | "super-admin";
 type TaskStatusFilter = "pending" | "completed";
-type TaskCardFilter = "all" | "manager" | "employee" | "super-admin" | "my-forms" | "approved" | "rejected";
+type TaskCardFilter =
+    | "all"
+    | "action-required"
+    | "manager"
+    | "employee"
+    | "super-admin"
+    | "my-forms"
+    | "approved"
+    | "rejected";
 
 interface WorkflowTask {
     id: string;
@@ -74,6 +94,8 @@ interface WorkflowTask {
     city: string | null;
     assigned_to_username: string | null;
     assigned_by_username: string | null;
+    opportunity_client_name?: string | null;
+    opportunity_workflow_status?: string | null;
 }
 
 interface WorkflowHistoryEntry {
@@ -192,6 +214,236 @@ const branchLabel: Record<WorkflowTaskFlow, string> = {
     request: "Request",
     ceo_contact: "CEO Contact",
     feasibility: "Feasibility Study",
+    opportunity_study: "Opportunity Study",
+    committee_opinion: "Committee Opinion",
+    opportunity_contract: "Opportunity Contract",
+    station_publish: "Publish Station",
+    station_form: "Station Form",
+    opportunity_ceo_review: "CEO Opportunity Review",
+};
+
+const resolveTaskDeepLink = (task: WorkflowTask, underReviewPath: string): string | null => {
+    const meta =
+        task.metadata && typeof task.metadata === "object"
+            ? (task.metadata as Record<string, unknown>)
+            : null;
+    const opportunityId = meta?.opportunityId ? String(meta.opportunityId) : "";
+    const contractDept = String(meta?.department || task.target_department || "").trim().toLowerCase();
+
+    if (task.flow_type === "opportunity_contract" && contractDept === "legal" && opportunityId) {
+        return `/all-stations-legal?tab=contract&opportunityId=${encodeURIComponent(opportunityId)}`;
+    }
+
+    const deepLink = meta?.deepLink;
+    if (typeof deepLink === "string" && deepLink.trim()) {
+        return deepLink.trim();
+    }
+    const workflowDepartmentType = meta?.workflowDepartmentType === "franchise" ? "franchise" : "investment";
+    const deptBase =
+        workflowDepartmentType === "franchise"
+            ? "/station/new-station/form/franchise-department"
+            : "/station/new-station/form/investment-department";
+
+    if (task.flow_type === "opportunity_study" && opportunityId) {
+        return `${deptBase}?tab=investment-feasibility&opportunityId=${encodeURIComponent(opportunityId)}`;
+    }
+    if (task.flow_type === "committee_opinion" && opportunityId) {
+        const studyId = meta?.studyId ? String(meta.studyId) : "";
+        const studyQs = studyId ? `&studyId=${encodeURIComponent(studyId)}` : "";
+        return `${deptBase}?tab=opinions&opportunityId=${encodeURIComponent(opportunityId)}${studyQs}`;
+    }
+    if (task.flow_type === "opportunity_contract" && opportunityId) {
+        return `${deptBase}?tab=opportunities&opportunityId=${encodeURIComponent(opportunityId)}`;
+    }
+    if (task.flow_type === "station_publish" && opportunityId) {
+        return `${deptBase}?tab=opportunities&opportunityId=${encodeURIComponent(opportunityId)}&filter=approved_pending_station_assignment`;
+    }
+    if (task.flow_type === "opportunity_ceo_review" && opportunityId) {
+        return `${deptBase}?tab=opportunities&opportunityId=${encodeURIComponent(opportunityId)}`;
+    }
+    if (task.flow_type === "feasibility") {
+        const projectId = meta?.projectId
+            ? String(meta.projectId)
+            : task.investment_project_id
+              ? String(task.investment_project_id)
+              : "";
+        if (projectId) {
+            return `${underReviewPath}?projectId=${encodeURIComponent(projectId)}`;
+        }
+    }
+    return null;
+};
+
+const normalizeWorkflowDepartment = (value: unknown): string => {
+    const raw = String(value ?? "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+    if (raw === "real_estate") return "realestate";
+    if (raw === "operations") return "operation";
+    return raw;
+};
+
+const DEPARTMENT_SCOPED_INVESTMENT_FLOWS: WorkflowTaskFlow[] = [
+    "committee_opinion",
+    "opportunity_study",
+    "opportunity_contract",
+    "station_publish",
+    "station_form",
+];
+
+const isInvestmentTaskForDepartment = (
+    task: WorkflowTask,
+    department: string | null | undefined,
+): boolean => {
+    if (!department || !DEPARTMENT_SCOPED_INVESTMENT_FLOWS.includes(task.flow_type)) {
+        return false;
+    }
+    const userDept = normalizeWorkflowDepartment(department);
+    const targetDept = normalizeWorkflowDepartment(task.target_department);
+    const meta =
+        task.metadata && typeof task.metadata === "object"
+            ? normalizeWorkflowDepartment((task.metadata as Record<string, unknown>).department)
+            : "";
+    return userDept === targetDept || (Boolean(meta) && userDept === meta);
+};
+
+const isOpenWorkflowTask = (task: WorkflowTask): boolean =>
+    task.status === "assigned" || task.status === "manager_queue";
+
+const isExecutiveOpportunityReviewTask = (
+    task: WorkflowTask,
+    userRole?: string,
+): boolean => {
+    if (userRole !== "ceo" && userRole !== "super_admin") {
+        return false;
+    }
+    return task.flow_type === "opportunity_ceo_review" && isOpenWorkflowTask(task);
+};
+
+const AWAITING_CEO_WORKFLOW_STATUSES = new Set(["awaiting_ceo_decision", "awaiting_ceo_final_approval"]);
+
+const getOpportunityIdFromTask = (task: WorkflowTask): string => {
+    const meta = task.metadata && typeof task.metadata === "object"
+        ? (task.metadata as Record<string, unknown>)
+        : null;
+    return meta?.opportunityId ? String(meta.opportunityId) : "";
+};
+
+const hasOpenCeoReviewTaskForOpportunity = (
+    taskList: WorkflowTask[],
+    opportunityId: string,
+    action: "ceo_decision" | "ceo_final_approval",
+): boolean => {
+    return taskList.some((task) => {
+        if (task.flow_type !== "opportunity_ceo_review" || !isOpenWorkflowTask(task)) {
+            return false;
+        }
+        const meta = task.metadata && typeof task.metadata === "object"
+            ? (task.metadata as Record<string, unknown>)
+            : null;
+        return getOpportunityIdFromTask(task) === opportunityId
+            && String(meta?.action || "ceo_decision") === action;
+    });
+};
+
+const buildCeoReviewFallbackTask = (opportunity: Record<string, unknown>): WorkflowTask => {
+    const opportunityId = String(opportunity.id || "");
+    const workflowStatus = String(opportunity.workflow_status || "awaiting_ceo_decision");
+    const action = workflowStatus === "awaiting_ceo_final_approval"
+        ? "ceo_final_approval"
+        : "ceo_decision";
+    const workflowDepartmentType = String(opportunity.workflow_department_type || "investment").toLowerCase() === "franchise"
+        ? "franchise"
+        : "investment";
+    const deptBase = workflowDepartmentType === "franchise"
+        ? "/station/new-station/form/franchise-department"
+        : "/station/new-station/form/investment-department";
+    const clientName = String(opportunity.client_name || "Opportunity");
+    const now = new Date().toISOString();
+
+    return {
+        id: `ceo-opportunity-${opportunityId}`,
+        investment_project_id: null,
+        title: action === "ceo_final_approval" ? "Final CEO approval required" : "CEO decision required",
+        description: `Review opportunity for ${clientName}.`,
+        flow_type: "opportunity_ceo_review",
+        status: "assigned",
+        origin_department: workflowDepartmentType as Department,
+        target_department: "ceo",
+        assigned_to: null,
+        assigned_by: null,
+        attachment_url: null,
+        attachment_note: null,
+        attachment_uploaded_by: null,
+        attachment_uploaded_at: null,
+        attachment_uploaded_by_username: null,
+        manager_attachment_url: null,
+        employee_attachment_url: null,
+        manager_note: null,
+        employee_note: null,
+        assignee_note: null,
+        super_admin_comment: null,
+        metadata: {
+            opportunityId,
+            workflowDepartmentType,
+            action,
+            clientName,
+            deepLink: `${deptBase}?tab=opportunities&opportunityId=${encodeURIComponent(opportunityId)}`,
+            isCeoOpportunityFallback: true,
+        },
+        created_by: null,
+        created_by_username: null,
+        created_at: now,
+        updated_at: now,
+        project_name: clientName,
+        project_code: opportunityId,
+        review_status: null,
+        workflow_path: null,
+        city: opportunity.city ? String(opportunity.city) : null,
+        assigned_to_username: null,
+        assigned_by_username: null,
+        opportunity_client_name: clientName,
+        opportunity_workflow_status: workflowStatus,
+    };
+};
+
+const isActionRequiredForUser = (
+    task: WorkflowTask,
+    userId: string | undefined,
+    userRole?: string,
+    userDepartment?: string | null,
+): boolean => {
+    if (!userId) return false;
+
+    if (task.flow_type === "feasibility") {
+        if (userRole === "ceo" || userRole === "super_admin") {
+            return task.target_department === "ceo"
+                && (task.status === "assigned" || task.status === "manager_submitted");
+        }
+        return task.status === "assigned" || task.status === "manager_submitted";
+    }
+
+    if (userRole === "ceo" || userRole === "super_admin") {
+        if (isExecutiveOpportunityReviewTask(task, userRole)) {
+            return true;
+        }
+        if (task.status === "manager_submitted" || task.status === "under_super_admin_review") {
+            return true;
+        }
+    }
+
+    const actionableStatus = task.status === "assigned" || task.status === "manager_queue";
+    if (!actionableStatus) {
+        return false;
+    }
+
+    if (task.assigned_to === userId) {
+        return true;
+    }
+
+    if (userRole === "department_manager" && isInvestmentTaskForDepartment(task, userDepartment)) {
+        return true;
+    }
+
+    return false;
 };
 
 export function TasksPage() {
@@ -216,11 +468,12 @@ export function TasksPage() {
     const [expandedHistoryTaskId, setExpandedHistoryTaskId] = useState<string | null>(null);
     const [expandedFeasibilityTaskId, setExpandedFeasibilityTaskId] = useState<string | null>(null);
     const [feasibilityDetailsByTaskId, setFeasibilityDetailsByTaskId] = useState<Record<string, any>>({});
-    const [selectedTaskCard, setSelectedTaskCard] = useState<TaskCardFilter>("all");
+    const [selectedTaskCard, setSelectedTaskCard] = useState<TaskCardFilter>("action-required");
     const [statusFilter, setStatusFilter] = useState<TaskStatusFilter>("pending");
     const [taskLoadError, setTaskLoadError] = useState<string | null>(null);
     const [submittedType, setSubmittedType] = useState<"all" | "request" | "ceo_contact">("all");
     const [feasibilityInputs, setFeasibilityInputs] = useState<Record<string, FeasibilityInput>>({});
+    const [awaitingCeoOpportunities, setAwaitingCeoOpportunities] = useState<Record<string, unknown>[]>([]);
 
     const canAssign = user?.role === "super_admin"
         || (user?.role === "department_manager" && String(user?.department || "").trim().toLowerCase() === "project");
@@ -311,6 +564,26 @@ export function TasksPage() {
             }
 
             setTasks(allTasks);
+
+            if (user?.role === "ceo" || user?.role === "super_admin") {
+                try {
+                    const [investmentOpps, franchiseOpps] = await Promise.all([
+                        investmentWorkflowAPI.listOpportunities("investment").catch(() => []),
+                        investmentWorkflowAPI.listOpportunities("franchise").catch(() => []),
+                    ]);
+                    const awaiting = [...investmentOpps, ...franchiseOpps].filter((opp) =>
+                        AWAITING_CEO_WORKFLOW_STATUSES.has(String(opp?.workflow_status || "")),
+                    );
+                    setAwaitingCeoOpportunities(awaiting);
+                } catch (oppError) {
+                    console.warn("Failed to load awaiting-CEO opportunities for tasks fallback:", oppError);
+                    setAwaitingCeoOpportunities([]);
+                }
+            } else {
+                setAwaitingCeoOpportunities([]);
+            }
+
+            notifyPendingTaskCountChanged();
         } catch (error) {
             console.error("Failed to fetch workflow tasks:", error);
             setTaskLoadError("Failed to load tasks. Retrying usually resolves this.");
@@ -321,7 +594,7 @@ export function TasksPage() {
 
     useEffect(() => {
         loadData();
-    }, [token, canAssign]);
+    }, [token, canAssign, user?.role]);
 
     useEffect(() => {
         if ((!canAssign && !isExecutiveReviewer) || !token || tasks.length === 0) return;
@@ -444,10 +717,21 @@ export function TasksPage() {
         return tasks.filter((task) => {
             const assignedToMe = task.assigned_to === user?.id;
             const createdByMe = task.created_by === user?.id;
-            const isFeasibilityParticipantTask = task.flow_type === ("feasibility" as any);
-            return (assignedToMe || createdByMe || isFeasibilityParticipantTask) && matchesSearch(task, search);
+            const isFeasibilityParticipantTask = task.flow_type === "feasibility";
+            const isDepartmentInvestmentTask =
+                user?.role === "department_manager"
+                && isInvestmentTaskForDepartment(task, user.department);
+            const isExecutiveInvestmentReview =
+                isExecutiveOpportunityReviewTask(task, user?.role);
+            return (
+                assignedToMe
+                || createdByMe
+                || isFeasibilityParticipantTask
+                || isDepartmentInvestmentTask
+                || isExecutiveInvestmentReview
+            ) && matchesSearch(task, search);
         });
-    }, [tasks, user?.id, search]);
+    }, [tasks, user?.id, user?.role, user?.department, search]);
 
     const superAdminTasks = useMemo(() => {
         return tasks.filter((task) => {
@@ -459,14 +743,45 @@ export function TasksPage() {
         return (task.flow_type === "request" || task.flow_type === "ceo_contact") && task.created_by === user?.id;
     }, [user?.id]);
 
-    const stats = useMemo(() => ({
+    const ceoFallbackTasks = useMemo(() => {
+        if (!isExecutiveReviewer) {
+            return [] as WorkflowTask[];
+        }
+
+        return awaitingCeoOpportunities
+            .map((opp) => {
+                const opportunityId = String(opp.id || "");
+                const workflowStatus = String(opp.workflow_status || "awaiting_ceo_decision");
+                const action = workflowStatus === "awaiting_ceo_final_approval"
+                    ? "ceo_final_approval"
+                    : "ceo_decision";
+                if (hasOpenCeoReviewTaskForOpportunity(tasks, opportunityId, action)) {
+                    return null;
+                }
+                return buildCeoReviewFallbackTask(opp);
+            })
+            .filter((task): task is WorkflowTask => Boolean(task))
+            .filter((task) => matchesSearch(task, search));
+    }, [awaitingCeoOpportunities, isExecutiveReviewer, search, tasks]);
+
+    const stats = useMemo(() => {
+        const workflowActionRequired = tasks.filter(
+            (t) => isActionRequiredForUser(t, user?.id, user?.role, user?.department) && matchesSearch(t, search),
+        ).length;
+        return {
         total: tasks.length,
+        actionRequired: workflowActionRequired + ceoFallbackTasks.length,
         managerQueue: tasks.filter((t) => t.status === "manager_queue").length,
         employeeWork: tasks.filter((t) => t.status === "assigned" || t.status === "employee_submitted").length,
-        superAdminReview: tasks.filter((t) => t.status === "manager_submitted" || t.status === "under_super_admin_review").length,
+        superAdminReview: tasks.filter(
+            (t) => t.status === "manager_submitted"
+                || t.status === "under_super_admin_review"
+                || isExecutiveOpportunityReviewTask(t, user?.role),
+        ).length + (isExecutiveReviewer ? ceoFallbackTasks.length : 0),
         approved: tasks.filter((t) => t.status === "approved").length,
         rejected: tasks.filter((t) => t.status === "rejected").length,
-    }), [tasks]);
+    };
+    }, [ceoFallbackTasks.length, isExecutiveReviewer, tasks, search, user?.id, user?.role, user?.department]);
 
     const visibleTasks = activeTab === "manager"
         ? managerTasks
@@ -476,12 +791,42 @@ export function TasksPage() {
 
     const filteredVisibleTasks = useMemo(() => {
         switch (selectedTaskCard) {
+            case "action-required": {
+                const actionable = tasks.filter(
+                    (task) => isActionRequiredForUser(task, user?.id, user?.role, user?.department) && matchesSearch(task, search),
+                );
+                const coveredOpportunityIds = new Set(
+                    actionable
+                        .filter((task) => task.flow_type === "opportunity_ceo_review")
+                        .map((task) => getOpportunityIdFromTask(task))
+                        .filter(Boolean),
+                );
+                const fallbacks = ceoFallbackTasks.filter(
+                    (task) => !coveredOpportunityIds.has(getOpportunityIdFromTask(task)),
+                );
+                return [...actionable, ...fallbacks];
+            }
             case "manager":
                 return managerTasks.filter((task) => task.status === "manager_queue");
             case "employee":
                 return employeeTasks.filter((task) => task.status === "assigned" || task.status === "employee_submitted");
-            case "super-admin":
-                return superAdminTasks.filter((task) => task.status === "manager_submitted" || task.status === "under_super_admin_review");
+            case "super-admin": {
+                const reviewTasks = superAdminTasks.filter(
+                    (task) => task.status === "manager_submitted"
+                        || task.status === "under_super_admin_review"
+                        || isExecutiveOpportunityReviewTask(task, user?.role),
+                );
+                const coveredIds = new Set(
+                    reviewTasks
+                        .filter((task) => task.flow_type === "opportunity_ceo_review")
+                        .map((task) => getOpportunityIdFromTask(task))
+                        .filter(Boolean),
+                );
+                const fallbacks = ceoFallbackTasks.filter(
+                    (task) => !coveredIds.has(getOpportunityIdFromTask(task)),
+                );
+                return [...reviewTasks, ...fallbacks];
+            }
             case "my-forms":
                 return tasks.filter((task) => {
                     if (!isSubmittedFormTask(task) || !matchesSearch(task, search)) {
@@ -502,7 +847,7 @@ export function TasksPage() {
             default:
                 return visibleTasks;
         }
-    }, [employeeTasks, isSubmittedFormTask, managerTasks, search, selectedTaskCard, submittedType, superAdminTasks, tasks, visibleTasks]);
+    }, [ceoFallbackTasks, employeeTasks, isSubmittedFormTask, managerTasks, search, selectedTaskCard, submittedType, superAdminTasks, tasks, user?.department, user?.id, user?.role, visibleTasks]);
 
     const uploadFile = async (file: File): Promise<string | null> => {
         if (!token) return null;
@@ -857,7 +1202,10 @@ export function TasksPage() {
         const canManagerAct = mode === "manager"
             && (task.status === "manager_queue" || task.status === "assigned" || task.status === "employee_submitted");
         const canEmployeeAct = mode === "employee"
-            && task.assigned_to === user?.id
+            && (
+                task.assigned_to === user?.id
+                || isInvestmentTaskForDepartment(task, user?.department)
+            )
             && (task.status === "assigned" || task.status === "employee_submitted");
         const canSuperAdminPreviewContract =
             mode === "super-admin"
@@ -868,6 +1216,15 @@ export function TasksPage() {
             && (
                 (task.assigned_to === user?.id && task.status === "assigned")
                 || canSuperAdminPreviewContract
+            );
+        const taskDeepLink = resolveTaskDeepLink(task, underReviewPath);
+        const canOpenWork =
+            Boolean(taskDeepLink)
+            && (
+                task.assigned_to === user?.id
+                || isInvestmentTaskForDepartment(task, user?.department)
+                || (task.flow_type === "feasibility" && (task.status === "assigned" || task.status === "manager_submitted"))
+                || isExecutiveReviewer
             );
         const isGenericTask = task.flow_type === "request" || task.flow_type === "ceo_contact";
         const isContractTask = task.flow_type === "contract";
@@ -882,8 +1239,12 @@ export function TasksPage() {
         const showCeoDecisionPanel = isExecutiveReviewer
             && task.flow_type === "ceo_contact"
             && task.status === "manager_submitted";
+        const showOpportunityCeoReviewPanel = isExecutiveReviewer
+            && task.flow_type === "opportunity_ceo_review"
+            && isOpenWorkflowTask(task);
         const showSuperAdminDecisionPanel = !isGenericTask
             && mode === "super-admin"
+            && !showOpportunityCeoReviewPanel
             && (
                 task.status === "manager_submitted"
                 || task.status === "under_super_admin_review"
@@ -917,6 +1278,13 @@ export function TasksPage() {
                         {statusLabel[task.status]}
                     </span>
                 </div>
+
+                {task.assignee_note && (
+                    <div className="rounded-xl border border-info/30 bg-info/10 px-4 py-3">
+                        <p className="text-[11px] font-black uppercase tracking-wider text-info">Assignment note</p>
+                        <p className="mt-1 text-sm text-foreground">{task.assignee_note}</p>
+                    </div>
+                )}
 
                 {requestWorkflowSummary && (
                     <div className={`rounded-xl border px-4 py-3 ${requestWorkflowSummary.className}`}>
@@ -1027,6 +1395,15 @@ export function TasksPage() {
                         Current assignee: <span className="font-semibold text-foreground">{task.assigned_to_username || "Unassigned"}</span>
                     </p>
                     <div className="flex items-center gap-2">
+                        {canOpenWork && taskDeepLink && (
+                            <button
+                                type="button"
+                                onClick={() => navigate(taskDeepLink!)}
+                                className="px-3 py-1.5 rounded-lg border border-success/30 bg-success/10 text-success font-semibold hover:bg-success/20"
+                            >
+                                Open work
+                            </button>
+                        )}
                         {task.investment_project_id && !isFeasibilityTask && (
                             <button
                                 type="button"
@@ -1860,6 +2237,29 @@ export function TasksPage() {
                     </div>
                 )}
 
+                {showOpportunityCeoReviewPanel && (
+                    <div className="border-t border-border pt-4 space-y-3">
+                        <p className="text-sm font-semibold text-foreground">
+                            <ShieldCheck className="w-4 h-4 inline mr-1" />
+                            {meta?.action === "ceo_final_approval"
+                                ? "Final CEO approval required"
+                                : "Investment opportunity CEO decision"}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                            Committee department opinions are complete. Open the opportunity to final approve, send for contract, or reject.
+                        </p>
+                        {taskDeepLink && (
+                            <button
+                                type="button"
+                                onClick={() => navigate(taskDeepLink)}
+                                className="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold"
+                            >
+                                Open opportunity review
+                            </button>
+                        )}
+                    </div>
+                )}
+
                 {showSuperAdminDecisionPanel && (
                     <div className="border-t border-border pt-4 space-y-3">
                         <p className="text-xs text-muted-foreground">
@@ -1973,8 +2373,8 @@ export function TasksPage() {
             return;
         }
 
-        if (card === "super-admin") {
-            setActiveTab("super-admin");
+        if (card === "action-required" || card === "super-admin") {
+            setActiveTab(isExecutiveReviewer ? "super-admin" : "employee");
         }
     };
 
@@ -1993,7 +2393,15 @@ export function TasksPage() {
                 </div>
             ) : (
                 <>
-                    <div className="grid grid-cols-1 md:grid-cols-7 gap-4 mb-6">
+                    <div className="grid grid-cols-1 md:grid-cols-8 gap-4 mb-6">
+                        <button
+                            type="button"
+                            onClick={() => selectTaskCard("action-required")}
+                            className={`bg-card/80 rounded-xl border p-5 text-left transition-all ${selectedTaskCard === "action-required" ? "border-success ring-2 ring-success/20 shadow-lg" : "border-border hover:border-success/40 hover:shadow-md"}`}
+                        >
+                            <p className="text-sm text-muted-foreground">Action required</p>
+                            <p className="text-3xl font-black text-success">{stats.actionRequired}</p>
+                        </button>
                         <button
                             type="button"
                             onClick={() => selectTaskCard("all")}

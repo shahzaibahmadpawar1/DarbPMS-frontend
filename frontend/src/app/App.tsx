@@ -63,6 +63,7 @@ const UsersPage = lazy(() => import("@/app/components/UsersPage").then((m) => ({
 const ActivityHistoryPage = lazy(() => import("@/app/components/ActivityHistoryPage").then((m) => ({ default: m.ActivityHistoryPage })));
 const RecentActivitiesPage = lazy(() => import("@/app/components/RecentActivitiesPage").then((m) => ({ default: m.RecentActivitiesPage })));
 const AdminSettingsPage = lazy(() => import("@/app/components/AdminSettingsPage").then((m) => ({ default: m.AdminSettingsPage })));
+const UserSidebarSettingsPage = lazy(() => import("@/app/components/UserSidebarSettingsPage").then((m) => ({ default: m.UserSidebarSettingsPage })));
 const LegalWorkflowPage = lazy(() => import("@/app/components/LegalWorkflowPage").then((m) => ({ default: m.LegalWorkflowPage })));
 const ProjectWorkflowPage = lazy(() => import("@/app/components/ProjectWorkflowPage").then((m) => ({ default: m.ProjectWorkflowPage })));
 const PreOpeningPage = lazy(() => import("@/app/components/PreOpeningPage").then((m) => ({ default: m.PreOpeningPage })));
@@ -107,6 +108,7 @@ function App() {
               <Route path="/all-stations-contact-ceo" element={<ComplaintContactForm />} />
               <Route path="/all-stations-users" element={<UsersPage />} />
               <Route path="/all-stations-settings" element={<AdminSettingsPage />} />
+              <Route path="/all-stations-settings/preferences" element={<UserSidebarSettingsPage />} />
               <Route path="/all-stations-legal" element={<LegalWorkflowPage />} />
               <Route path="/all-stations-project" element={<ProjectWorkflowPage />} />
               <Route path="/all-stations-pre-opening" element={<PreOpeningPage />} />

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Save, List, Eye, FileCheck, Send } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
+import { useStationFormReadOnly } from "../../hooks/useStationFormReadOnly";
 import { useResolvedStationCode } from "../../hooks/useResolvedStationCode";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
@@ -30,22 +31,21 @@ function LicenseField({ label, name, value, type = "text", onChange, disabled }:
 }
 
 export function TaqyeesLicenseForm() {
-  const { accessMode } = useStation();
   const resolvedStationCode = useResolvedStationCode();
-  const isReadOnly = accessMode === 'view-only';
+  const isReadOnly = useStationFormReadOnly('taqyees-license');
   const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [draftId, setDraftId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    licenseNo: isReadOnly ? "TAQ-2024-55109" : "",
-    issuanceDate: isReadOnly ? "2024-03-01" : "",
-    licenseExpiryDate: isReadOnly ? "2025-03-01" : "",
-    numberOfDays: isReadOnly ? "180" : "",
-    licenseStatus: isReadOnly ? "active" : "",
-    stationCode: isReadOnly ? "N101" : "",
-    officeCode: isReadOnly ? "OFF-772" : "",
+    licenseNo: "",
+    issuanceDate: "",
+    licenseExpiryDate: "",
+    numberOfDays: "",
+    licenseStatus: "",
+    stationCode: "",
+    officeCode: "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -53,7 +53,7 @@ export function TaqyeesLicenseForm() {
   };
 
   useEffect(() => {
-    if (!resolvedStationCode || isReadOnly) return;
+    if (!resolvedStationCode) return;
     setFormData((prev) => ({ ...prev, stationCode: prev.stationCode || resolvedStationCode }));
   }, [resolvedStationCode, isReadOnly]);
 
@@ -61,7 +61,7 @@ export function TaqyeesLicenseForm() {
     const loadLatestSaved = async () => {
       try {
         const token = localStorage.getItem("auth_token");
-        if (!token || isReadOnly) return;
+        if (!token) return;
 
         const stationCode = formData.stationCode || resolvedStationCode || "";
         const params = new URLSearchParams();

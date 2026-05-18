@@ -3,32 +3,33 @@ import { ArrowRight } from "lucide-react";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { BrandName } from "./BrandName";
 import { useStation } from "../context/StationContext";
+import { useAuth } from "@/context/AuthContext";
+import { canManageAllStationForms } from "@/utils/stationFormPermissions";
 import logo from "../../assets/logo.png";
 
 export function ModeSelectionPage() {
     const navigate = useNavigate();
     const { setAccessMode } = useStation();
+    const { user } = useAuth();
+    const allowAdminMode = canManageAllStationForms(user);
 
-    const handleModeSelect = (mode: 'admin' | 'view-only', path: string) => {
-        setAccessMode(mode);
+    const handleModeSelect = (path: string) => {
+        setAccessMode(allowAdminMode ? "admin" : "view-only");
         navigate(path);
     };
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-muted via-background to-muted flex items-center justify-center p-4 relative overflow-hidden">
-            {/* Language Switcher - Top Right */}
             <div className="absolute top-6 right-6 z-20">
                 <LanguageSwitcher />
             </div>
 
-            {/* Mesh Gradients */}
             <div className="absolute inset-0 bg-gradient-to-tr from-primary/5 via-transparent to-secondary/5 pointer-events-none"></div>
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,hsl(var(--primary)/0.05),transparent_50%)] pointer-events-none"></div>
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,hsl(var(--secondary)/0.05),transparent_50%)] pointer-events-none"></div>
 
             <div className="w-full max-w-5xl relative z-10 animate-in fade-in zoom-in duration-500">
                 <div className="bg-card/80 backdrop-blur-xl rounded-[2.5rem] shadow-2xl border border-border card-glow p-12 relative overflow-hidden">
-                    {/* Top accent line */}
                     <div className="absolute top-0 left-0 right-0 h-1.5 gradient-primary"></div>
 
                     <div className="text-center mb-12">
@@ -40,9 +41,8 @@ export function ModeSelectionPage() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-4xl mx-auto">
-                        {/* All Stations Option */}
                         <button
-                            onClick={() => handleModeSelect('admin', "/all-stations-dashboard")}
+                            onClick={() => handleModeSelect("/all-stations-dashboard")}
                             className="group relative bg-background border-2 border-border p-10 rounded-3xl hover:border-primary hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2 transition-all text-center overflow-hidden"
                         >
                             <div className="absolute top-0 left-0 right-0 h-1 gradient-primary opacity-0 group-hover:opacity-100 transition-opacity"></div>
@@ -64,9 +64,8 @@ export function ModeSelectionPage() {
                             </div>
                         </button>
 
-                        {/* Single Station Option */}
                         <button
-                            onClick={() => handleModeSelect('admin', "/select-station")}
+                            onClick={() => handleModeSelect("/select-station")}
                             className="group relative bg-background border-2 border-border p-10 rounded-3xl hover:border-secondary hover:shadow-2xl hover:shadow-secondary/10 hover:-translate-y-2 transition-all text-center overflow-hidden"
                         >
                             <div className="absolute top-0 left-0 right-0 h-1 gradient-primary-to-secondary opacity-0 group-hover:opacity-100 transition-opacity"></div>

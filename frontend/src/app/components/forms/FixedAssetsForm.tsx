@@ -2,12 +2,13 @@ import { useState } from "react";
 import { Save, List, PlusCircle, Eye } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
+import { useStationFormReadOnly } from "../../hooks/useStationFormReadOnly";
 import { useResolvedStationCode } from "../../hooks/useResolvedStationCode";
 
 export function FixedAssetsForm() {
-  const { accessMode, selectedStation } = useStation();
+  const { selectedStation } = useStation();
   const resolvedStationCode = useResolvedStationCode();
-  const isReadOnly = accessMode === 'view-only';
+  const isReadOnly = useStationFormReadOnly('fixed-assets');
 
   const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
   const [formData, setFormData] = useState({

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Save, List, Eye, FileCheck, Send } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
+import { useStationFormReadOnly } from "../../hooks/useStationFormReadOnly";
 import { useResolvedStationCode } from "../../hooks/useResolvedStationCode";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
@@ -30,34 +31,33 @@ function LicenseField({ label, name, value, type = "text", onChange, disabled }:
 }
 
 export function SalamahLicenseForm() {
-  const { accessMode } = useStation();
   const resolvedStationCode = useResolvedStationCode();
-  const isReadOnly = accessMode === 'view-only';
+  const isReadOnly = useStationFormReadOnly('salamah-license');
   const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [draftId, setDraftId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
-    licenseNo: isReadOnly ? "SAL-99812-2024" : "",
-    issuanceDate: isReadOnly ? "2024-02-15" : "",
-    licenseExpiryDate: isReadOnly ? "2025-02-14" : "",
-    numberOfDays: isReadOnly ? "365" : "",
-    licenseStatus: isReadOnly ? "active" : "",
-    investorName: isReadOnly ? "Darb Al Sultan Co." : "",
-    ministryOfInteriorNo: isReadOnly ? "MOI-772938" : "",
-    nationalAddress: isReadOnly ? "7721 King Fahd Rd, Riyadh" : "",
-    commercialRegister: isReadOnly ? "1010293848" : "",
-    facilityName: isReadOnly ? "Location N101 Station" : "",
-    branch: isReadOnly ? "Main Branch" : "",
-    area: isReadOnly ? "Central Region" : "",
-    city: isReadOnly ? "Riyadh" : "",
-    district: isReadOnly ? "Al-Malqa" : "",
-    street: isReadOnly ? "King Fahd Road" : "",
-    landNo: isReadOnly ? "L-229-B" : "",
-    shopSpace: isReadOnly ? "450" : "",
-    stationCode: isReadOnly ? "N101" : "",
-    officeCode: isReadOnly ? "OFF-001" : "",
+    licenseNo: "",
+    issuanceDate: "",
+    licenseExpiryDate: "",
+    numberOfDays: "",
+    licenseStatus: "",
+    investorName: "",
+    ministryOfInteriorNo: "",
+    nationalAddress: "",
+    commercialRegister: "",
+    facilityName: "",
+    branch: "",
+    area: "",
+    city: "",
+    district: "",
+    street: "",
+    landNo: "",
+    shopSpace: "",
+    stationCode: "",
+    officeCode: "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -65,7 +65,7 @@ export function SalamahLicenseForm() {
   };
 
   useEffect(() => {
-    if (!resolvedStationCode || isReadOnly) return;
+    if (!resolvedStationCode) return;
     setFormData((prev) => ({ ...prev, stationCode: prev.stationCode || resolvedStationCode }));
   }, [resolvedStationCode, isReadOnly]);
 
@@ -73,7 +73,7 @@ export function SalamahLicenseForm() {
     const loadLatestSaved = async () => {
       try {
         const token = localStorage.getItem("auth_token");
-        if (!token || isReadOnly) return;
+        if (!token) return;
 
         const stationCode = formData.stationCode || resolvedStationCode || "";
         const params = new URLSearchParams();

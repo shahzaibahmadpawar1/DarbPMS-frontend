@@ -2,12 +2,12 @@ import { useState, useEffect } from "react";
 import { Save, List, PlusCircle, Send } from "lucide-react";
 import { FormRecordsList } from "../FormRecordsList";
 import { useStation } from "../../context/StationContext";
+import { useStationFormReadOnly } from "../../hooks/useStationFormReadOnly";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 export function CamerasForm() {
-    const { accessMode } = useStation();
-    const isReadOnly = accessMode === 'view-only';
+    const isReadOnly = useStationFormReadOnly('cameras');
 
     const [viewMode, setViewMode] = useState<'form' | 'records'>('form');
     const [loading, setLoading] = useState(false);

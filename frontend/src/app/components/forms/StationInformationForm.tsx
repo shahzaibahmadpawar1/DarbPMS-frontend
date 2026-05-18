@@ -1,16 +1,15 @@
 import { useState, useEffect } from "react";
 import { Save, Eye } from "lucide-react";
-import { useStation } from "../../context/StationContext";
+import { useStationFormReadOnly } from "../../hooks/useStationFormReadOnly";
 import { useAutoPopulate } from "../../hooks/useAutoPopulate";
 import { useResolvedStationCode } from "../../hooks/useResolvedStationCode";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:5000/api";
 
 export function StationInformationForm() {
-  const { accessMode } = useStation();
   const { investmentProjectData, clearInvestmentProjectData } = useAutoPopulate();
   const resolvedStationCode = useResolvedStationCode();
-  const isReadOnly = accessMode === 'view-only';
+  const isReadOnly = useStationFormReadOnly('station-information');
   const stationTypes = ["operation", "rent", "franchise", "investment", "ownership"];
 
   const [existingStationCode, setExistingStationCode] = useState<string | null>(null);

@@ -2,8 +2,9 @@ import { useCallback, useEffect, useRef, useState, type ReactNode } from "react"
 import { Link } from "react-router-dom";
 import { X, Printer, FileText, Eye, ClipboardList, ExternalLink, Upload, Trash2 } from "lucide-react";
 import { investmentWorkflowAPI, usersAPI } from "@/services/api";
+import { CEO_CONTRACT_DEPARTMENT_OPTIONS } from "@/app/constants/contractDepartments";
 import { useAuth } from "@/context/AuthContext";
-import { canSubmitStudyToCommittee } from "@/utils/investmentPermissions";
+import { canSubmitStudyToCommittee, type WorkflowDepartmentType } from "@/utils/investmentPermissions";
 import { computeStudyFinancials, computeProductProfitTotals, fmtStudyNumber, parseNum } from "@/utils/investmentStudyMetrics";
 
 const API_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";
@@ -739,11 +740,13 @@ export function InvestmentOpportunityDetailModal({
   onClose,
   autoPrintRequest,
   onAutoPrintDone,
+  initialOpenStudyId,
 }: {
   opportunityId: string | null;
   onClose: () => void;
   autoPrintRequest?: number;
   onAutoPrintDone?: () => void;
+  initialOpenStudyId?: string | null;
 }) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -845,6 +848,11 @@ export function InvestmentOpportunityDetailModal({
   }, [loadAll]);
 
   useEffect(() => {
+    if (!initialOpenStudyId || loading || !base) return;
+    setNestedStudyId(String(initialOpenStudyId));
+  }, [initialOpenStudyId, loading, base]);
+
+  useEffect(() => {
     const req = Number(autoPrintRequest || 0);
     if (!req) return;
     if (req === lastAutoPrintRef.current) return;
@@ -877,12 +885,20 @@ export function InvestmentOpportunityDetailModal({
   const mapHref = opp.location_url ? String(opp.location_url) : null;
   const workflowStatus = String(opp.workflow_status || "").toLowerCase();
   const isExecutiveUser = Boolean(user?.role === "ceo" || user?.role === "super_admin");
+  const isOpportunityCreator = Boolean(
+    user && String(opp.created_by || "") === String(user.id || ""),
+  );
+  const isInvestmentFranchiseSupervisor = Boolean(
+    user?.role === "supervisor" &&
+      (user.department === "investment" || user.department === "franchise"),
+  );
   const canPublishStationAssignment = Boolean(
     user &&
       workflowStatus === "approved_pending_station_assignment" &&
       (user.role === "super_admin" ||
         user.role === "ceo" ||
-        (user.role === "department_manager" && String(user.department || "") === "investment")),
+        isOpportunityCreator ||
+        isInvestmentFranchiseSupervisor),
   );
   const isAssignedContractManager = Boolean(
     user && String(opp.contract_manager_user_id || "") === String(user.id || ""),
@@ -1171,6 +1187,9 @@ export function InvestmentOpportunityDetailModal({
                 {isExecutiveUser && workflowStatus === "awaiting_ceo_decision" ? (
                   <div className="no-print rounded-xl border border-border p-4 bg-muted/10 space-y-3">
                     <p className="text-sm font-bold text-foreground">CEO Decision</p>
+                    <p className="text-xs text-muted-foreground">
+                      Final Approve sends the opportunity back to the user who created it to enter the official station code and name; after they publish, it appears on the Stations list.
+                    </p>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                       <select
                         className="px-3 py-2 rounded-lg border border-border bg-background text-sm"
@@ -1180,8 +1199,8 @@ export function InvestmentOpportunityDetailModal({
                           setContractManagerUserId("");
                         }}
                       >
-                        {["project", "operation", "realestate", "investment", "finance"].map((d) => (
-                          <option key={d} value={d}>{d}</option>
+                        {CEO_CONTRACT_DEPARTMENT_OPTIONS.map((d) => (
+                          <option key={d.value} value={d.value}>{d.label}</option>
                         ))}
                       </select>
                       <select
@@ -1544,7 +1563,7 @@ export function InvestmentOpportunityDetailModal({
                 {canSeeContractSubmittedNotice ? (
                   <div className="no-print rounded-xl border border-emerald-300 bg-emerald-50/60 p-4 flex items-center justify-between">
                     <p className="text-sm text-foreground">
-                      Contract form is submitted and pending CEO final review.
+                      Contract form is submitted and pending CEO final review. After Final Approve, Investment assigns the official station code and name before it appears on the Stations list.
                     </p>
                     {isExecutiveUser ? (
                       <div className="flex items-center gap-2">
@@ -1585,7 +1604,7 @@ export function InvestmentOpportunityDetailModal({
                   <div className="no-print rounded-xl border border-border p-4 bg-muted/10 space-y-3">
                     <p className="text-sm font-bold text-foreground">Official station assignment</p>
                     <p className="text-xs text-muted-foreground">
-                      After contract-path CEO approval, Investment assigns the official station code and name. Publishing creates the investment project, station record, and initial workflow so the station appears on Project and All Stations dashboards.
+                      After CEO approval, the opportunity creator or an Investment/Franchise supervisor assigns the official station code and name. Publishing creates the investment project, station record, and initial workflow so the station appears on Project and All Stations dashboards.
                     </p>
                     {canPublishStationAssignment ? (
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -1622,7 +1641,7 @@ export function InvestmentOpportunityDetailModal({
                       </div>
                     ) : (
                       <p className="text-xs text-muted-foreground">
-                        Waiting for an Investment department manager (or executive) to publish the station.
+                        Waiting for the opportunity creator, an Investment/Franchise supervisor, or an executive to publish the station.
                       </p>
                     )}
                   </div>
@@ -1661,6 +1680,11 @@ export function InvestmentOpportunityDetailModal({
       {nestedStudyId ? (
         <InvestmentStudyDetailModal
           studyId={nestedStudyId}
+          departmentType={
+            String(base?.opportunity?.workflow_department_type || "").toLowerCase() === "franchise"
+              ? "franchise"
+              : "investment"
+          }
           onClose={() => setNestedStudyId(null)}
           stackZClass="z-[95]"
           onSubmitted={() => void loadAll()}
@@ -1675,12 +1699,14 @@ export function InvestmentStudyDetailModal({
   onClose,
   stackZClass = "z-[80]",
   onSubmitted,
+  departmentType = "investment",
 }: {
   studyId: string | null;
   onClose: () => void;
   stackZClass?: string;
   /** Called after a successful submit-to-committee so parent lists can refresh. */
   onSubmitted?: () => void;
+  departmentType?: WorkflowDepartmentType;
 }) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
@@ -1694,14 +1720,14 @@ export function InvestmentStudyDetailModal({
     }
     setLoading(true);
     try {
-      const d = await investmentWorkflowAPI.getStudyDetails(studyId);
+      const d = await investmentWorkflowAPI.getStudyDetails(studyId, departmentType);
       setData(d);
     } catch {
       setData(null);
     } finally {
       setLoading(false);
     }
-  }, [studyId]);
+  }, [studyId, departmentType]);
 
   useEffect(() => {
     void loadStudy();
@@ -1713,13 +1739,15 @@ export function InvestmentStudyDetailModal({
   const study = data?.study;
   const opportunity = data?.opportunity;
   const submitted = String(study?.status || "") === "submitted_to_committee";
-  const canSubmit = Boolean(data && study && !submitted && canSubmitStudyToCommittee(user, opportunity));
+  const canSubmit = Boolean(
+    data && study && !submitted && canSubmitStudyToCommittee(user, opportunity, departmentType),
+  );
 
   const onSendToCommittee = async () => {
     if (!studyId || submitting) return;
     setSubmitting(true);
     try {
-      await investmentWorkflowAPI.submitStudy(studyId);
+      await investmentWorkflowAPI.submitStudy(studyId, departmentType);
       await loadStudy();
       onSubmitted?.();
     } catch (e: any) {

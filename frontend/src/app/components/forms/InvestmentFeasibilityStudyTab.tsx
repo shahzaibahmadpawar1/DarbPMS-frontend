@@ -172,7 +172,7 @@ export function InvestmentFeasibilityStudyTab({
   const [studyTab, setStudyTab] = useState<StudyFilterTab>("all");
   const [detailStudyId, setDetailStudyId] = useState<string | null>(null);
 
-  const canCreate = canWriteFeasibilityStudy(user, opportunities);
+  const canCreate = canWriteFeasibilityStudy(user, departmentType);
 
   const load = async () => {
     if (!token) return;
@@ -320,6 +320,7 @@ export function InvestmentFeasibilityStudyTab({
 
       <InvestmentStudyDetailModal
         studyId={detailStudyId}
+        departmentType={departmentType}
         onClose={() => setDetailStudyId(null)}
         onSubmitted={() => void load()}
       />
@@ -328,7 +329,7 @@ export function InvestmentFeasibilityStudyTab({
         <NewStudyModal
           token={token}
           departmentType={departmentType}
-          selectableOpportunities={eligibleOpportunitiesForNewStudy(user, opportunities)}
+          selectableOpportunities={eligibleOpportunitiesForNewStudy(user, opportunities, departmentType)}
           onClose={() => setShowNew(false)}
           onSaved={async () => {
             setShowNew(false);

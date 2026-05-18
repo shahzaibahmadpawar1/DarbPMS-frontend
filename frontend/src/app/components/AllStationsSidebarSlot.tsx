@@ -26,6 +26,7 @@ import {
     type WorkflowDepartmentType,
 } from "@/utils/investmentDepartmentNav";
 import type { SidebarNestedOrder } from "@/utils/sidebarNestedOrder";
+import { TaskPendingBadge } from "@/components/TaskPendingBadge";
 
 export interface NavItem {
     titleKey:
@@ -41,6 +42,7 @@ export interface NavItem {
         | "franchiseDept"
         | "legalDept"
         | "projectDept"
+        | "feasibilityStudy"
         | "preOpening"
         | "orderRequest"
         | "openingSoonProjects"
@@ -60,12 +62,19 @@ export interface SidebarNavRenderContext {
     underReviewCount: number;
     isDeptUser: boolean;
     showSystemUsers: boolean;
-    showSystemSettings: boolean;
+    showCompanyInfo: boolean;
+    showUserSettings: boolean;
     sidebarNestedOrder: SidebarNestedOrder;
     projectMenuOpen: boolean;
     setProjectMenuOpen: (fn: (o: boolean) => boolean) => void;
     isProjectRoute: boolean;
     showProjectMenu: boolean;
+    feasibilityStudyMenuOpen: boolean;
+    setFeasibilityStudyMenuOpen: (fn: (o: boolean) => boolean) => void;
+    isFeasibilityStudyRoute: boolean;
+    showFeasibilityStudyMenu: boolean;
+    showCommitteeOpinionsNav: boolean;
+    feasibilityStudyWrapRef: RefObject<HTMLDivElement | null>;
     preOpeningMenuOpen: boolean;
     setPreOpeningMenuOpen: (fn: (o: boolean) => boolean) => void;
     isPreOpeningRoute: boolean;
@@ -131,12 +140,19 @@ export function AllStationsSidebarSlot({
         underReviewCount,
         isDeptUser,
         showSystemUsers,
-        showSystemSettings,
+        showCompanyInfo,
+        showUserSettings,
         sidebarNestedOrder,
         projectMenuOpen,
         setProjectMenuOpen,
         isProjectRoute,
         showProjectMenu,
+        feasibilityStudyMenuOpen,
+        setFeasibilityStudyMenuOpen,
+        isFeasibilityStudyRoute,
+        showFeasibilityStudyMenu,
+        showCommitteeOpinionsNav,
+        feasibilityStudyWrapRef,
         preOpeningMenuOpen,
         setPreOpeningMenuOpen,
         isPreOpeningRoute,
@@ -205,29 +221,6 @@ export function AllStationsSidebarSlot({
                 {sidebarOpen && projectMenuOpen && (
                     <div className="ms-2 border-s border-white/25 ps-3 space-y-1 pb-1">
                         {sidebarNestedOrder.projectDept.map((childId) => {
-                            if (childId === "newProject") {
-                                return (
-                                    <div key={childId} className="space-y-1">
-                                        <div className="flex items-center gap-3 py-2.5 px-3 rounded-lg text-sm font-medium text-white/90">
-                                            <PlusCircle className="w-5 h-5 shrink-0" /><span className="truncate">{t("projectNewProject")}</span>
-                                        </div>
-                                        <Link to="/station/new-station/form/investment-department?tab=new-project" onClick={() => window.innerWidth < 1024 && setSidebarOpen(false)}
-                                            className={`ms-6 flex items-center gap-3 py-2 px-3 rounded-lg text-sm font-medium transition-all ${location.pathname.includes("/investment-department") ? "bg-primary text-white shadow-lg" : "text-white/90 hover:bg-white/10"}`}>
-                                            <span className="truncate">{t("investmentDept")}</span>
-                                        </Link>
-                                        <Link to="/station/new-station/form/franchise-department?tab=new-project" onClick={() => window.innerWidth < 1024 && setSidebarOpen(false)}
-                                            className={`ms-6 flex items-center gap-3 py-2 px-3 rounded-lg text-sm font-medium transition-all ${location.pathname.includes("/franchise-department") ? "bg-primary text-white shadow-lg" : "text-white/90 hover:bg-white/10"}`}>
-                                            <span className="truncate">{t("franchiseDept")}</span>
-                                        </Link>
-                                    </div>
-                                );
-                            }
-                            if (childId === "feasibility") {
-                                return <Link key={childId} to="/all-stations-project?tab=feasibility" onClick={() => window.innerWidth < 1024 && setSidebarOpen(false)}
-                                    className={`flex items-center gap-3 py-2.5 px-3 rounded-lg text-sm font-medium transition-all ${(location.pathname === "/all-stations-project" && location.search.includes("tab=feasibility")) ? "bg-primary text-white shadow-lg" : "text-white/90 hover:bg-white/10"}`}>
-                                    <BookOpen className="w-5 h-5 shrink-0" /><span className="truncate">{t("projectFeasibilityStudy")}</span>
-                                </Link>;
-                            }
                             if (childId === "stations") {
                                 return <Link key={childId} to="/all-stations-list" onClick={() => window.innerWidth < 1024 && setSidebarOpen(false)}
                                     className={`flex items-center gap-3 py-2.5 px-3 rounded-lg text-sm font-medium transition-all ${location.pathname === "/all-stations-list" ? "bg-primary text-white shadow-lg" : "text-white/90 hover:bg-white/10"}`}>
@@ -244,6 +237,62 @@ export function AllStationsSidebarSlot({
                                 className={`flex items-center gap-3 py-2.5 px-3 rounded-lg text-sm font-medium transition-all ${location.pathname === "/all-stations-reports" ? "bg-primary text-white shadow-lg" : "text-white/90 hover:bg-white/10"}`}>
                                 <FileText className="w-5 h-5 shrink-0" /><span className="truncate">{t("reports")}</span>
                             </Link>;
+                        })}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    if (slotId === "feasibilityStudy") {
+        if (!showFeasibilityStudyMenu) return null;
+        return (
+            <div ref={feasibilityStudyWrapRef} className={sidebarOpen ? "space-y-1" : "relative z-[55]"}>
+                <button
+                    type="button"
+                    onClick={() => setFeasibilityStudyMenuOpen((open) => !open)}
+                    className={`w-full flex items-center ${sidebarOpen ? "gap-3 px-4" : "justify-center px-2"} py-3 rounded-lg transition-all duration-200 ${sidebarOpen ? (feasibilityStudyMenuOpen || isFeasibilityStudyRoute ? "bg-white/15 text-white shadow-md" : "text-white/80 hover:bg-white/15 hover:text-white") : (feasibilityStudyMenuOpen || isFeasibilityStudyRoute ? "bg-white/15 text-white" : "text-white/80 hover:bg-white/15 hover:text-white")}`}
+                    title={!sidebarOpen ? t("feasibilityStudy") : undefined}
+                    aria-expanded={feasibilityStudyMenuOpen}
+                >
+                    <BookOpen className="w-5 h-5 shrink-0" />
+                    {sidebarOpen && (
+                        <>
+                            <span className="flex-1 min-w-0 text-start text-sm font-semibold truncate">{t("feasibilityStudy")}</span>
+                            <ChevronDown className={`w-4 h-4 shrink-0 text-white/90 transition-transform duration-200 ${feasibilityStudyMenuOpen ? "rotate-180" : ""}`} aria-hidden />
+                        </>
+                    )}
+                </button>
+                {sidebarOpen && feasibilityStudyMenuOpen && (
+                    <div className="ms-2 border-s border-white/25 ps-3 space-y-1 pb-1">
+                        {sidebarNestedOrder.feasibilityStudy.map((childId) => {
+                            if (childId === "overview") {
+                                return (
+                                    <Link
+                                        key={childId}
+                                        to="/all-stations-project?tab=feasibility"
+                                        onClick={() => window.innerWidth < 1024 && setSidebarOpen(false)}
+                                        className={`flex items-center gap-3 py-2.5 px-3 rounded-lg text-sm font-medium transition-all ${location.pathname === "/all-stations-project" && location.search.includes("tab=feasibility") ? "bg-primary text-white shadow-lg" : "text-white/90 hover:bg-white/10"}`}
+                                    >
+                                        <BookOpen className="w-5 h-5 shrink-0" />
+                                        <span className="truncate">{t("projectFeasibilityStudy")}</span>
+                                    </Link>
+                                );
+                            }
+                            if (childId === "committeeOpinions" && showCommitteeOpinionsNav) {
+                                return (
+                                    <Link
+                                        key={childId}
+                                        to="/station/new-station/form/investment-department?tab=opinions"
+                                        onClick={() => window.innerWidth < 1024 && setSidebarOpen(false)}
+                                        className={`flex items-center gap-3 py-2.5 px-3 rounded-lg text-sm font-medium transition-all ${location.pathname.includes("/investment-department") && location.search.includes("tab=opinions") ? "bg-primary text-white shadow-lg" : "text-white/90 hover:bg-white/10"}`}
+                                    >
+                                        <User className="w-5 h-5 shrink-0" />
+                                        <span className="truncate">{t("investmentOpinions")}</span>
+                                    </Link>
+                                );
+                            }
+                            return null;
                         })}
                     </div>
                 )}
@@ -365,10 +414,18 @@ export function AllStationsSidebarSlot({
                     title={!sidebarOpen ? t("tasksMenu") : undefined}
                     aria-expanded={tasksMenuOpen}
                 >
-                    <ClipboardList className="w-5 h-5 shrink-0" />
+                    <span className="relative shrink-0">
+                        <ClipboardList className="w-5 h-5" />
+                        {!sidebarOpen && taskCount > 0 ? (
+                            <span className="absolute -top-1.5 -end-1.5 min-w-[18px] h-[18px] px-1 bg-info text-info-foreground rounded-full flex items-center justify-center text-[9px] font-bold leading-none shadow-sm">
+                                {taskCount > 99 ? "99+" : taskCount}
+                            </span>
+                        ) : null}
+                    </span>
                     {sidebarOpen && (
                         <>
                             <span className="flex-1 min-w-0 text-start text-sm font-semibold truncate">{t("tasksMenu")}</span>
+                            <TaskPendingBadge count={taskCount} />
                             <ChevronDown className={`w-4 h-4 shrink-0 text-white/90 transition-transform duration-200 ${tasksMenuOpen ? "rotate-180" : ""}`} aria-hidden />
                         </>
                     )}
@@ -378,7 +435,9 @@ export function AllStationsSidebarSlot({
                         {sidebarNestedOrder.tasksMenu.map((childId) => (
                             <Link key={childId} to="/all-stations-tasks" onClick={() => window.innerWidth < 1024 && setSidebarOpen(false)}
                                 className={`flex items-center gap-3 py-2.5 px-3 rounded-lg text-sm font-medium transition-all ${location.pathname === "/all-stations-tasks" ? "bg-primary text-white shadow-lg" : "text-white/90 hover:bg-white/10"}`}>
-                                <ClipboardList className="w-5 h-5 shrink-0" /><span className="truncate">{t("tasks")}</span>
+                                <ClipboardList className="w-5 h-5 shrink-0" />
+                                <span className="truncate flex-1 min-w-0">{t("tasks")}</span>
+                                <TaskPendingBadge count={taskCount} />
                             </Link>
                         ))}
                     </div>
@@ -640,7 +699,7 @@ export function AllStationsSidebarSlot({
     }
 
     if (slotId === "systemSettings") {
-        if (isDeptUser || (!showSystemUsers && !showSystemSettings)) {
+        if (!showSystemUsers && !showCompanyInfo && !showUserSettings) {
             return null;
         }
         return (
@@ -685,8 +744,17 @@ export function AllStationsSidebarSlot({
                                         </Link>
                                     );
                                 }
+                                if (childId === "userSettings") {
+                                    if (!showUserSettings) return null;
+                                    return (
+                                        <Link key={childId} to="/all-stations-settings/preferences" onClick={() => { if (window.innerWidth < 1024) setSidebarOpen(false); }}
+                                            className={`flex items-center gap-3 py-2.5 px-3 rounded-lg text-sm font-medium transition-all ${location.pathname === "/all-stations-settings/preferences" ? "bg-primary text-white shadow-lg" : "text-white/90 hover:bg-white/10"}`}>
+                                            <Settings className="w-5 h-5 shrink-0" /><span className="truncate">{t("settings")}</span>
+                                        </Link>
+                                    );
+                                }
                                 if (childId === "companyInfo") {
-                                    if (!showSystemSettings) return null;
+                                    if (!showCompanyInfo) return null;
                                     return (
                                         <Link key={childId} to="/all-stations-settings" onClick={() => { if (window.innerWidth < 1024) setSidebarOpen(false); }}
                                             className={`flex items-center gap-3 py-2.5 px-3 rounded-lg text-sm font-medium transition-all ${location.pathname === "/all-stations-settings" ? "bg-primary text-white shadow-lg" : "text-white/90 hover:bg-white/10"}`}>
@@ -722,11 +790,7 @@ export function AllStationsSidebarSlot({
             {sidebarOpen && (
                 <div className="flex items-center gap-2 min-w-0">
                     <span className="text-sm font-medium truncate">{t(item.titleKey)}</span>
-                    {item.titleKey === "tasks" && taskCount > 0 && (
-                        <span className="min-w-5 h-5 px-1.5 bg-info text-info-foreground rounded-full flex items-center justify-center text-[10px] font-bold leading-none shadow-sm">
-                            {taskCount > 99 ? "99+" : taskCount}
-                        </span>
-                    )}
+                    {item.titleKey === "tasks" ? <TaskPendingBadge count={taskCount} /> : null}
                     {item.titleKey === "underReview" && underReviewCount > 0 && (
                         <span className="min-w-5 h-5 px-1.5 bg-info text-info-foreground rounded-full flex items-center justify-center text-[10px] font-bold leading-none shadow-sm">
                             {underReviewCount > 99 ? "99+" : underReviewCount}
